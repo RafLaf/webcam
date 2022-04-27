@@ -7,7 +7,7 @@ import time
 import torch.nn.functional as F
 
 addr_cam = "rtsp://admin:brain2021@10.29.232.40"
-device = 'cuda:0'
+device = 'cpu'
 
 
 # 1, 2, 3... for every class we're adding
@@ -31,10 +31,10 @@ def preprocess(features, mean_base_features=None):
 #model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
 model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
 
-model.load_state_dict(torch.load('/ssd2/backbones/resnet12/miniimagenet/mini1.pt1', map_location=device))
+model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
 #model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/tieredlong1.pt1', map_location=device))
 
-mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
+#mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
 shots_list = []
 registered_classes = []
 
@@ -44,6 +44,36 @@ inference = False
 registration = False
 prev_frame_time = time.time()
 font = cv2.FONT_HERSHEY_SIMPLEX
+
+def draw_indicator(img, percentages):
+
+    def percentage_to_color(p):
+        return 0,255 - (255 * p), 255 * p
+
+    # config
+    levels = 50
+    level_width = 60
+    level_height = 5
+    shift_y = 1200
+    # draw
+    
+    #cv2.rectangle(img, (10, img.shape[0] - (indicator_height + 10)), (10 + indicator_width, img.shape[0] - 10), (0, 0, 0), cv2.FILLED)
+    for k in range(percentages.shape[0]):
+        img_level = int(percentages[k] * levels)
+        for i in range(img_level):
+            level_y_b = shift_y - i * level_height
+            print('here', level_y_b)
+            print(i,k, img_level)
+            print('print',img_level)
+            start_point = (20 + level_width*k , level_y_b - level_height)
+            end_point =  (20 + level_width*k + level_width -10 , level_y_b)
+            print('start_end', start_point, end_point)
+            print('color', percentage_to_color(i / levels))
+            #cv2.rectangle(img, start_point, end_point , percentage_to_color(i / levels), cv2.FILLED)
+            cv2.rectangle(img,start_point, end_point, percentage_to_color(i / levels), cv2.FILLED)
+            if i==0:
+                cv2.putText(frame, str(k), (end_point[0] -level_width//2, end_point[1]+40), font, 1, (255, 0, 0), 1, cv2.LINE_AA)
+
 
 while(True):
     ret,frame = cap.read()
@@ -66,7 +96,7 @@ while(True):
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
         # preprocess features
-        features = preprocess(features, mean_base_features)
+        #features = preprocess(features, mean_base_features)
         print('features:', features.shape)
 
         if classe not in registered_classes:
@@ -94,7 +124,7 @@ while(True):
         print('shots:', shots.shape)
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
-        features = preprocess(features, mean_base_features)
+        #features = preprocess(features, mean_base_features)
         distances = torch.norm(shots-features, dim = 1, p=2)
         prediction = distances.argmin().item()
         print('distances:', distances)
@@ -108,7 +138,7 @@ while(True):
         print('probabilities:', probabilities)
         cv2.putText(frame, f'Object is from class :{prediction}', (7, 550), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
-
+        draw_indicator(frame, probabilities)
     cv2.putText(frame, f'fps:{fps}', (7, 70), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.putText(frame, f'clock:{clock}', (2200, 70), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.imshow('frame',frame)
