@@ -70,7 +70,9 @@ def draw_indicator(frame, percentages, shot_frames):
         frame[ y_start_img:y_start_img + s[0], x_start_img:x_start_img + s[1]] = image #.reshape(s[1], s[0], -1)
 
         img_level = int(percentages[k] * levels)
-        cv2.putText(frame, str(np.round(percentages[k].item(),2)*100)+'%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        #cv2.putText(frame, str(np.round(percentages[k].item(),2)*100)+'%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(frame, f'{np.round(100*percentages[k].item(), 2)}%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        
         cv2.rectangle(frame,(20 + level_width*k , shift_y - levels* level_height), (20 + level_width*k + level_width -10,shift_y  ) , (0,0,0), cv2.FILLED)
         for i in range(img_level):
             level_y_b = shift_y - i * level_height
@@ -147,7 +149,7 @@ while(True):
         print('probabilities:', probabilities)
         cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.05), int(height*0.25)), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
-        draw_indicator(frame, np.array(np.array(list(map(lambda x:np.round(x, 2), probabilities.tolist())))), shot_frames)
+        draw_indicator(frame,probabilities, shot_frames)
     cv2.putText(frame, f'fps:{fps}', (int(width*0.05), int(height*0.1)), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.putText(frame, f'clock:{clock}', (int(width*0.8), int(height*0.1)), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.imshow('frame',frame)
