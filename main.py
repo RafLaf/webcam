@@ -93,7 +93,6 @@ while(True):
     prev_frame_time = new_frame_time
     
     key = cv2.waitKey(33) & 0xFF
-    
     if key in range(48, 53):
         registration = True
         inference = False
@@ -116,12 +115,8 @@ while(True):
             shots_list[classe]= features
             shot_frames[classe]= image_label
 
-    if fps!=0 and clock % fps == 0 and inference:
-        img = apply_transformations(frame).to(device)
-        _, features = model(img.unsqueeze(0))
-    
     if registration:
-        if time.time()-last_detected<3:
+        if time.time()-last_detected<3 and inference==False:
             cv2.putText(frame, f'Class :{classe} registered', (int(width*0.05), int(height*0.25)), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
@@ -130,7 +125,6 @@ while(True):
         inference = True
         probabilities = None
     if inference:
-
         shots = torch.cat(shots_list)
         print('shots:', shots.shape)
         img = apply_transformations(frame).to(device)
