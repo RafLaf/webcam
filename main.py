@@ -39,7 +39,9 @@ model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', 
 shots_list = []
 registered_classes = []
 shot_frames = []
-cap = cv2.VideoCapture(addr_cam)
+#cap = cv2.VideoCapture(addr_cam)
+cap = cv2.VideoCapture(0)
+scale = 1
 clock = 0
 inference = False
 registration = False
@@ -83,7 +85,9 @@ def draw_indicator(frame, percentages, shot_frames):
             #if i==0:
             #    cv2.putText(frame, str(k), (end_point[0] -level_width//2, end_point[1]+40), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
-cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
+clock_M = 0
+clock_init = 20
+mean_features = []
 while(True):
     ret,frame = cap.read()
     height, width, _ = frame.shape
@@ -91,9 +95,20 @@ while(True):
     #print('clock: ', clock)    
     fps = int(1/(new_frame_time-prev_frame_time))
     prev_frame_time = new_frame_time
+    if clock_M <= clock_init:
+        img = apply_transformations(frame).to(device)
+        _, features = model(img.unsqueeze(0))
+        mean_features.append(features.detach().cpu())
     
+        if clock_M == clock_init:
+            mean_features = torch.cat(mean_features, dim = 0)
+            mean_features = mean_features.mean(dim = 0)
+        cv2.putText(frame, f'Initialization', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+
+        clock_M += 1        
+
     key = cv2.waitKey(33) & 0xFF
-    if key in range(48, 53):
+    if key in range(48, 53) and clock_M>clock_init:
         registration = True
         inference = False
         
@@ -104,7 +119,7 @@ while(True):
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
         # preprocess features
-        #features = preprocess(features, mean_base_features)
+        features = preprocess(features, mean_base_features= mean_features)
         print('features:', features.shape)
         image_label = cv2.resize(frame, (int(frame.shape[1]//10),int(frame.shape[0]//10 )), interpolation = cv2.INTER_AREA)
         if classe not in registered_classes:
@@ -117,19 +132,19 @@ while(True):
 
     if registration:
         if time.time()-last_detected<3 and inference==False:
-            cv2.putText(frame, f'Class :{classe} registered', (int(width*0.05), int(height*0.25)), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(frame, f'Class :{classe} registered', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
 
     if key == ord('i'):
         inference = True
         probabilities = None
-    if inference:
+    if inference and clock_M>clock_init:
         shots = torch.cat(shots_list)
         print('shots:', shots.shape)
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
-        #features = preprocess(features, mean_base_features)
+        features = preprocess(features, mean_base_features= mean_features)
         distances = torch.norm(shots-features, dim = 1, p=2)
         prediction = distances.argmin().item()
         print('distances:', distances)
@@ -137,15 +152,15 @@ while(True):
         if probabilities == None:
             probabilities = probas
         else:
-            probabilities = probabilities*0.95 + probas*0.05
+            probabilities = probabilities*0.85 + probas*0.15
         print('pred:', prediction)
         print('probas:', probas)
         print('probabilities:', probabilities)
-        cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.05), int(height*0.25)), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
+        cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         draw_indicator(frame,probabilities, shot_frames)
-    cv2.putText(frame, f'fps:{fps}', (int(width*0.05), int(height*0.1)), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
-    cv2.putText(frame, f'clock:{clock}', (int(width*0.8), int(height*0.1)), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
+    cv2.putText(frame, f'fps:{fps}', (int(width*0.05), int(height*0.1)), font, scale, (100, 255, 0), 3, cv2.LINE_AA)
+    cv2.putText(frame, f'clock:{clock}', (int(width*0.8), int(height*0.1)), font, scale, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.imshow('frame',frame)
     clock += 1
     # reset clock
