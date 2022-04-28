@@ -6,7 +6,7 @@ from resnet12 import ResNet12
 import time
 import torch.nn.functional as F
 
-addr_cam = "rtsp://admin:brain2021@10.29.232.41"
+addr_cam = "rtsp://admin:brain2021@10.29.232.40"
 device = 'cpu'
 
 
@@ -31,8 +31,9 @@ def preprocess(features, mean_base_features=None):
 #model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
 model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
 
-model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
+#model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
 #model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/tieredlong1.pt1', map_location=device))
+model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', map_location=device))
 
 #mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
 shots_list = []
@@ -48,12 +49,12 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 def draw_indicator(frame, percentages, shot_frames):
     def percentage_to_color(p):
         return 0,255 - (255 * p), 255 * p
-
+    height, width, _ = frame.shape
     # config
     levels = 50
-    level_width = 100
+    level_width = width //10
     level_height = 5
-    shift_y = 1200
+    shift_y = int(height*0.8)
     # draw
     
     #cv2.rectangle(img, (10, img.shape[0] - (indicator_height + 10)), (10 + indicator_width, img.shape[0] - 10), (0, 0, 0), cv2.FILLED)
@@ -64,22 +65,23 @@ def draw_indicator(frame, percentages, shot_frames):
         s = image.shape
         print('shape:', s)
         #frame[20 + level_width*k :20 + level_width*k +s[0] , shift_y + level_height * 10:shift_y + level_height * 10+s[1]] = image
-        frame[20 + level_width :20 + level_width +s[0] , shift_y + level_height*k :shift_y + level_height*k + s[1]] = image
+        y_start_img = shift_y 
+        x_start_img = 15+level_width*k  
+        frame[ y_start_img:y_start_img + s[0], x_start_img:x_start_img + s[1]] = image #.reshape(s[1], s[0], -1)
 
         img_level = int(percentages[k] * levels)
         cv2.putText(frame, str(np.round(percentages[k].item(),2)*100)+'%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-
         cv2.rectangle(frame,(20 + level_width*k , shift_y - levels* level_height), (20 + level_width*k + level_width -10,shift_y  ) , (0,0,0), cv2.FILLED)
         for i in range(img_level):
             level_y_b = shift_y - i * level_height
             start_point = (20 + level_width*k , level_y_b - level_height)
             end_point =  (20 + level_width*k + level_width -10 , level_y_b)
-            #cv2.rectangle(img, start_point, end_point , percentage_to_color(i / levels), cv2.FILLED)
-            cv2.rectangle(frame,start_point, end_point, percentage_to_color(i / levels), cv2.FILLED)
-            if i==0:
-                cv2.putText(frame, str(k), (end_point[0] -level_width//2, end_point[1]+40), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+            cv2.rectangle(frame, start_point, end_point , percentage_to_color(i / levels), cv2.FILLED)
+            #cv2.rectangle(frame,start_point, end_point, percentage_to_color(i / levels), cv2.FILLED)
+            #if i==0:
+            #    cv2.putText(frame, str(k), (end_point[0] -level_width//2, end_point[1]+40), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
-
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 3)
 while(True):
     ret,frame = cap.read()
     height, width, _ = frame.shape
@@ -97,18 +99,20 @@ while(True):
         last_detected = time.time()
         classe = key-48
         print('class :', classe)
-        shot_frames.append(cv2.resize(frame, (int(frame.shape[0]//20),int(frame.shape[1]//20 )), interpolation = cv2.INTER_AREA))
+        
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
         # preprocess features
         #features = preprocess(features, mean_base_features)
         print('features:', features.shape)
-
+        image_label = cv2.resize(frame, (int(frame.shape[1]//10),int(frame.shape[0]//10 )), interpolation = cv2.INTER_AREA)
         if classe not in registered_classes:
             registered_classes.append(classe)
             shots_list.append(features)
+            shot_frames.append(image_label)
         else:
             shots_list[classe]= features
+            shot_frames[classe]= image_label
 
     if fps!=0 and clock % fps == 0 and inference:
         img = apply_transformations(frame).to(device)
@@ -116,7 +120,7 @@ while(True):
     
     if registration:
         if time.time()-last_detected<3:
-            cv2.putText(frame, f'Class :{classe} registered', (7, 250), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(frame, f'Class :{classe} registered', (int(width*0.05), int(height*0.25)), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
 
@@ -141,9 +145,9 @@ while(True):
         print('pred:', prediction)
         print('probas:', probas)
         print('probabilities:', probabilities)
-        cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.05), int(height*0.5)), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
+        cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.05), int(height*0.25)), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
-        draw_indicator(frame, probabilities, shot_frames)
+        draw_indicator(frame, np.array(np.array(list(map(lambda x:np.round(x, 2), probabilities.tolist())))), shot_frames)
     cv2.putText(frame, f'fps:{fps}', (int(width*0.05), int(height*0.1)), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.putText(frame, f'clock:{clock}', (int(width*0.8), int(height*0.1)), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.imshow('frame',frame)
