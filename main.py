@@ -45,34 +45,34 @@ registration = False
 prev_frame_time = time.time()
 font = cv2.FONT_HERSHEY_SIMPLEX
 
-def draw_indicator(img, percentages):
+def draw_indicator(frame, percentages):
 
     def percentage_to_color(p):
         return 0,255 - (255 * p), 255 * p
 
     # config
     levels = 50
-    level_width = 60
+    level_width = 100
     level_height = 5
     shift_y = 1200
     # draw
     
     #cv2.rectangle(img, (10, img.shape[0] - (indicator_height + 10)), (10 + indicator_width, img.shape[0] - 10), (0, 0, 0), cv2.FILLED)
+    cv2.rectangle(frame, (20  , shift_y - level_height * (levels+10) ), (20 + level_width*(percentages.shape[0]-1) + level_width -10,shift_y - level_height * (levels+1)  ) ,(0, 0, 0), cv2.FILLED)
+    cv2.rectangle(frame, (20  , shift_y + level_height * 1 ), (20 + level_width*(percentages.shape[0]-1) + level_width -10,shift_y + level_height * 10  ) ,(0, 0, 0), cv2.FILLED)
     for k in range(percentages.shape[0]):
         img_level = int(percentages[k] * levels)
+        cv2.putText(frame, str(np.round(percentages[k].item(),2)*100)+'%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+
+        cv2.rectangle(frame,(20 + level_width*k , shift_y - levels* level_height), (20 + level_width*k + level_width -10,shift_y  ) , (0,0,0), cv2.FILLED)
         for i in range(img_level):
             level_y_b = shift_y - i * level_height
-            print('here', level_y_b)
-            print(i,k, img_level)
-            print('print',img_level)
             start_point = (20 + level_width*k , level_y_b - level_height)
             end_point =  (20 + level_width*k + level_width -10 , level_y_b)
-            print('start_end', start_point, end_point)
-            print('color', percentage_to_color(i / levels))
             #cv2.rectangle(img, start_point, end_point , percentage_to_color(i / levels), cv2.FILLED)
-            cv2.rectangle(img,start_point, end_point, percentage_to_color(i / levels), cv2.FILLED)
+            cv2.rectangle(frame,start_point, end_point, percentage_to_color(i / levels), cv2.FILLED)
             if i==0:
-                cv2.putText(frame, str(k), (end_point[0] -level_width//2, end_point[1]+40), font, 1, (255, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(frame, str(k), (end_point[0] -level_width//2, end_point[1]+40), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
 
 while(True):
@@ -137,7 +137,7 @@ while(True):
         print('probas:', probas)
         print('probabilities:', probabilities)
         cv2.putText(frame, f'Object is from class :{prediction}', (7, 550), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
-        cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
+        #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         draw_indicator(frame, probabilities)
     cv2.putText(frame, f'fps:{fps}', (7, 70), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.putText(frame, f'clock:{clock}', (2200, 70), font, 3, (100, 255, 0), 3, cv2.LINE_AA)
