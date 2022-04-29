@@ -63,13 +63,14 @@ def draw_indicator(frame, percentages, shot_frames):
     cv2.rectangle(frame, (20  , shift_y - level_height * (levels+10) ), (20 + level_width*(percentages.shape[0]-1) + level_width -10,shift_y - level_height * (levels+1)  ) ,(0, 0, 0), cv2.FILLED)
     cv2.rectangle(frame, (20  , shift_y + level_height * 1 ), (20 + level_width*(percentages.shape[0]-1) + level_width -10,shift_y + level_height * 10  ) ,(0, 0, 0), cv2.FILLED)
     for k in range(percentages.shape[0]):
-        image = shot_frames[k]
-        s = image.shape
+        images = shot_frames[k]
+        s = images[0].shape
         print('shape:', s)
         #frame[20 + level_width*k :20 + level_width*k +s[0] , shift_y + level_height * 10:shift_y + level_height * 10+s[1]] = image
         y_start_img = shift_y 
         x_start_img = 15+level_width*k  
-        frame[ y_start_img:y_start_img + s[0], x_start_img:x_start_img + s[1]] = image #.reshape(s[1], s[0], -1)
+        for n_shot in range(len(images)):
+            frame[ y_start_img + n_shot*(s[0]+10):y_start_img + s[0] + n_shot*(s[0]+10), x_start_img:x_start_img + s[1]] = images[n_shot] #.reshape(s[1], s[0], -1)
 
         img_level = int(percentages[k] * levels)
         #cv2.putText(frame, str(np.round(percentages[k].item(),2)*100)+'%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
@@ -129,15 +130,15 @@ while(True):
         if classe not in registered_classes:
             registered_classes.append(classe)
             shots_list.append(features)
-            shot_frames.append(image_label)
+            shot_frames.append([image_label])
         else:
             shots_list[classe] = torch.cat((shots_list[classe], features), dim = 0)
             print('------------:', shots_list[classe].shape)
-            shot_frames[classe]= image_label
+            shot_frames[classe].append(image_label)
 
     if registration:
         if time.time()-last_detected<3 and inference==False:
-            cv2.putText(frame, f'Class :{classe} registered. Shot nb {len(shots_list[classe])}', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shots_list[classe])}', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
 
