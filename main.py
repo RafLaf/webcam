@@ -73,7 +73,7 @@ def draw_indicator(frame, percentages, shot_frames):
 
         img_level = int(percentages[k] * levels)
         #cv2.putText(frame, str(np.round(percentages[k].item(),2)*100)+'%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.putText(frame, f'{np.round(100*percentages[k].item(), 2)}%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.putText(frame, f'{np.round(100*percentages[k].item(), 2)}%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, scale, (255, 255, 255), 1, cv2.LINE_AA)
         
         cv2.rectangle(frame,(20 + level_width*k , shift_y - levels* level_height), (20 + level_width*k + level_width -10,shift_y  ) , (0,0,0), cv2.FILLED)
         for i in range(img_level):
@@ -88,8 +88,12 @@ def draw_indicator(frame, percentages, shot_frames):
 clock_M = 0
 clock_init = 20
 mean_features = []
+#resolution = (1280,720)
+resolution = (1920,1080)
+
 while(True):
     ret,frame = cap.read()
+    frame = cv2.resize(frame, resolution, interpolation = cv2.INTER_AREA)
     height, width, _ = frame.shape
     new_frame_time = time.time()
     #print('clock: ', clock)    
