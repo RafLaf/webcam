@@ -56,7 +56,7 @@ def draw_indicator(frame, percentages, shot_frames):
     levels = 50
     level_width = width //10
     level_height = 5
-    shift_y = int(height*0.6)
+    shift_y = int(height*0.4)
     # draw
     
     #cv2.rectangle(img, (10, img.shape[0] - (indicator_height + 10)), (10 + indicator_width, img.shape[0] - 10), (0, 0, 0), cv2.FILLED)
@@ -70,7 +70,8 @@ def draw_indicator(frame, percentages, shot_frames):
         y_start_img = shift_y 
         x_start_img = 15+level_width*k  
         for n_shot in range(len(images)):
-            frame[ y_start_img + n_shot*(s[0]+10):y_start_img + s[0] + n_shot*(s[0]+10), x_start_img:x_start_img + s[1]] = images[n_shot] #.reshape(s[1], s[0], -1)
+            if y_start_img + s[0] + n_shot*(s[0]+10)< frame.shape[0]:
+                frame[ y_start_img + n_shot*(s[0]+10):y_start_img + s[0] + n_shot*(s[0]+10), x_start_img:x_start_img + s[1]] = images[n_shot] #.reshape(s[1], s[0], -1)
 
         img_level = int(percentages[k] * levels)
         #cv2.putText(frame, str(np.round(percentages[k].item(),2)*100)+'%', (20 + level_width*k  , shift_y - level_height * (levels+3)), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
@@ -108,7 +109,7 @@ while(True):
         if clock_M == clock_init:
             mean_features = torch.cat(mean_features, dim = 0)
             mean_features = mean_features.mean(dim = 0)
-        cv2.putText(frame, f'Initialization', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+        cv2.putText(frame, f'Initialization', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
 
         clock_M += 1        
 
@@ -138,7 +139,7 @@ while(True):
 
     if registration:
         if time.time()-last_detected<3 and inference==False:
-            cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shots_list[classe])}', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shots_list[classe])}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
 
@@ -152,12 +153,12 @@ while(True):
         resetting  = True
         
     if resetting:
-        cv2.putText(frame, f'Reset', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+        cv2.putText(frame, f'Reset', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         reset_clock += 1
         if reset_clock > 20:
             resetting = False
 
-    if key == ord('i'):
+    if key == ord('i') and len(shots_list)>0:
         inference = True
         probabilities = None
         shots = torch.stack([s.mean(dim=0) for s in shots_list])
@@ -173,7 +174,7 @@ while(True):
             probabilities = probas
         else:
             probabilities = probabilities*0.85 + probas*0.15
-        cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+        cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         draw_indicator(frame,probabilities, shot_frames)
     cv2.putText(frame, f'fps:{fps}', (int(width*0.05), int(height*0.1)), font, scale, (100, 255, 0), 3, cv2.LINE_AA)
