@@ -90,7 +90,7 @@ clock_init = 20
 mean_features = []
 #resolution = (1280,720)
 resolution = (1920,1080)
-
+resetting = False
 while(True):
     ret,frame = cap.read()
     frame = cv2.resize(frame, resolution, interpolation = cv2.INTER_AREA)
@@ -112,7 +112,7 @@ while(True):
         clock_M += 1        
 
     key = cv2.waitKey(33) & 0xFF
-    if key in range(48, 53) and clock_M>clock_init:
+    if key in range(48, 53) and clock_M>clock_init and not resetting:
         registration = True
         inference = False
         
@@ -131,7 +131,8 @@ while(True):
             shots_list.append(features)
             shot_frames.append(image_label)
         else:
-            shots_list[classe]= features
+            shots_list[classe] = torch.cat((shots_list[classe], features), dim = 0)
+            print('------------:', shots_list[classe].shape)
             shot_frames[classe]= image_label
 
     if registration:
@@ -140,11 +141,26 @@ while(True):
         else:
             registration = False
 
+    if key == ord('r'):
+        registration = False
+        inference = False
+        shots_list = []
+        shot_frames = []
+        registered_classes = []
+        reset_clock = 0
+        resetting  = True
+        
+    if resetting:
+        cv2.putText(frame, f'Reset', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+        reset_clock += 1
+        if reset_clock > 20:
+            resetting = False
+
     if key == ord('i'):
         inference = True
         probabilities = None
-    if inference and clock_M>clock_init:
-        shots = torch.cat(shots_list)
+    if inference and clock_M>clock_init and not resetting:
+        shots = torch.stack([s.mean(dim=0) for s in shots_list])
         print('shots:', shots.shape)
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
