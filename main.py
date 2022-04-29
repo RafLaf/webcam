@@ -56,7 +56,7 @@ def draw_indicator(frame, percentages, shot_frames):
     levels = 50
     level_width = width //10
     level_height = 5
-    shift_y = int(height*0.8)
+    shift_y = int(height*0.6)
     # draw
     
     #cv2.rectangle(img, (10, img.shape[0] - (indicator_height + 10)), (10 + indicator_width, img.shape[0] - 10), (0, 0, 0), cv2.FILLED)
@@ -137,7 +137,7 @@ while(True):
 
     if registration:
         if time.time()-last_detected<3 and inference==False:
-            cv2.putText(frame, f'Class :{classe} registered', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(frame, f'Class :{classe} registered. Shot nb {len(shots_list[classe])}', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
 
@@ -159,23 +159,19 @@ while(True):
     if key == ord('i'):
         inference = True
         probabilities = None
-    if inference and clock_M>clock_init and not resetting:
         shots = torch.stack([s.mean(dim=0) for s in shots_list])
         print('shots:', shots.shape)
+    if inference and clock_M>clock_init and not resetting:
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
         features = preprocess(features, mean_base_features= mean_features)
         distances = torch.norm(shots-features, dim = 1, p=2)
         prediction = distances.argmin().item()
-        print('distances:', distances)
         probas = F.softmax(-20*distances).detach().cpu()
         if probabilities == None:
             probabilities = probas
         else:
             probabilities = probabilities*0.85 + probas*0.15
-        print('pred:', prediction)
-        print('probas:', probas)
-        print('probabilities:', probabilities)
         cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.05), int(height*0.25)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         draw_indicator(frame,probabilities, shot_frames)
