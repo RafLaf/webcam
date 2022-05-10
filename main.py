@@ -9,7 +9,6 @@ import torch.nn.functional as F
 addr_cam = "rtsp://admin:brain2021@10.29.232.40"
 device = 'cpu'
 
-
 # 1, 2, 3... for every class we're adding
 # i for starting inference, it will be run every 1 second
 # q for exiting the program
@@ -28,12 +27,28 @@ def preprocess(features, mean_base_features=None):
     return features
 
 # Get the model
-#model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
-model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
+model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
+#model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
+
+def load_model_weights(model, path, device):
+    pretrained_dict = torch.load(path, map_location=device)
+    model_dict = model.state_dict()
+    #pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+    new_dict = {}
+    for k, v in pretrained_dict.items():
+        if k in model_dict:
+            if 'bn' in k:
+                new_dict[k] = v
+            else:
+                new_dict[k] = v.half()
+    model_dict.update(new_dict) 
+    model.load_state_dict(model_dict)
+    print('Model loaded!')
 
 #model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
 #model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/tieredlong1.pt1', map_location=device))
-model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', map_location=device))
+#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', map_location=device))
+load_model_weights(model, '/hdd/data/backbones/easybackbones/tieredlong1.pt1', device)
 
 #mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
 shots_list = []
@@ -104,8 +119,7 @@ while(True):
     if clock_M <= clock_init:
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
-        mean_features.append(features.detach().cpu())
-    
+        mean_features.append(features.detach().to(device))
         if clock_M == clock_init:
             mean_features = torch.cat(mean_features, dim = 0)
             mean_features = mean_features.mean(dim = 0)
