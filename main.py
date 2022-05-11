@@ -107,6 +107,27 @@ mean_features = []
 #resolution = (1280,720)
 resolution = (1920,1080)
 resetting = False
+K_nn = 5
+model_name = 'knn'
+
+def predict(shots_list, features, model_name):
+    if model_name == 'ncm':
+        shots = torch.stack([s.mean(dim=0) for s in shots_list])
+        distances = torch.norm(shots-features, dim = 1, p=2)
+        classe_prediction = distances.argmin().item()
+        probas = F.softmax(-20*distances, dim=0).detach().cpu()
+    elif model_name == 'knn':
+        shots = torch.cat(shots_list)
+        #create target list of the shots
+        targets = torch.cat([torch.Tensor([i]*shots_list[i].shape[0]) for i in range(len(shots_list))])
+        distances = torch.norm(shots-features, dim = 1, p=2)
+        #get the k nearest neighbors
+
+        _, indices = distances.topk(K_nn, largest=False)
+        probas = F.one_hot(targets[indices].long(), num_classes=len(shots_list)).sum(dim=0)/K_nn
+        classe_prediction = probas.argmax().item()
+    return probas, classe_prediction
+
 while(True):
     ret,frame = cap.read()
     frame = cv2.resize(frame, resolution, interpolation = cv2.INTER_AREA)
@@ -156,7 +177,7 @@ while(True):
                 shot_frames[classe].append(image_label)
 
     if registration:
-        if abs(clock-last_detected)<20 and inference==False:
+        if abs(clock-last_detected)<10 and inference==False:
             cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shot_frames[classe])}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
@@ -179,20 +200,22 @@ while(True):
     if key == ord('i') and len(shots_list)>0:
         inference = True
         probabilities = None
-        shots = torch.stack([s.mean(dim=0) for s in shots_list])
-        print('shots:', shots.shape)
+
     if inference and clock_M>clock_init and not resetting:
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
         features = preprocess(features, mean_base_features= mean_features)
-        distances = torch.norm(shots-features, dim = 1, p=2)
-        prediction = distances.argmin().item()
-        probas = F.softmax(-20*distances, dim=0).detach().cpu()
+        probas, classe_prediction = predict(shots_list, features, model_name=model_name)
+        print('probabilities:', probas)
         if probabilities == None:
             probabilities = probas
         else:
-            probabilities = probabilities*0.85 + probas*0.15
-        cv2.putText(frame, f'Object is from class :{prediction}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+            if model_name == 'ncm':
+                probabilities = probabilities*0.85 + probas*0.15
+            elif model_name == 'knn':
+                probabilities = probabilities*0.95 + probas*0.05
+        print('probabilities after exp moving average:', probabilities)
+        cv2.putText(frame, f'Object is from class :{classe_prediction}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         draw_indicator(frame,probabilities, shot_frames)
     cv2.putText(frame, f'fps:{fps}', (int(width*0.05), int(height*0.1)), font, scale, (100, 255, 0), 3, cv2.LINE_AA)
