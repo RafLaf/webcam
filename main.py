@@ -7,7 +7,7 @@ import time
 import torch.nn.functional as F
 
 addr_cam = "rtsp://admin:brain2021@10.29.232.40"
-device = 'cpu'
+device = 'cuda:0'
 
 # 1, 2, 3... for every class we're adding
 # i for starting inference, it will be run every 1 second
@@ -128,12 +128,15 @@ while(True):
         clock_M += 1        
 
     key = cv2.waitKey(33) & 0xFF
-    if key in range(48, 53) and clock_M>clock_init and not resetting:
+    # shot acquisition
+    if (key in range(48, 53) or registration) and clock_M>clock_init and not resetting:
+        #if key in range(48, 53):
         registration = True
         inference = False
         
-        last_detected = time.time()
-        classe = key-48
+        if key in range(48, 53):
+            classe = key-48
+            last_detected = time.time()
         print('class :', classe)
         
         img = apply_transformations(frame).to(device)
@@ -145,14 +148,16 @@ while(True):
         if classe not in registered_classes:
             registered_classes.append(classe)
             shots_list.append(features)
-            shot_frames.append([image_label])
+            if key in range(48, 53):
+                shot_frames.append([image_label])
         else:
             shots_list[classe] = torch.cat((shots_list[classe], features), dim = 0)
             print('------------:', shots_list[classe].shape)
-            shot_frames[classe].append(image_label)
+            if key in range(48, 53):
+                shot_frames[classe].append(image_label)
 
     if registration:
-        if time.time()-last_detected<3 and inference==False:
+        if time.time()-last_detected<2 and inference==False:
             cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shots_list[classe])}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
