@@ -80,7 +80,6 @@ def draw_indicator(frame, percentages, shot_frames):
     for k in range(percentages.shape[0]):
         images = shot_frames[k]
         s = images[0].shape
-        print('shape:', s)
         #frame[20 + level_width*k :20 + level_width*k +s[0] , shift_y + level_height * 10:shift_y + level_height * 10+s[1]] = image
         y_start_img = shift_y 
         x_start_img = 15+level_width*k  
@@ -158,7 +157,7 @@ while(True):
 
     if registration:
         if time.time()-last_detected<2 and inference==False:
-            cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shots_list[classe])}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
+            cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shot_frames[classe])}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
 
