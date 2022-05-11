@@ -205,7 +205,7 @@ while(True):
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
         features = preprocess(features, mean_base_features= mean_features)
-        probas, classe_prediction = predict(shots_list, features, model_name=model_name)
+        probas, _ = predict(shots_list, features, model_name=model_name)
         print('probabilities:', probas)
         if probabilities == None:
             probabilities = probas
@@ -214,6 +214,7 @@ while(True):
                 probabilities = probabilities*0.85 + probas*0.15
             elif model_name == 'knn':
                 probabilities = probabilities*0.95 + probas*0.05
+        classe_prediction = probabilities.argmax().item()
         print('probabilities after exp moving average:', probabilities)
         cv2.putText(frame, f'Object is from class :{classe_prediction}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
