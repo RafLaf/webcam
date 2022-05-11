@@ -135,7 +135,7 @@ while(True):
         
         if key in range(48, 53):
             classe = key-48
-            last_detected = time.time()
+            last_detected = clock*1 #time.time()
         print('class :', classe)
         
         img = apply_transformations(frame).to(device)
@@ -156,7 +156,7 @@ while(True):
                 shot_frames[classe].append(image_label)
 
     if registration:
-        if time.time()-last_detected<2 and inference==False:
+        if abs(clock-last_detected)<20 and inference==False:
             cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shot_frames[classe])}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
             registration = False
@@ -187,7 +187,7 @@ while(True):
         features = preprocess(features, mean_base_features= mean_features)
         distances = torch.norm(shots-features, dim = 1, p=2)
         prediction = distances.argmin().item()
-        probas = F.softmax(-20*distances).detach().cpu()
+        probas = F.softmax(-20*distances, dim=0).detach().cpu()
         if probabilities == None:
             probabilities = probas
         else:
@@ -200,7 +200,7 @@ while(True):
     cv2.imshow('frame',frame)
     clock += 1
     # reset clock
-    if clock == 100: clock = 0
+    #if clock == 100: clock = 0
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 cap.release()
