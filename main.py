@@ -14,14 +14,14 @@ device = 'cuda:0'
 # q for exiting the program
 
 # Apply transformations
-def apply_transformations(img):
+def image_preprocess(img):
     img = transforms.ToTensor()(img)
     norm = transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
     all_transforms = torch.nn.Sequential(transforms.Resize(110), transforms.CenterCrop(100), norm)
     img = all_transforms(img)
     return img
 
-def preprocess(features, mean_base_features=None):
+def feature_preprocess(features, mean_base_features=None):
     features = features - mean_base_features
     features = features / torch.norm(features, dim = 1, keepdim = True)
     return features
@@ -37,10 +37,13 @@ def load_model_weights(model, path, device):
     new_dict = {}
     for k, v in pretrained_dict.items():
         if k in model_dict:
+
+            #bn : keep precision (low cost associated)
+            #does this work for the fpga ?
             if 'bn' in k:
                 new_dict[k] = v
             else:
-                new_dict[k] = v.half()
+                new_dict[k] = v.to(torch.float16)
     model_dict.update(new_dict) 
     model.load_state_dict(model_dict)
     print('Model loaded!')
@@ -124,7 +127,7 @@ def predict(shots_list, features, model_name):
         #get the k nearest neighbors
 
         _, indices = distances.topk(K_nn, largest=False)
-        probas = F.one_hot(targets[indices].long(), num_classes=len(shots_list)).sum(dim=0)/K_nn
+        probas = F.one_hot(targets[indices].to(torch.int64), num_classes=len(shots_list)).sum(dim=0)/K_nn
         classe_prediction = probas.argmax().item()
     return probas, classe_prediction
 
@@ -137,7 +140,7 @@ while(True):
     fps = int(1/(new_frame_time-prev_frame_time))
     prev_frame_time = new_frame_time
     if clock_M <= clock_init:
-        img = apply_transformations(frame).to(device)
+        img = image_preprocess(frame).to(device)
         _, features = model(img.unsqueeze(0))
         mean_features.append(features.detach().to(device))
         if clock_M == clock_init:
@@ -159,10 +162,10 @@ while(True):
             last_detected = clock*1 #time.time()
         print('class :', classe)
         
-        img = apply_transformations(frame).to(device)
+        img = image_preprocess(frame).to(device)
         _, features = model(img.unsqueeze(0))
         # preprocess features
-        features = preprocess(features, mean_base_features= mean_features)
+        features = feature_preprocess(features, mean_base_features= mean_features)
         print('features:', features.shape)
         image_label = cv2.resize(frame, (int(frame.shape[1]//10),int(frame.shape[0]//10 )), interpolation = cv2.INTER_AREA)
         if classe not in registered_classes:
@@ -202,9 +205,9 @@ while(True):
         probabilities = None
 
     if inference and clock_M>clock_init and not resetting:
-        img = apply_transformations(frame).to(device)
+        img = image_preprocess(frame).to(device)
         _, features = model(img.unsqueeze(0))
-        features = preprocess(features, mean_base_features= mean_features)
+        features = feature_preprocess(features, mean_base_features= mean_features)
         probas, _ = predict(shots_list, features, model_name=model_name)
         print('probabilities:', probas)
         if probabilities == None:
