@@ -150,12 +150,11 @@ while(True):
         clock_M += 1        
 
     key = cv2.waitKey(33) & 0xFF
-    # shot acquisition
-
     
+    # shot acquisition
     if (key in range(48, 53) or do_registration) and clock_M>clock_init and not do_reset:
         #if key in range(48, 53):
-        do_registration = True
+        
         do_inference = False
         
         if key in range(48, 53):
@@ -183,14 +182,15 @@ while(True):
             print('------------:', shots_list[classe].shape)
             if key in range(48, 53):
                 shot_frames[classe].append(image_label)
-
-    if do_registration:
-        if abs(clock-last_detected)<10 and not do_inference:
+                
+        if abs(clock-last_detected)<10:
+            do_registration = True
             text=f'Class :{classe} registered. Number of shots: {len(shot_frames[classe])}'
             cv_interface.put_text(text)
         else:
             do_registration = False
-
+    
+    #reset action
     if key == ord('r'):
         do_registration = False
         do_inference = False
@@ -205,11 +205,12 @@ while(True):
         reset_clock += 1
         if reset_clock > 20:
             do_reset = False
-
+    
+    #inference action
     if key == ord('i') and len(shots_list)>0:
         do_inference = True
         probabilities = None
-
+    #perform inference
     if do_inference and clock_M>clock_init and not do_reset:
         frame= cv_interface.get_frame()
         img = image_preprocess(frame).to(device)
@@ -233,6 +234,7 @@ while(True):
         #f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
         cv_interface.draw_indicator(probabilities,shot_frames,font)
 
+    #interface
     cv_interface.put_text(f"fps:{fps}",bottom_pos_x=0.05,bottom_pos_y=0.1)
     cv_interface.put_text(f"clock:{clock}",bottom_pos_x=0.8,bottom_pos_y=0.1)
     cv_interface.show()
