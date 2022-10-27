@@ -54,25 +54,33 @@ def load_model_weights(model, path, device):
 load_model_weights(model, '/hdd/data/backbones/easybackbones/tieredlong1.pt1', device)
 
 #mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
-shots_list = []
-registered_classes = []
-shot_frames = []
+
 #cap = cv2.VideoCapture(addr_cam)
+
+#CV2 related constant
 cap = cv2.VideoCapture(0)
 scale = 1
-clock = 0
-inference = False
-registration = False
+
+#program related constant
+do_inference = False
+do_registration = False
+do_reset = False
 prev_frame_time = time.time()
 font = cv2.FONT_HERSHEY_SIMPLEX
 
+#data holding variables
+shots_list = []
+registered_classes = []
+shot_frames = []
+mean_features = []
 
+#time related variables
+clock = 0
 clock_M = 0
 clock_init = 20
-mean_features = []
-#resolution = (1280,720)
-resolution = (1920,1080)
-resetting = False
+
+#model parameters
+resolution = (1920,1080)#resolution = (1280,720)
 K_nn = 5
 model_name = 'knn'
 
@@ -115,10 +123,12 @@ while(True):
 
     key = cv2.waitKey(33) & 0xFF
     # shot acquisition
-    if (key in range(48, 53) or registration) and clock_M>clock_init and not resetting:
+
+    
+    if (key in range(48, 53) or do_registration) and clock_M>clock_init and not do_reset:
         #if key in range(48, 53):
-        registration = True
-        inference = False
+        do_registration = True
+        do_inference = False
         
         if key in range(48, 53):
             classe = key-48
@@ -142,32 +152,32 @@ while(True):
             if key in range(48, 53):
                 shot_frames[classe].append(image_label)
 
-    if registration:
-        if abs(clock-last_detected)<10 and inference==False:
+    if do_registration:
+        if abs(clock-last_detected)<10 and not do_inference:
             cv2.putText(frame, f'Class :{classe} registered. Number of shots: {len(shot_frames[classe])}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         else:
-            registration = False
+            do_registration = False
 
     if key == ord('r'):
-        registration = False
-        inference = False
+        do_registration = False
+        do_inference = False
         shots_list = []
         shot_frames = []
         registered_classes = []
         reset_clock = 0
-        resetting  = True
+        do_reset  = True
         
-    if resetting:
+    if do_reset:
         cv2.putText(frame, f'Reset', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         reset_clock += 1
         if reset_clock > 20:
-            resetting = False
+            do_reset = False
 
     if key == ord('i') and len(shots_list)>0:
-        inference = True
+        do_inference = True
         probabilities = None
 
-    if inference and clock_M>clock_init and not resetting:
+    if do_inference and clock_M>clock_init and not do_reset:
         img = image_preprocess(frame).to(device)
         _, features = model(img.unsqueeze(0))
         features = feature_preprocess(features, mean_base_features= mean_features)
@@ -181,10 +191,12 @@ while(True):
             elif model_name == 'knn':
                 probabilities = probabilities*0.95 + probas*0.05
         classe_prediction = probabilities.argmax().item()
+        
         print('probabilities after exp moving average:', probabilities)
         cv2.putText(frame, f'Object is from class :{classe_prediction}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         draw_indicator(frame,probabilities, shot_frames,font,scale)
+    
     cv2.putText(frame, f'fps:{fps}', (int(width*0.05), int(height*0.1)), font, scale, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.putText(frame, f'clock:{clock}', (int(width*0.8), int(height*0.1)), font, scale, (100, 255, 0), 3, cv2.LINE_AA)
     cv2.imshow('frame',frame)
