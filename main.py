@@ -78,6 +78,20 @@ class opencv_interface:
     def draw_indicator(self,probabilities,shot_frames,font):
         draw_indicator(self.frame,probabilities, shot_frames,font,self.scale)
 
+    def add_snapshot(self,data,classe,possible_input):
+        image_label = cv2.resize(self.frame, (int(frame.shape[1]//10),int(frame.shape[0]//10 )), interpolation = cv2.INTER_AREA)
+        if key in possible_input:
+            data.shot_frames[classe].append(image_label)
+
+        
+def save_feature(data,classe,features):
+            if classe not in data.registered_classes:
+                data.registered_classes.append(classe)
+                data.shot_list.append(features)
+            else:
+                data.shot_list[classe] = torch.cat((data.shot_list[classe], features), dim = 0)
+                print('------------:', data.shot_list[classe].shape)
+
 
 #CV2 related constant
 cap = cv2.VideoCapture(0)
@@ -93,12 +107,18 @@ do_registration = False
 do_reset = False
 prev_frame_time = time.time()
 font = cv2.FONT_HERSHEY_SIMPLEX
+possible_input=[i for i in range(48, 53)]
 
 #data holding variables
-shots_list = []
-registered_classes = []
-shot_frames = []
-mean_features = []
+
+data={
+    
+    "registered_classes":[],
+    "shot_frames":[[]*len(possible_input)],
+    "shots_list":[],
+    "mean_features" : []
+}
+
 
 #time related variables
 clock = 0
@@ -108,6 +128,7 @@ clock_init = 20
 #model parameters
 K_nn = 5
 model_name = 'knn'
+
 
 def predict(shots_list, features, model_name):
     if model_name == 'ncm':
@@ -127,6 +148,25 @@ def predict(shots_list, features, model_name):
         classe_prediction = probas.argmax().item()
     return probas, classe_prediction
 
+def predict_class_moving_avg(img,data,model_name):
+     
+    _, features = model(img.unsqueeze(0))
+    
+    features = feature_preprocess(features, mean_base_features= data.mean_features)
+    
+    probas, _ = predict(data.shot_list, features, model_name=model_name)
+    print('probabilities:', probas)
+    
+    if probabilities == None:
+        probabilities = probas
+    else:
+        if model_name == 'ncm':
+            probabilities = probabilities*0.85 + probas*0.15
+        elif model_name == 'knn':
+            probabilities = probabilities*0.95 + probas*0.05
+
+    classe_prediction = probabilities.argmax().item()
+    return classe_prediction
 
 while(True):
     cv_interface.read_frame()
@@ -140,10 +180,10 @@ while(True):
         frame=cv_interface.get_frame()
         img = image_preprocess(frame).to(device)
         _, features = model(img.unsqueeze(0))
-        mean_features.append(features.detach().to(device))
+        data.mean_features.append(features.detach().to(device))
         if clock_M == clock_init:
-            mean_features = torch.cat(mean_features, dim = 0)
-            mean_features = mean_features.mean(dim = 0)
+            data.mean_features = torch.cat(data.mean_features, dim = 0)
+            data.mean_features = data.mean_features.mean(dim = 0)
 
         cv_interface.put_text(f'Initialization')
 
@@ -152,40 +192,28 @@ while(True):
     key = cv2.waitKey(33) & 0xFF
     
     # shot acquisition
-    if (key in range(48, 53) or do_registration) and clock_M>clock_init and not do_reset:
-        #if key in range(48, 53):
-        
+    if (key in possible_input or do_registration) and clock_M>clock_init and not do_reset:
         do_inference = False
         
-        if key in range(48, 53):
-            classe = key-48
+        if key in possible_input:
+            classe = possible_input.index(key)
             last_detected = clock*1 #time.time()
+
         print('class :', classe)
         frame=cv_interface.get_frame()
         img = image_preprocess(frame).to(device)
         _, features = model(img.unsqueeze(0))
 
         # preprocess features
-        features = feature_preprocess(features, mean_base_features= mean_features)
+        features = feature_preprocess(features, mean_base_features= data.mean_features)
         print('features:', features.shape)
         
-        #TODO : replace with torch resizing 
-        image_label = cv2.resize(frame, (int(frame.shape[1]//10),int(frame.shape[0]//10 )), interpolation = cv2.INTER_AREA)
-        
-        if classe not in registered_classes:
-            registered_classes.append(classe)
-            shots_list.append(features)
-            if key in range(48, 53):
-                shot_frames.append([image_label])
-        else:
-            shots_list[classe] = torch.cat((shots_list[classe], features), dim = 0)
-            print('------------:', shots_list[classe].shape)
-            if key in range(48, 53):
-                shot_frames[classe].append(image_label)
-                
+        cv_interface.add_snapshot(data,classe,possible_input)
+        #add the representation to the class
+        save_feature(data,classe,features)
         if abs(clock-last_detected)<10:
             do_registration = True
-            text=f'Class :{classe} registered. Number of shots: {len(shot_frames[classe])}'
+            text=f'Class :{classe} registered. Number of shots: {len(data.shot_frames[classe])}'
             cv_interface.put_text(text)
         else:
             do_registration = False
@@ -194,8 +222,8 @@ while(True):
     if key == ord('r'):
         do_registration = False
         do_inference = False
-        shots_list = []
-        shot_frames = []
+        data.shot_list = []
+        data.shot_frames = []
         registered_classes = []
         reset_clock = 0
         do_reset  = True
@@ -207,32 +235,21 @@ while(True):
             do_reset = False
     
     #inference action
-    if key == ord('i') and len(shots_list)>0:
+    if key == ord('i') and len(data.shot_list)>0:
         do_inference = True
         probabilities = None
-    #perform inference
+    
+    #perform infernece
     if do_inference and clock_M>clock_init and not do_reset:
         frame= cv_interface.get_frame()
         img = image_preprocess(frame).to(device)
-        _, features = model(img.unsqueeze(0))
-        features = feature_preprocess(features, mean_base_features= mean_features)
-        probas, _ = predict(shots_list, features, model_name=model_name)
-        print('probabilities:', probas)
-        
-        if probabilities == None:
-            probabilities = probas
-        else:
-            if model_name == 'ncm':
-                probabilities = probabilities*0.85 + probas*0.15
-            elif model_name == 'knn':
-                probabilities = probabilities*0.95 + probas*0.05
-
-        classe_prediction = probabilities.argmax().item()
+       
+        classe_prediction=predict_class_moving_avg(img,data,model_name)
         
         print('probabilities after exp moving average:', probabilities)
         cv_interface.putText(f'Object is from class :{classe_prediction}')
         #f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
-        cv_interface.draw_indicator(probabilities,shot_frames,font)
+        cv_interface.draw_indicator(probabilities,data.shot_frames,font)
 
     #interface
     cv_interface.put_text(f"fps:{fps}",bottom_pos_x=0.05,bottom_pos_y=0.1)
