@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-def draw_indicator(frame, percentages, shot_frames,font,scale):
+def draw_indic(frame, percentages, shot_frames,font,scale):
     def percentage_to_color(p):
         return 0,255 - (255 * p), 255 * p
     height, width, _ = frame.shape
@@ -60,8 +60,8 @@ class opencv_interface:
 
     def show(self):
         cv2.imshow("frame",self.frame)
-    def draw_indicator(self,probabilities,shot_frames,font):
-        draw_indicator(self.frame,probabilities, shot_frames,font,self.scale)
+    def draw_indicator(self,probabilities,shot_frames):
+        draw_indic(self.frame,probabilities, shot_frames,self.font,self.scale)
 
     def add_snapshot(self,data,classe):
         image_label = cv2.resize(self.frame, (int(self.height//10),int(self.width//10 )), interpolation = cv2.INTER_AREA)

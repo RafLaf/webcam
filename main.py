@@ -8,8 +8,8 @@ from torchvision import transforms, datasets
 from resnet12 import ResNet12
 import time
 import torch.nn.functional as F
-from utils import draw_indicator,opencv_interface
-
+from utils import opencv_interface
+import copy
 
 print("import done")
 
@@ -83,7 +83,7 @@ def predict(shots_list, features, model_name):
         classe_prediction = probas.argmax().item()
     return probas, classe_prediction
 
-def predict_class_moving_avg(img,data,model_name):
+def predict_class_moving_avg(img,data,model_name,probabilities):
      
     _, features = model(img.unsqueeze(0))
     
@@ -101,7 +101,7 @@ def predict_class_moving_avg(img,data,model_name):
             probabilities = probabilities*0.95 + probas*0.05
 
     classe_prediction = probabilities.argmax().item()
-    return classe_prediction
+    return classe_prediction,probabilities
 
 
 #model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
@@ -132,14 +132,14 @@ prev_frame_time = time.time()
 possible_input=[i for i in range(48, 53)]
 
 #data holding variables
-
-data={
+empty_data={
     
     "registered_classes":[],
-    "shot_frames":[[]*len(possible_input)],
+    "shot_frames":[[] for i in range(len(possible_input))],
     "shot_list":[],
     "mean_features" : []
 }
+data=copy.deepcopy(empty_data)
 
 
 #time related variables
@@ -193,6 +193,7 @@ while(True):
         features = feature_preprocess(features, mean_base_features= data["mean_features"])
         print('features:', features.shape)
         if key in possible_input:
+            print(f"saving snapshot of class {classe}")
             cv_interface.add_snapshot(data,classe)
         #add the representation to the class
         
@@ -208,7 +209,7 @@ while(True):
     if key == ord('r'):
         do_registration = False
         do_inference = False
-        data=empty_data
+        data=copy.deepcopy(empty_data)
         reset_clock = 0
         do_reset  = True
         
@@ -218,7 +219,7 @@ while(True):
         if reset_clock > 20:
             do_reset = False
     
-    #inference action
+    #inference actionfont
     if key == ord('i') and len(data["shot_list"])>0:
         do_inference = True
         probabilities = None
@@ -228,12 +229,12 @@ while(True):
         frame= cv_interface.get_image()
         img = image_preprocess(frame).to(device)
        
-        classe_prediction=predict_class_moving_avg(img,data,model_name)
+        classe_prediction,probabilities=predict_class_moving_avg(img,data,model_name,probabilities)
         
         print('probabilities after exp moving average:', probabilities)
-        cv_interface.putText(f'Object is from class :{classe_prediction}')
+        cv_interface.put_text(f'Object is from class :{classe_prediction}')
         #f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
-        cv_interface.draw_indicator(probabilities,data["shot_frames"],font)
+        cv_interface.draw_indicator(probabilities,data["shot_frames"])
 
     #interface
     cv_interface.put_text(f"fps:{fps}",bottom_pos_x=0.05,bottom_pos_y=0.1)
