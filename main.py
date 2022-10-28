@@ -4,13 +4,14 @@ import cv2
 import numpy as np
 print("importing torch")
 import torch
-from torchvision import transforms, datasets
-from resnet12 import ResNet12
+
 import time
-import torch.nn.functional as F
-from utils import opencv_interface
 import copy
-from possible_models import get_model,load_model_weights,predict,predict_class_moving_avg
+
+
+from utils import opencv_interface
+from possible_models import get_model,load_model_weights,predict_class_moving_avg
+from preprocess import image_preprocess,feature_preprocess
 
 print("import done")
 
@@ -21,24 +22,9 @@ device = 'cuda:0'
 # i for starting inference, it will be run every 1 second
 # q for exiting the program
 
-# Apply transformations
-#TODO : transoform them to numpy arrray for compatibility with pynk
-def image_preprocess(img):
-    img = transforms.ToTensor()(img)
-    norm = transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
-    all_transforms = torch.nn.Sequential(transforms.Resize(110), transforms.CenterCrop(100), norm)
-    img = all_transforms(img)
-    return img
-
-def feature_preprocess(features, mean_base_features=None):
-    features = features - mean_base_features
-    features = features / torch.norm(features, dim = 1, keepdim = True)
-    return features
-
 # Get the model
 
 model_specs={
-    
     "feature_maps":64, 
     "input_shape":[3,84,84],
     "num_classes":351, 
@@ -46,7 +32,7 @@ model_specs={
     "rotations":False
 }
 
-model=get_model("resnet12",model_specs)
+model=get_model("resnet12",model_specs).to(device)
 #model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
 #model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
 
@@ -109,7 +95,6 @@ clock_M = 0
 clock_init = 20
 
 #model parameters
-K_nn = 5
 model_name = 'knn'
 
 
@@ -192,7 +177,7 @@ while(True):
         frame= cv_interface.get_image()
         img = image_preprocess(frame).to(device)
        
-        classe_prediction,probabilities=predict_class_moving_avg(img,data,model_name,probabilities)
+        classe_prediction,probabilities=predict_class_moving_avg(img,data,model,model_name,probabilities)
         
         print('probabilities after exp moving average:', probabilities)
         cv_interface.put_text(f'Object is from class :{classe_prediction}')
