@@ -48,7 +48,7 @@ model_specs={
 }
 
 model=get_model("resnet12",model_specs)
-model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
+#model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
 #model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
 
 
