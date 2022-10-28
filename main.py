@@ -209,12 +209,14 @@ while(True):
     if key == ord('r'):
         do_registration = False
         do_inference = False
+        mean_features=data["mean_features"]
         data=copy.deepcopy(empty_data)
+        data["mean_features"]=mean_features
         reset_clock = 0
         do_reset  = True
         
     if do_reset:
-        cv_interface.put_text("Resnet")
+        cv_interface.put_text("Resnet background inference")
         reset_clock += 1
         if reset_clock > 20:
             do_reset = False
