@@ -38,7 +38,6 @@ def feature_preprocess(features, mean_base_features=None):
 # Get the model
 
 model_specs={
-    "model":"resnet12",
     
     "feature_maps":64, 
     "input_shape":[3,84,84],
