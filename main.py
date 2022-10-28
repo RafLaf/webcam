@@ -1,11 +1,17 @@
+
+print("importing cv2")
 import cv2
 import numpy as np
+print("importing torch")
 import torch
 from torchvision import transforms, datasets
 from resnet12 import ResNet12
 import time
 import torch.nn.functional as F
 from utils import draw_indicator,opencv_interface
+
+
+print("import done")
 
 #addr_cam = "rtsp://admin:brain2021@10.29.232.40"
 device = 'cuda:0'
@@ -50,12 +56,12 @@ def load_model_weights(model, path, device):
     print('Model loaded!')
 
 def save_feature(data,classe,features):
-    if classe not in data.registered_classes:
-        data.registered_classes.append(classe)
-        data.shot_list.append(features)
+    if classe not in data["registered_classes"]:
+        data["registered_classes"].append(classe)
+        data["shot_list"].append(features)
     else:
-        data.shot_list[classe] = torch.cat((data.shot_list[classe], features), dim = 0)
-        print('------------:', data.shot_list[classe].shape)
+        data["shot_list"][classe] = torch.cat((data["shot_list"][classe], features), dim = 0)
+        print('------------:', data["shot_list"][classe].shape)
 
 
 
@@ -81,9 +87,9 @@ def predict_class_moving_avg(img,data,model_name):
      
     _, features = model(img.unsqueeze(0))
     
-    features = feature_preprocess(features, mean_base_features= data.mean_features)
+    features = feature_preprocess(features, mean_base_features= data["mean_features"])
     
-    probas, _ = predict(data.shot_list, features, model_name=model_name)
+    probas, _ = predict(data["shot_list"], features, model_name=model_name)
     print('probabilities:', probas)
     
     if probabilities == None:
@@ -101,7 +107,9 @@ def predict_class_moving_avg(img,data,model_name):
 #model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
 #model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/tieredlong1.pt1', map_location=device))
 #model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', map_location=device))
-load_model_weights(model, '/hdd/data/backbones/easybackbones/tieredlong1.pt1', device)
+
+path_model="weight/tieredlong1.pt1"
+load_model_weights(model, path_model, device)
 
 #mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
 
@@ -111,16 +119,16 @@ load_model_weights(model, '/hdd/data/backbones/easybackbones/tieredlong1.pt1', d
 cap = cv2.VideoCapture(0)
 scale = 1
 resolution_output = (1920,1080)#resolution = (1280,720)
+font = cv2.FONT_HERSHEY_SIMPLEX
 
-
-cv_interface=opencv_interface(cap,scale,resolution_output)
+cv_interface=opencv_interface(cap,scale,resolution_output,font)
 
 #program related constant
 do_inference = False
 do_registration = False
 do_reset = False
 prev_frame_time = time.time()
-font = cv2.FONT_HERSHEY_SIMPLEX
+
 possible_input=[i for i in range(48, 53)]
 
 #data holding variables
@@ -129,7 +137,7 @@ data={
     
     "registered_classes":[],
     "shot_frames":[[]*len(possible_input)],
-    "shots_list":[],
+    "shot_list":[],
     "mean_features" : []
 }
 
@@ -154,13 +162,13 @@ while(True):
     prev_frame_time = new_frame_time
     
     if clock_M <= clock_init:
-        frame=cv_interface.get_frame()
+        frame=cv_interface.get_image()
         img = image_preprocess(frame).to(device)
         _, features = model(img.unsqueeze(0))
-        data.mean_features.append(features.detach().to(device))
+        data["mean_features"].append(features.detach().to(device))
         if clock_M == clock_init:
-            data.mean_features = torch.cat(data.mean_features, dim = 0)
-            data.mean_features = data.mean_features.mean(dim = 0)
+            data["mean_features"] = torch.cat(data["mean_features"], dim = 0)
+            data["mean_features"] = data["mean_features"].mean(dim = 0)
 
         cv_interface.put_text(f'Initialization')
 
@@ -177,12 +185,12 @@ while(True):
             last_detected = clock*1 #time.time()
 
         print('class :', classe)
-        frame=cv_interface.get_frame()
+        frame=cv_interface.get_image()
         img = image_preprocess(frame).to(device)
         _, features = model(img.unsqueeze(0))
 
         # preprocess features
-        features = feature_preprocess(features, mean_base_features= data.mean_features)
+        features = feature_preprocess(features, mean_base_features= data["mean_features"])
         print('features:', features.shape)
         if key in possible_input:
             cv_interface.add_snapshot(data,classe)
@@ -191,7 +199,7 @@ while(True):
         save_feature(data,classe,features)
         if abs(clock-last_detected)<10:
             do_registration = True
-            text=f'Class :{classe} registered. Number of shots: {len(data.shot_frames[classe])}'
+            text=f'Class :{classe} registered. Number of shots: {len(data["shot_frames"][classe])}'
             cv_interface.put_text(text)
         else:
             do_registration = False
@@ -200,9 +208,7 @@ while(True):
     if key == ord('r'):
         do_registration = False
         do_inference = False
-        data.shot_list = []
-        data.shot_frames = []
-        data.registered_classes = []
+        data=empty_data
         reset_clock = 0
         do_reset  = True
         
@@ -213,13 +219,13 @@ while(True):
             do_reset = False
     
     #inference action
-    if key == ord('i') and len(data.shot_list)>0:
+    if key == ord('i') and len(data["shot_list"])>0:
         do_inference = True
         probabilities = None
     
     #perform infernece
     if do_inference and clock_M>clock_init and not do_reset:
-        frame= cv_interface.get_frame()
+        frame= cv_interface.get_image()
         img = image_preprocess(frame).to(device)
        
         classe_prediction=predict_class_moving_avg(img,data,model_name)
@@ -227,7 +233,7 @@ while(True):
         print('probabilities after exp moving average:', probabilities)
         cv_interface.putText(f'Object is from class :{classe_prediction}')
         #f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
-        cv_interface.draw_indicator(probabilities,data.shot_frames,font)
+        cv_interface.draw_indicator(probabilities,data["shot_frames"],font)
 
     #interface
     cv_interface.put_text(f"fps:{fps}",bottom_pos_x=0.05,bottom_pos_y=0.1)
@@ -239,5 +245,4 @@ while(True):
     #if clock == 100: clock = 0
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-cap.release()
-cv2.destroyAllWindows()
+cv_interface.close()

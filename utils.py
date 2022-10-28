@@ -40,16 +40,18 @@ def draw_indicator(frame, percentages, shot_frames,font,scale):
             #    cv2.putText(frame, str(k), (end_point[0] -level_width//2, end_point[1]+40), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
 class opencv_interface:
-    def __init__(self,video_capture,scale,resolution):
+    def __init__(self,video_capture,scale,resolution,font):
         self.video_capture=video_capture
         self.scale=scale
         self.height=resolution[0]
         self.width=resolution[1]
         self.resolution=resolution
+        self.font=font
     
     def read_frame(self):
-        _,frame = cap.read()
+        _,frame = self.video_capture.read()
         self.frame=cv2.resize(frame, self.resolution, interpolation = cv2.INTER_AREA)
+
     def get_image(self):
         return self.frame
 
@@ -63,6 +65,10 @@ class opencv_interface:
 
     def add_snapshot(self,data,classe):
         image_label = cv2.resize(self.frame, (int(self.height//10),int(self.width//10 )), interpolation = cv2.INTER_AREA)
-        data.shot_frames[classe].append(image_label)
+        data["shot_frames"][classe].append(image_label)
+
+    def close(self):
+        self.video_capture.release()
+        cv2.destroyAllWindows()
 
         
