@@ -10,6 +10,7 @@ import time
 import torch.nn.functional as F
 from utils import opencv_interface
 import copy
+from possible_models import get_model,load_model_weights,predict,predict_class_moving_avg
 
 print("import done")
 
@@ -21,6 +22,7 @@ device = 'cuda:0'
 # q for exiting the program
 
 # Apply transformations
+#TODO : transoform them to numpy arrray for compatibility with pynk
 def image_preprocess(img):
     img = transforms.ToTensor()(img)
     norm = transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
@@ -34,26 +36,22 @@ def feature_preprocess(features, mean_base_features=None):
     return features
 
 # Get the model
+
+model_specs={
+    "model":"resnet12",
+    
+    "feature_maps":64, 
+    "input_shape":[3,84,84],
+    "num_classes":351, 
+    "few_shot":True, 
+    "rotations":False
+}
+
+model=get_model("resnet12",model_specs)
 model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
 #model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
 
-def load_model_weights(model, path, device):
-    pretrained_dict = torch.load(path, map_location=device)
-    model_dict = model.state_dict()
-    #pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-    new_dict = {}
-    for k, v in pretrained_dict.items():
-        if k in model_dict:
 
-            #bn : keep precision (low cost associated)
-            #does this work for the fpga ?
-            if 'bn' in k:
-                new_dict[k] = v
-            else:
-                new_dict[k] = v.to(torch.float16)
-    model_dict.update(new_dict) 
-    model.load_state_dict(model_dict)
-    print('Model loaded!')
 
 def save_feature(data,classe,features):
     if classe not in data["registered_classes"]:
@@ -65,43 +63,7 @@ def save_feature(data,classe,features):
 
 
 
-def predict(shots_list, features, model_name):
-    if model_name == 'ncm':
-        shots = torch.stack([s.mean(dim=0) for s in shots_list])
-        distances = torch.norm(shots-features, dim = 1, p=2)
-        classe_prediction = distances.argmin().item()
-        probas = F.softmax(-20*distances, dim=0).detach().cpu()
-    elif model_name == 'knn':
-        shots = torch.cat(shots_list)
-        #create target list of the shots
-        targets = torch.cat([torch.Tensor([i]*shots_list[i].shape[0]) for i in range(len(shots_list))])
-        distances = torch.norm(shots-features, dim = 1, p=2)
-        #get the k nearest neighbors
 
-        _, indices = distances.topk(K_nn, largest=False)
-        probas = F.one_hot(targets[indices].to(torch.int64), num_classes=len(shots_list)).sum(dim=0)/K_nn
-        classe_prediction = probas.argmax().item()
-    return probas, classe_prediction
-
-def predict_class_moving_avg(img,data,model_name,probabilities):
-     
-    _, features = model(img.unsqueeze(0))
-    
-    features = feature_preprocess(features, mean_base_features= data["mean_features"])
-    
-    probas, _ = predict(data["shot_list"], features, model_name=model_name)
-    print('probabilities:', probas)
-    
-    if probabilities == None:
-        probabilities = probas
-    else:
-        if model_name == 'ncm':
-            probabilities = probabilities*0.85 + probas*0.15
-        elif model_name == 'knn':
-            probabilities = probabilities*0.95 + probas*0.05
-
-    classe_prediction = probabilities.argmax().item()
-    return classe_prediction,probabilities
 
 
 #model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
