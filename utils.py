@@ -38,3 +38,31 @@ def draw_indicator(frame, percentages, shot_frames,font,scale):
             #cv2.rectangle(frame,start_point, end_point, percentage_to_color(i / levels), cv2.FILLED)
             #if i==0:
             #    cv2.putText(frame, str(k), (end_point[0] -level_width//2, end_point[1]+40), font, 1, (255, 255, 255), 1, cv2.LINE_AA)
+
+class opencv_interface:
+    def __init__(self,video_capture,scale,resolution):
+        self.video_capture=video_capture
+        self.scale=scale
+        self.height=resolution[0]
+        self.width=resolution[1]
+        self.resolution=resolution
+    
+    def read_frame(self):
+        _,frame = cap.read()
+        self.frame=cv2.resize(frame, self.resolution, interpolation = cv2.INTER_AREA)
+    def get_image(self):
+        return self.frame
+
+    def put_text(self,text,bottom_pos_x=0.4,bottom_pos_y=0.1):
+        cv2.putText(self.frame, text, (int(self.width*bottom_pos_x), int(self.height*bottom_pos_y)), self.font, self.scale, (255, 0, 0), 3, cv2.LINE_AA)
+
+    def show(self):
+        cv2.imshow("frame",self.frame)
+    def draw_indicator(self,probabilities,shot_frames,font):
+        draw_indicator(self.frame,probabilities, shot_frames,font,self.scale)
+
+    def add_snapshot(self,data,classe):
+        image_label = cv2.resize(self.frame, (int(self.height//10),int(self.width//10 )), interpolation = cv2.INTER_AREA)
+        data.shot_frames[classe].append(image_label)
+
+        

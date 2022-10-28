@@ -5,8 +5,9 @@ from torchvision import transforms, datasets
 from resnet12 import ResNet12
 import time
 import torch.nn.functional as F
-from utils import draw_indicator
-addr_cam = "rtsp://admin:brain2021@10.29.232.40"
+from utils import draw_indicator,opencv_interface
+
+#addr_cam = "rtsp://admin:brain2021@10.29.232.40"
 device = 'cuda:0'
 
 # 1, 2, 3... for every class we're adding
@@ -48,86 +49,14 @@ def load_model_weights(model, path, device):
     model.load_state_dict(model_dict)
     print('Model loaded!')
 
-#model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
-#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/tieredlong1.pt1', map_location=device))
-#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', map_location=device))
-load_model_weights(model, '/hdd/data/backbones/easybackbones/tieredlong1.pt1', device)
-
-#mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
-
-#cap = cv2.VideoCapture(addr_cam)
-class opencv_interface:
-    def __init__(self,video_capture,scale,resolution):
-        self.video_capture=video_capture
-        self.scale=scale
-        self.height=resolution[0]
-        self.width=resolution[1]
-        self.resolution=resolution
-    
-    def read_frame(self):
-        _,frame = cap.read()
-        self.frame=cv2.resize(frame, self.resolution, interpolation = cv2.INTER_AREA)
-    def get_image(self):
-        return self.frame
-
-    def put_text(self,text,bottom_pos_x=0.4,bottom_pos_y=0.1):
-        cv2.putText(frame, text, (int(self.width*bottom_pos_x), int(self.height*bottom_pos_y)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
-
-    def show(self):
-        cv2.imshow("frame",self.frame)
-    def draw_indicator(self,probabilities,shot_frames,font):
-        draw_indicator(self.frame,probabilities, shot_frames,font,self.scale)
-
-    def add_snapshot(self,data,classe,possible_input):
-        image_label = cv2.resize(self.frame, (int(frame.shape[1]//10),int(frame.shape[0]//10 )), interpolation = cv2.INTER_AREA)
-        if key in possible_input:
-            data.shot_frames[classe].append(image_label)
-
-        
 def save_feature(data,classe,features):
-            if classe not in data.registered_classes:
-                data.registered_classes.append(classe)
-                data.shot_list.append(features)
-            else:
-                data.shot_list[classe] = torch.cat((data.shot_list[classe], features), dim = 0)
-                print('------------:', data.shot_list[classe].shape)
+    if classe not in data.registered_classes:
+        data.registered_classes.append(classe)
+        data.shot_list.append(features)
+    else:
+        data.shot_list[classe] = torch.cat((data.shot_list[classe], features), dim = 0)
+        print('------------:', data.shot_list[classe].shape)
 
-
-#CV2 related constant
-cap = cv2.VideoCapture(0)
-scale = 1
-resolution_output = (1920,1080)#resolution = (1280,720)
-
-
-cv_interface=opencv_interface(cap,scale,resolution_output)
-
-#program related constant
-do_inference = False
-do_registration = False
-do_reset = False
-prev_frame_time = time.time()
-font = cv2.FONT_HERSHEY_SIMPLEX
-possible_input=[i for i in range(48, 53)]
-
-#data holding variables
-
-data={
-    
-    "registered_classes":[],
-    "shot_frames":[[]*len(possible_input)],
-    "shots_list":[],
-    "mean_features" : []
-}
-
-
-#time related variables
-clock = 0
-clock_M = 0
-clock_init = 20
-
-#model parameters
-K_nn = 5
-model_name = 'knn'
 
 
 def predict(shots_list, features, model_name):
@@ -168,6 +97,54 @@ def predict_class_moving_avg(img,data,model_name):
     classe_prediction = probabilities.argmax().item()
     return classe_prediction
 
+
+#model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
+#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/tieredlong1.pt1', map_location=device))
+#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', map_location=device))
+load_model_weights(model, '/hdd/data/backbones/easybackbones/tieredlong1.pt1', device)
+
+#mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
+
+#cap = cv2.VideoCapture(addr_cam)
+
+#CV2 related constant
+cap = cv2.VideoCapture(0)
+scale = 1
+resolution_output = (1920,1080)#resolution = (1280,720)
+
+
+cv_interface=opencv_interface(cap,scale,resolution_output)
+
+#program related constant
+do_inference = False
+do_registration = False
+do_reset = False
+prev_frame_time = time.time()
+font = cv2.FONT_HERSHEY_SIMPLEX
+possible_input=[i for i in range(48, 53)]
+
+#data holding variables
+
+data={
+    
+    "registered_classes":[],
+    "shot_frames":[[]*len(possible_input)],
+    "shots_list":[],
+    "mean_features" : []
+}
+
+
+#time related variables
+clock = 0
+clock_M = 0
+clock_init = 20
+
+#model parameters
+K_nn = 5
+model_name = 'knn'
+
+
+
 while(True):
     cv_interface.read_frame()
     
@@ -207,9 +184,10 @@ while(True):
         # preprocess features
         features = feature_preprocess(features, mean_base_features= data.mean_features)
         print('features:', features.shape)
-        
-        cv_interface.add_snapshot(data,classe,possible_input)
+        if key in possible_input:
+            cv_interface.add_snapshot(data,classe)
         #add the representation to the class
+        
         save_feature(data,classe,features)
         if abs(clock-last_detected)<10:
             do_registration = True
@@ -224,7 +202,7 @@ while(True):
         do_inference = False
         data.shot_list = []
         data.shot_frames = []
-        registered_classes = []
+        data.registered_classes = []
         reset_clock = 0
         do_reset  = True
         
@@ -256,8 +234,6 @@ while(True):
     cv_interface.put_text(f"clock:{clock}",bottom_pos_x=0.8,bottom_pos_y=0.1)
     cv_interface.show()
     
-
-
     clock += 1
     # reset clock
     #if clock == 100: clock = 0
