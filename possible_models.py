@@ -29,8 +29,6 @@ def image_preprocess(img):
     return img
 
 
-
-
 def load_model_weights(model, path, device=None):
     """
     load the weight given by the path
@@ -137,8 +135,6 @@ def feature_preprocess(features, mean_base_features):
     features = features - mean_base_features
     features = features / torch.norm(features, dim=1, keepdim=True)
     return features
-
-
 
 def get_preprocessed_feature(img,backbone,mean_features,device):
     """
