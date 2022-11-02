@@ -105,6 +105,7 @@ def launch_demo():
     # CV2 related constant
     cap = cv2.VideoCapture(0)
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT)
+    
     # model related
     model = get_model("resnet12", MODEL_SPECS).to(DEVICE)
     load_model_weights(model, PATH_MODEL, device=DEVICE)
