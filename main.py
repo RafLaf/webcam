@@ -23,7 +23,7 @@ print("import done")
 # cap = cv2.VideoCapture(addr_cam)
 
 
-def compute_feature_and_save(frame,backbone,save_to, current_classe, feature_to_save):
+def compute_feature_and_save(frame,backbone,save_to, current_classe):
     """
     predict and save the given feature of a given class in a dictionnary
         parameters :
@@ -31,7 +31,6 @@ def compute_feature_and_save(frame,backbone,save_to, current_classe, feature_to_
             backbone(nn.Module)  backbone to use
             save_to(dict) : contains feature, present class, mean features, and snapshots
             current_class : class of the feature
-            feature_to_save : feature to be saved
     """
     
 
@@ -41,10 +40,11 @@ def compute_feature_and_save(frame,backbone,save_to, current_classe, feature_to_
 
     if current_classe not in save_to["registered_classes"]:
         save_to["registered_classes"].append(current_classe)
-        save_to["shot_list"].append(feature_to_save)
+        save_to["shot_list"].append(features)
     else:
+        #TODO : change dtype to numpy array
         save_to["shot_list"][current_classe] = torch.cat(
-            (save_to["shot_list"][current_classe], feature_to_save), dim=0
+            (save_to["shot_list"][current_classe], features), dim=0
         )
         print("------------:", save_to["shot_list"][current_classe].shape)
 
@@ -123,6 +123,7 @@ def launch_demo():
             
             data["mean_features"].append(features.detach().to(DEVICE))
             if clock_m == clock_init:
+                #TODO : change dtype to numpy array
                 data["mean_features"] = torch.cat(data["mean_features"], dim=0)
                 data["mean_features"] = data["mean_features"].mean(dim=0)
 
@@ -152,7 +153,7 @@ def launch_demo():
                 cv_interface.add_snapshot(data, classe)
             
             # add the representation to the class
-            compute_feature_and_save(frame,model,data, classe, features)
+            compute_feature_and_save(frame,model,data, classe)
 
             if abs(clock - last_detected) < 10:
                 do_registration = True
