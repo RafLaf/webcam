@@ -65,11 +65,13 @@ def get_performance(test_set,data,backbone,CLASSIFIER_SPECS,transform=None):
             break
 
         repr=get_features(img,backbone,DEVICE,transform=transform)
+    
         classe_pred,prediction=predict_feature(data.shot_list,
             repr,
+            data.mean_features,
             CLASSIFIER_SPECS["model_name"],
             **CLASSIFIER_SPECS["args"])
-            
+
         list_pred.append(classe_pred)
         list_gt.append(gt_classe)
 

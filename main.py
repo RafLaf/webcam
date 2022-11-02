@@ -15,7 +15,7 @@ import torch# import numpy as np
 
 from graphical_interface import OpencvInterface
 from possible_models import get_model,get_features, load_model_weights, \
-    predict_class_moving_avg,get_preprocessed_feature
+    predict_class_moving_avg
 from data_few_shot import DataFewShot
 print("import done")
 
@@ -118,7 +118,7 @@ def launch_demo():
                 cv_interface.add_snapshot(classe)
             
             # add the representation to the class
-            features =get_preprocessed_feature(frame,model,current_data.mean_features,DEVICE)
+            features= get_features(frame,model,DEVICE)
             
             print("features shape:", features.shape)
             

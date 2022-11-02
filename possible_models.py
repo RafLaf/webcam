@@ -101,23 +101,9 @@ def feature_preprocess(features, mean_base_features):
     features = features / torch.norm(features, dim=1, keepdim=True)
     return features
 
-def get_preprocessed_feature(img,backbone,mean_features,device,transform="Camera"):
-    """
-    compute the normalized feature for the given img
-    args :
-        img(PIL Image or numpy.ndarray) : current img
-        backbone(torch.nn.Module) : neural network that will output features
-        mean_features (torch.Tensor) : mean of all features
-        device(torch.device) : the device on wich the weights should be loaded
-        transform : tranformation to apply to the input
-    returns : 
-        features : preprocessed featured of img
-    """
-    features= get_features(img,backbone,device,transform=transform)
-    features = feature_preprocess(features, mean_features)
-    return features
 
-def predict_feature(shots_list, features, model_name, **kwargs):
+
+def predict_feature(shots_list, features,mean_feature, model_name, **kwargs):
     """
     TODO : change dtype to numpy array (4.)
     predict the class of a features with a model
@@ -130,6 +116,10 @@ def predict_feature(shots_list, features, model_name, **kwargs):
         classe_prediction : class prediction
         probas : probability of belonging to each class
     """
+    shots = torch.cat(shots_list)
+    shots = feature_preprocess(shots, mean_feature)
+    features = feature_preprocess(features,mean_feature)
+
     if model_name == "ncm":
         shots = torch.stack([s.mean(dim=0) for s in shots_list])
         distances = torch.norm(shots - features, dim=1, p=2)
@@ -138,9 +128,8 @@ def predict_feature(shots_list, features, model_name, **kwargs):
 
     elif model_name == "knn":
         number_neighboors = kwargs["number_neighboors"]
-        shots = torch.cat(shots_list)
         # create target list of the shots
-        
+
         targets = torch.cat(
             [torch.Tensor([i] * shots_list[i].shape[0]) for i in range(len(shots_list))]
         )
@@ -173,11 +162,11 @@ def predict_class_moving_avg(img, shots_list, mean_features, backbone,
         classe_prediction : class prediction
         probas : probability of belonging to each class
     """
-    features=get_preprocessed_feature(img,backbone,mean_features,device,transform=transform)
-
+    features= get_features(img,backbone,device,transform=transform)
+    
     model_name = classifier_specs["model_name"]
     _, probas = predict_feature(
-        shots_list, features, model_name, **classifier_specs["args"]
+        shots_list, features,mean_features, model_name, **classifier_specs["args"]
     )
     print("probabilities:", probas)
 
