@@ -4,9 +4,43 @@ handle loading, inference and prediction
 """
 import torch
 import torch.nn.functional as F
+from torchvision import transforms
+import numpy as np
 
 from resnet12 import ResNet12
-from preprocess import feature_preprocess,image_preprocess
+
+def image_preprocess(img):
+    """
+    preprocess a given image into a Tensor (rescaled and center crop + normalized)
+        Args :
+            img(PIL Image or numpy.ndarray): Image to be prepocess.
+        returns :
+            img(torch.Tensor) : preprocessed Image
+    """
+    img = transforms.ToTensor()(img)
+    norm = transforms.Normalize(
+        np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
+        np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
+    )
+    all_transforms = torch.nn.Sequential(
+        transforms.Resize(110), transforms.CenterCrop(100), norm
+    )
+    img = all_transforms(img)
+    return img
+
+
+def feature_preprocess(features, mean_base_features):
+    """
+    preprocess the feature (normalisation on the unit sphere) for classification
+        Args :
+            features(torch.Tensor) : feature to be preprocessed
+            mean_base_features(torch.Tensor) : expected mean of the tensor
+        returns:
+            features(torch.Tensor) : normalized feature
+    """
+    features = features - mean_base_features
+    features = features / torch.norm(features, dim=1, keepdim=True)
+    return features
 
 
 def load_model_weights(model, path, device=None):
@@ -85,21 +119,34 @@ def predict_feature(shots_list, features, model_name, **kwargs):
         classe_prediction = probas.argmax().item()
     return classe_prediction, probas
 
-def get_feature(img,backbone,mean_features,device):
+def get_features(img,backbone,device):
     """
-    compute the normalized feature for the given img
+    wrapper for the model
     args :
         img(PIL Image or numpy.ndarray) : current img
         backbone(torch.nn.Module) : neural network that will output features
-        mean_features (torch.Tensor) : mean of all features
         device(torch.device) : the device on wich the weights should be loaded 
         TODO : replace device argument by backbone.device
     returns : 
         features : preprocessed featured of img
     """
     img = image_preprocess(img).to(device)
-
     _, features = backbone(img.unsqueeze(0))
+    return features
+
+
+def get_preprocessed_feature(img,backbone,mean_features,device):
+    """
+    compute the normalized feature for the given img
+    args :
+        img(PIL Image or numpy.ndarray) : current img
+        backbone(torch.nn.Module) : neural network that will output features
+        mean_features (torch.Tensor) : mean of all features
+        device(torch.device) : the device on wich the weights should be loaded
+    returns : 
+        features : preprocessed featured of img
+    """
+    features=get_features(img,backbone,device)
     features = feature_preprocess(features, mean_features)
     return features
 
@@ -117,7 +164,7 @@ def predict_class_moving_avg(img, shots_list, mean_features, backbone, classifie
         classe_prediction : class prediction
         probas : probability of belonging to each class
     """
-    features=get_feature(img,backbone,mean_features,device)
+    features=get_preprocessed_feature(img,backbone,mean_features,device)
 
     model_name = classifier_specs["model_name"]
     _, probas = predict_feature(

@@ -14,8 +14,8 @@ import torch# import numpy as np
 
 
 from graphical_interface import OpencvInterface
-from possible_models import get_model, load_model_weights, predict_class_moving_avg
-from preprocess import image_preprocess, feature_preprocess
+from possible_models import get_model,get_features, load_model_weights, \
+    predict_class_moving_avg,get_preprocessed_feature
 
 print("import done")
 
@@ -23,14 +23,22 @@ print("import done")
 # cap = cv2.VideoCapture(addr_cam)
 
 
-def save_feature(save_to, current_classe, feature_to_save):
+def compute_feature_and_save(frame,backbone,save_to, current_classe, feature_to_save):
     """
-    save a given feature of a given class in a dictionnary
+    predict and save the given feature of a given class in a dictionnary
         parameters :
+            frame(np.ndarray) : current image to predict
+            backbone(nn.Module)  backbone to use
             save_to(dict) : contains feature, present class, mean features, and snapshots
             current_class : class of the feature
             feature_to_save : feature to be saved
     """
+    
+
+    # get features
+    features =get_preprocessed_feature(frame,backbone,save_to["mean_features"],DEVICE)
+    print("features:", features.shape)
+
     if current_classe not in save_to["registered_classes"]:
         save_to["registered_classes"].append(current_classe)
         save_to["shot_list"].append(feature_to_save)
@@ -111,8 +119,8 @@ def launch_demo():
 
         if clock_m <= clock_init:
             frame = cv_interface.get_image()
-            img = image_preprocess(frame).to(DEVICE)
-            _, features = model(img.unsqueeze(0))
+            features=get_features(frame,model,DEVICE)
+            
             data["mean_features"].append(features.detach().to(DEVICE))
             if clock_m == clock_init:
                 data["mean_features"] = torch.cat(data["mean_features"], dim=0)
@@ -138,20 +146,14 @@ def launch_demo():
 
             print("class :", classe)
             frame = cv_interface.get_image()
-            img = image_preprocess(frame).to(DEVICE)
-            _, features = model(img.unsqueeze(0))
-
-            # preprocess features
-            features = feature_preprocess(
-                features, data["mean_features"]
-            )
-            print("features:", features.shape)
+            
             if key in possible_input:
                 print(f"saving snapshot of class {classe}")
                 cv_interface.add_snapshot(data, classe)
+            
             # add the representation to the class
+            compute_feature_and_save(frame,model,data, classe, features)
 
-            save_feature(data, classe, features)
             if abs(clock - last_detected) < 10:
                 do_registration = True
                 text = f'Class :{classe} registered. \
