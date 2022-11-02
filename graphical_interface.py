@@ -159,9 +159,9 @@ class OpencvInterface:
         """
         draw_indic(self.frame, probabilities, self.snapshot, self.font, self.scale)
 
-    def add_snapshot(self, data, classe):
+    def add_snapshot(self, classe):
         """
-        add a snapshot to data
+        add a snapshot to memmory
         """
         image_label = cv2.resize(
             self.frame,
