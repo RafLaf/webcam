@@ -98,12 +98,12 @@ class OpencvInterface:
         resolution : height, width of the interface
         font : font used by opencv
         frame : current captured frame
-        class_input : input for each class
+        number_of_class : number of possible class
         snapshot : saved snapshots
 
 
     """
-    def __init__(self, video_capture, scale, resolution, font,class_input):
+    def __init__(self, video_capture, scale, resolution, font,number_of_class):
         self.video_capture = video_capture
         self.scale = scale
         self.height = resolution[0]
@@ -111,8 +111,8 @@ class OpencvInterface:
         self.resolution = resolution
         self.font = font
         self.frame=None
-        self.class_input=class_input
-        self.snapshot=[[] for i in range(len(class_input))]
+        self.number_of_class=number_of_class
+        self.snapshot=[[] for i in range(number_of_class)]
 
     def read_frame(self):
         """
@@ -178,7 +178,7 @@ class OpencvInterface:
     def reset_snapshot(self):
         """
         reset the snapshot to initial value"""
-        self.snapshot=[[] for i in range(len(self.class_input))]
+        self.snapshot=[[] for i in range(self.number_of_class)]
 
     def close(self):
         """
@@ -187,4 +187,10 @@ class OpencvInterface:
         self.video_capture.release()
         cv2.destroyAllWindows()
 
+
+    def get_key(self):
+        """
+        if a key was pressed, get the key
+        """
+        return cv2.waitKey(33) & 0xFF
     

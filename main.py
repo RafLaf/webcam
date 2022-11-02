@@ -103,7 +103,7 @@ def launch_demo():
 
     # CV2 related constant
     cap = cv2.VideoCapture(0)
-    cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT,possible_input)
+    cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT,len(possible_input))
     
     # model related
     model = get_model("resnet12", MODEL_SPECS).to(DEVICE)
@@ -131,7 +131,7 @@ def launch_demo():
 
             clock_m += 1
 
-        key = cv2.waitKey(33) & 0xFF
+        key = cv_interface.get_key()
 
         # shot acquisition
         if (
@@ -140,7 +140,7 @@ def launch_demo():
             and not do_reset
         ):
             do_inference = False
-
+        
             if key in possible_input:
                 classe = possible_input.index(key)
                 last_detected = clock * 1  # time.time()
@@ -204,9 +204,8 @@ def launch_demo():
         cv_interface.show()
 
         clock += 1
-        # reset clock
-        # if clock == 100: clock = 0
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        
+        if key == ord("q"):
             break
     cv_interface.close()
 
