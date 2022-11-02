@@ -89,7 +89,9 @@ def launch_demo():
             frame = cv_interface.get_image()
             features=get_features(frame,model,DEVICE)
             
-            current_data.add_mean_repr(features.detach().to(DEVICE),clock_m == clock_init,DEVICE)
+            current_data.add_mean_repr(features,DEVICE)
+            if clock_m == clock_init:
+                current_data.aggregate_mean_rep()
 
             cv_interface.put_text("Initialization")
             clock_m += 1

@@ -68,6 +68,58 @@ def get_model(model, model_specs):
     raise NotImplementedError(f"model {model} is not implemented")
 
 
+
+
+def get_features(img,backbone,device,transform="Camera"):
+    """
+    wrapper for the model
+    TODO : return a numpy array (3.)
+    args :
+        img(PIL Image or numpy.ndarray) : current img
+        backbone(torch.nn.Module) : neural network that will output features
+        device(torch.device) : the device on wich the weights should be loaded 
+        transform : tranformation to apply to the input. Default to camera setting
+        TODO : replace device argument by backbone.device
+    returns : 
+        features : preprocessed featured of img
+    """
+    if transform=="Camera":
+        transform = get_camera_preprocess()
+    
+    img=transform(img).to(device)
+    _, features = backbone(img.unsqueeze(0))
+    return features
+
+def feature_preprocess(features, mean_base_features):
+    """
+    TODO : change dtype to numpy array (2.)
+    preprocess the feature (normalisation on the unit sphere) for classification
+        Args :
+            features(torch.Tensor) : feature to be preprocessed
+            mean_base_features(torch.Tensor) : expected mean of the tensor
+        returns:
+            features(torch.Tensor) : normalized feature
+    """
+    features = features - mean_base_features
+    features = features / torch.norm(features, dim=1, keepdim=True)
+    return features
+
+def get_preprocessed_feature(img,backbone,mean_features,device,transform="Camera"):
+    """
+    compute the normalized feature for the given img
+    args :
+        img(PIL Image or numpy.ndarray) : current img
+        backbone(torch.nn.Module) : neural network that will output features
+        mean_features (torch.Tensor) : mean of all features
+        device(torch.device) : the device on wich the weights should be loaded
+        transform : tranformation to apply to the input
+    returns : 
+        features : preprocessed featured of img
+    """
+    features=get_features(img,backbone,device,transform=transform)
+    features = feature_preprocess(features, mean_features)
+    return features
+
 def predict_feature(shots_list, features, model_name, **kwargs):
     """
     TODO : change dtype to numpy array (4.)
@@ -106,58 +158,8 @@ def predict_feature(shots_list, features, model_name, **kwargs):
         classe_prediction = probas.argmax().item()
     return classe_prediction, probas
 
-def get_features(img,backbone,device,transform=None):
-    """
-    wrapper for the model
-    TODO : return a numpy array (3.)
-    args :
-        img(PIL Image or numpy.ndarray) : current img
-        backbone(torch.nn.Module) : neural network that will output features
-        device(torch.device) : the device on wich the weights should be loaded 
-        transform : tranformation to apply to the input. Default to camera setting
-        TODO : replace device argument by backbone.device
-    returns : 
-        features : preprocessed featured of img
-    """
-    if transform is None:
-        transform = get_camera_preprocess()
-    
-    img=transform(img).to(device)
-    _, features = backbone(img.unsqueeze(0))
-    return features
-
-def feature_preprocess(features, mean_base_features):
-    """
-    TODO : change dtype to numpy array (2.)
-    preprocess the feature (normalisation on the unit sphere) for classification
-        Args :
-            features(torch.Tensor) : feature to be preprocessed
-            mean_base_features(torch.Tensor) : expected mean of the tensor
-        returns:
-            features(torch.Tensor) : normalized feature
-    """
-    features = features - mean_base_features
-    features = features / torch.norm(features, dim=1, keepdim=True)
-    return features
-
-def get_preprocessed_feature(img,backbone,mean_features,device,transform=None):
-    """
-    compute the normalized feature for the given img
-    args :
-        img(PIL Image or numpy.ndarray) : current img
-        backbone(torch.nn.Module) : neural network that will output features
-        mean_features (torch.Tensor) : mean of all features
-        device(torch.device) : the device on wich the weights should be loaded
-        transform : tranformation to apply to the input
-    returns : 
-        features : preprocessed featured of img
-    """
-    features=get_features(img,backbone,device,transform=transform)
-    features = feature_preprocess(features, mean_features)
-    return features
-
 def predict_class_moving_avg(img, shots_list, mean_features, backbone, 
-    classifier_specs, prev_probabilities,device,transform=None):
+    classifier_specs, prev_probabilities,device,transform="Camera"):
     """
     TODO : change dtype to numpy array (1.)
     update the probabily and attribution of having a class, using the current image

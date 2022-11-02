@@ -7,6 +7,7 @@ class DataFewShot:
     """represent the data saved for few shot learning
     attributes :
         num_classe : max number of class handled
+        mean_features(torch.Tensor or list(torch.Tensor)) : mean of the feature / list of feature to aggregate 
         registered_classes : registered class
         shot_list : list of the regitered data
     """
@@ -14,6 +15,7 @@ class DataFewShot:
     def __init__(self,num_class):
         self.num_class=num_class
         self.shot_list=list(range(num_class))
+        self.mean_features=[]
         self.registered_classes=[]
         self.mean_repr=[]
 
@@ -30,19 +32,22 @@ class DataFewShot:
                 (self.shot_list[classe], repr), dim=0
             )
             print("------------:", self.shot_list[classe].shape)
-    
-    def add_mean_repr(self,features,do_average_feature,device):
+    def aggregate_mean_rep(self):
+        """
+        aggregate all saved features
+        can only be called once
+
+        """
+        self.mean_features = torch.cat(self.mean_features, dim=0)
+        self.mean_features = self.mean_features.mean(dim=0)
+        
+    def add_mean_repr(self,features,device):
         """
         add a given image to the mean repr of the datas
-        if do_average_feature, average feature and 
-        you can no longer call the fonction
         """
         
         self.mean_features.append(features.detach().to(device))
-        if do_average_feature:
-            #TODO : change dtype to numpy array
-            self.mean_features = torch.cat(self.mean_features, dim=0)
-            self.mean_features = self.mean_features.mean(dim=0)
+
     
     def reset(self):
         """
