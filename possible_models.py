@@ -29,18 +29,6 @@ def image_preprocess(img):
     return img
 
 
-def feature_preprocess(features, mean_base_features):
-    """
-    preprocess the feature (normalisation on the unit sphere) for classification
-        Args :
-            features(torch.Tensor) : feature to be preprocessed
-            mean_base_features(torch.Tensor) : expected mean of the tensor
-        returns:
-            features(torch.Tensor) : normalized feature
-    """
-    features = features - mean_base_features
-    features = features / torch.norm(features, dim=1, keepdim=True)
-    return features
 
 
 def load_model_weights(model, path, device=None):
@@ -84,6 +72,7 @@ def get_model(model, model_specs):
 
 def predict_feature(shots_list, features, model_name, **kwargs):
     """
+    TODO : change dtype to numpy array (4.)
     predict the class of a features with a model
     args:
         shots_list (list[torch.Tensor]) : previous representation for each class
@@ -122,6 +111,7 @@ def predict_feature(shots_list, features, model_name, **kwargs):
 def get_features(img,backbone,device):
     """
     wrapper for the model
+    TODO : return a numpy array (3.)
     args :
         img(PIL Image or numpy.ndarray) : current img
         backbone(torch.nn.Module) : neural network that will output features
@@ -133,6 +123,21 @@ def get_features(img,backbone,device):
     img = image_preprocess(img).to(device)
     _, features = backbone(img.unsqueeze(0))
     return features
+
+def feature_preprocess(features, mean_base_features):
+    """
+    TODO : change dtype to numpy array (2.)
+    preprocess the feature (normalisation on the unit sphere) for classification
+        Args :
+            features(torch.Tensor) : feature to be preprocessed
+            mean_base_features(torch.Tensor) : expected mean of the tensor
+        returns:
+            features(torch.Tensor) : normalized feature
+    """
+    features = features - mean_base_features
+    features = features / torch.norm(features, dim=1, keepdim=True)
+    return features
+
 
 
 def get_preprocessed_feature(img,backbone,mean_features,device):
@@ -152,6 +157,7 @@ def get_preprocessed_feature(img,backbone,mean_features,device):
 
 def predict_class_moving_avg(img, shots_list, mean_features, backbone, classifier_specs, prev_probabilities,device):
     """
+    TODO : change dtype to numpy array (1.)
     update the probabily and attribution of having a class, using the current image
     args :
         img(PIL Image or numpy.ndarray) : current img,
