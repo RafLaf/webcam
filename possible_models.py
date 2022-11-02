@@ -67,9 +67,6 @@ def get_model(model, model_specs):
         return ResNet12(**model_specs)
     raise NotImplementedError(f"model {model} is not implemented")
 
-
-
-
 def get_features(img,backbone,device,transform="Camera"):
     """
     wrapper for the model
@@ -116,7 +113,7 @@ def get_preprocessed_feature(img,backbone,mean_features,device,transform="Camera
     returns : 
         features : preprocessed featured of img
     """
-    features=get_features(img,backbone,device,transform=transform)
+    features= get_features(img,backbone,device,transform=transform)
     features = feature_preprocess(features, mean_features)
     return features
 
@@ -138,10 +135,12 @@ def predict_feature(shots_list, features, model_name, **kwargs):
         distances = torch.norm(shots - features, dim=1, p=2)
         classe_prediction = distances.argmin().item()
         probas = F.softmax(-20 * distances, dim=0).detach().cpu()
+
     elif model_name == "knn":
         number_neighboors = kwargs["number_neighboors"]
         shots = torch.cat(shots_list)
         # create target list of the shots
+        
         targets = torch.cat(
             [torch.Tensor([i] * shots_list[i].shape[0]) for i in range(len(shots_list))]
         )

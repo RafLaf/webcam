@@ -31,7 +31,9 @@ class DataFewShot:
             self.shot_list[classe] = torch.cat(
                 (self.shot_list[classe], repr), dim=0
             )
-            print("------------:", self.shot_list[classe].shape)
+            print(self.shot_list[classe].shape)
+    
+
     def aggregate_mean_rep(self):
         """
         aggregate all saved features
