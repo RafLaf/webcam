@@ -16,78 +16,16 @@ import torch# import numpy as np
 from graphical_interface import OpencvInterface
 from possible_models import get_model,get_features, load_model_weights, \
     predict_class_moving_avg,get_preprocessed_feature
-
+from data_few_shot import DataFewShot
 print("import done")
 
 # addr_cam = "rtsp://admin:brain2021@10.29.232.40"
 # cap = cv2.VideoCapture(addr_cam)
 
-class DataFewShot:
-    """represent the data saved for few shot learning"""
-
-    def __init__(self,num_class):
-        self.num_class=num_class
-        self.shot_list=list(range(num_class))
-        self.registered_classes=[]
-        self.mean_repr=[]
-
-    def add_repr(self,classe,repr):
-        """
-        add the given repr to the given classe
-        """
-        if classe not in self.registered_classes:
-            self.registered_classes.append(classe)
-            self.shot_list[classe]=repr
-        else:
-            #TODO : change dtype to numpy array
-            self.shot_list[classe] = torch.cat(
-                (self.shot_list[classe], repr), dim=0
-            )
-            print("------------:", self.shot_list[classe].shape)
-    
-    def add_mean_repr(self,features,average_feature):
-        """
-        add a given image to the mean repr of the datas
-        """
-        
-        self.mean_features.append(features.detach().to(DEVICE))
-        if average_feature:
-            #TODO : change dtype to numpy array
-            self.mean_features = torch.cat(self.mean_features, dim=0)
-            self.mean_features = self.mean_features.mean(dim=0)
-    
-    def reset(self):
-        """
-        reset the saved image, but not the mean repr
-        """
-        self.shot_list=list(range(self.num_class))
-        self.registered_classes=[]
-
-
-
-def compute_feature_and_save(frame,backbone,data, current_classe):
-    """
-    predict and save the given feature of a given class in a dictionnary
-        parameters :
-            frame(np.ndarray) : current image to predict
-            backbone(nn.Module)  backbone to use
-            data(DataFewShot) : contains feature, present class, mean features, and snapshots
-            current_class : class of the feature
-    """
-    
-
-    # get features
-    features =get_preprocessed_feature(frame,backbone,data.mean_features,DEVICE)
-    print("features:", features.shape)
-
-    data.add_repr(current_classe,)
-
-
 # constant of the program
 SCALE = 1
 RES_OUTPUT = (1920, 1080)  # resolution = (1280,720)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
-
 
 # model constant
 MODEL_SPECS = {
@@ -121,7 +59,7 @@ def launch_demo():
     prev_frame_time = time.time()
 
     possible_input = list(range(48, 53))
-
+    class_num=len(possible_input)
     # time related variables
     clock = 0
     clock_m = 0
@@ -129,11 +67,11 @@ def launch_demo():
 
     # data holding variables
 
-    current_data= DataFewShot(len(possible_input))
+    current_data= DataFewShot(class_num)
 
     # CV2 related constant
     cap = cv2.VideoCapture(0)
-    cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT,len(possible_input))
+    cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT,class_num)
     
     # model related
     model = get_model("resnet12", MODEL_SPECS).to(DEVICE)
@@ -151,7 +89,7 @@ def launch_demo():
             frame = cv_interface.get_image()
             features=get_features(frame,model,DEVICE)
             
-            current_data.add_mean_repr(features.detach().to(DEVICE),clock_m == clock_init)
+            current_data.add_mean_repr(features.detach().to(DEVICE),clock_m == clock_init,DEVICE)
 
             cv_interface.put_text("Initialization")
             clock_m += 1
@@ -183,7 +121,6 @@ def launch_demo():
             print("features shape:", features.shape)
             
             current_data.add_repr(classe,features)
-            compute_feature_and_save(frame,model,current_data, classe)
 
             if abs(clock - last_detected) < 10:
                 do_registration = True
