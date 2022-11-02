@@ -98,10 +98,12 @@ class OpencvInterface:
         resolution : height, width of the interface
         font : font used by opencv
         frame : current captured frame
+        class_input : input for each class
+        snapshot : saved snapshots
 
 
     """
-    def __init__(self, video_capture, scale, resolution, font):
+    def __init__(self, video_capture, scale, resolution, font,class_input):
         self.video_capture = video_capture
         self.scale = scale
         self.height = resolution[0]
@@ -109,6 +111,8 @@ class OpencvInterface:
         self.resolution = resolution
         self.font = font
         self.frame=None
+        self.class_input=class_input
+        self.snapshot=[[] for i in range(len(class_input))]
 
     def read_frame(self):
         """
@@ -149,23 +153,32 @@ class OpencvInterface:
         """
         cv2.imshow("frame", self.frame)
 
-    def draw_indicator(self, probabilities, shot_frames):
+    def draw_indicator(self, probabilities):
         """
         wrapper of draw_indic
         """
-        draw_indic(self.frame, probabilities, shot_frames, self.font, self.scale)
+        draw_indic(self.frame, probabilities, self.snapshot, self.font, self.scale)
 
     def add_snapshot(self, data, classe):
         """
         add a snapshot to data
-        TODO : add the snapshot to the object instead of data
         """
         image_label = cv2.resize(
             self.frame,
             (int(self.height // 10), int(self.width // 10)),
             interpolation=cv2.INTER_AREA,
         )
-        data["shot_frames"][classe].append(image_label)
+        self.snapshot[classe].append(image_label)
+    
+    def get_number_snapshot(self,classe):
+        """
+        get the number of snapshot of a given classe"""
+        return len(self.snapshot[classe])
+
+    def reset_snapshot(self):
+        """
+        reset the snapshot to initial value"""
+        self.snapshot=[[] for i in range(len(self.class_input))]
 
     def close(self):
         """
@@ -173,3 +186,5 @@ class OpencvInterface:
         """
         self.video_capture.release()
         cv2.destroyAllWindows()
+
+    

@@ -96,7 +96,6 @@ def launch_demo():
     # data holding variables
     empty_data = {
         "registered_classes": [],
-        "shot_frames": [[] for i in range(len(possible_input))],
         "shot_list": [],
         "mean_features": [],
     }
@@ -104,7 +103,7 @@ def launch_demo():
 
     # CV2 related constant
     cap = cv2.VideoCapture(0)
-    cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT)
+    cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT,possible_input)
     
     # model related
     model = get_model("resnet12", MODEL_SPECS).to(DEVICE)
@@ -159,7 +158,7 @@ def launch_demo():
             if abs(clock - last_detected) < 10:
                 do_registration = True
                 text = f'Class :{classe} registered. \
-                Number of shots: {len(data["shot_frames"][classe])}'
+                Number of shots: {cv_interface.get_number_snapshot(classe)}'
                 cv_interface.put_text(text)
             else:
                 do_registration = False
@@ -170,6 +169,7 @@ def launch_demo():
             do_inference = False
             mean_features = data["mean_features"]
             data = copy.deepcopy(empty_data)
+            cv_interface.reset_snapshot()
             data["mean_features"] = mean_features
             reset_clock = 0
             do_reset = True
@@ -196,7 +196,7 @@ def launch_demo():
             print("probabilities after exp moving average:", probabilities)
             cv_interface.put_text(f"Object is from class :{classe_prediction}")
             # f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
-            cv_interface.draw_indicator(probabilities, data["shot_frames"])
+            cv_interface.draw_indicator(probabilities)
 
         # interface
         cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
