@@ -4,9 +4,7 @@ operations relevent for input/output of the neural network and the rest of the c
 """
 import torch
 from torchvision import transforms
-#import torch.nn.functional as F
 import numpy as np
-
 
 
 

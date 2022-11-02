@@ -13,7 +13,7 @@ import cv2
 import torch# import numpy as np
 
 
-from utils import opencv_interface
+from graphical_interface import OpencvInterface
 from possible_models import get_model, load_model_weights, predict_class_moving_avg
 from preprocess import image_preprocess, feature_preprocess
 
@@ -58,7 +58,12 @@ MODEL_SPECS = {
 PATH_MODEL = "weight/tieredlong1.pt1"
 
 # model parameters
-MODEL_NAME = "knn"
+CLASSIFIER_SPECS = {
+    "model_name":"knn",
+    "args":{
+        "number_neighboors":5
+    }
+}
 DEVICE = "cuda:0"
 
 
@@ -91,10 +96,10 @@ def launch_demo():
 
     # CV2 related constant
     cap = cv2.VideoCapture(0)
-    cv_interface = opencv_interface(cap, SCALE, RES_OUTPUT, FONT)
+    cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT)
     # model related
     model = get_model("resnet12", MODEL_SPECS).to(DEVICE)
-    load_model_weights(model, PATH_MODEL, DEVICE)
+    load_model_weights(model, PATH_MODEL, device=DEVICE)
 
     while True:
         cv_interface.read_frame()
@@ -138,7 +143,7 @@ def launch_demo():
 
             # preprocess features
             features = feature_preprocess(
-                features, mean_base_features=data["mean_features"]
+                features, data["mean_features"]
             )
             print("features:", features.shape)
             if key in possible_input:
@@ -176,13 +181,12 @@ def launch_demo():
             do_inference = True
             probabilities = None
 
-        # perform infernece
+        # perform inference
         if do_inference and clock_m > clock_init and not do_reset:
             frame = cv_interface.get_image()
-            img = image_preprocess(frame).to(DEVICE)
-
+            
             classe_prediction, probabilities = predict_class_moving_avg(
-                img, data, model, MODEL_NAME, probabilities
+                frame, data["shots_list"],data["mean_features"], model, CLASSIFIER_SPECS, probabilities,DEVICE
             )
 
             print("probabilities after exp moving average:", probabilities)

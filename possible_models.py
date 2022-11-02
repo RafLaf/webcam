@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 
 from resnet12 import ResNet12
-from preprocess import feature_preprocess
+from preprocess import feature_preprocess,image_preprocess
 
 
 def load_model_weights(model, path, device=None):
@@ -48,7 +48,7 @@ def get_model(model, model_specs):
     raise NotImplementedError(f"model {model} is not implemented")
 
 
-def predict(shots_list, features, model_name, **kwargs):
+def predict_feature(shots_list, features, model_name, **kwargs):
     """
     predict the class of a features with a model
     args:
@@ -85,35 +85,53 @@ def predict(shots_list, features, model_name, **kwargs):
         classe_prediction = probas.argmax().item()
     return classe_prediction, probas
 
+def get_feature(img,backbone,mean_features,device):
+    """
+    compute the normalized feature for the given img
+    args :
+        img(PIL Image or numpy.ndarray) : current img
+        backbone(torch.nn.Module) : neural network that will output features
+        mean_features (torch.Tensor) : mean of all features
+        device(torch.device) : the device on wich the weights should be loaded 
+        TODO : replace device argument by backbone.device
+    returns : 
+        features : preprocessed featured of img
+    """
+    img = image_preprocess(img).to(device)
 
-def predict_class_moving_avg(img, data, backbone, classifier_specs, probabilities):
+    _, features = backbone(img.unsqueeze(0))
+    features = feature_preprocess(features, mean_features)
+    return features
+
+def predict_class_moving_avg(img, shots_list, mean_features, backbone, classifier_specs, prev_probabilities,device):
     """
     update the probabily and attribution of having a class, using the current image
     args :
         img(PIL Image or numpy.ndarray) : current img,
-        data(dict) : dictionnary with all the relevent datas
+        shots_list (list[torch.Tensor]) : previous representation for each class
+        mean_features (torch.Tensor) : mean of all features
         backbone(torch.nn.Module) : neural network that will output features
         classifier_specs(dict) : specification of the classifier
-        probabilities(float64) : probability of each class
+        prev_probabilities(?) : probability of each class
     returns :
         classe_prediction : class prediction
         probas : probability of belonging to each class
     """
-    _, features = backbone(img.unsqueeze(0))
-    features = feature_preprocess(features, data["mean_features"])
+    features=get_feature(img,backbone,mean_features,device)
+
     model_name = classifier_specs["model_name"]
-    _, probas = predict(
-        data["shot_list"], features, model_name, **classifier_specs["args"]
+    _, probas = predict_feature(
+        shots_list, features, model_name, **classifier_specs["args"]
     )
     print("probabilities:", probas)
 
-    if probabilities is None:
-        probabilities = probas
+    if prev_probabilities is None:
+        prev_probabilities = probas
     else:
         if model_name == "ncm":
-            probabilities = probabilities * 0.85 + probas * 0.15
+            probabilities = prev_probabilities * 0.85 + probas * 0.15
         elif model_name == "knn":
-            probabilities = probabilities * 0.95 + probas * 0.05
+            probabilities = prev_probabilities * 0.95 + probas * 0.05
 
     classe_prediction = probabilities.argmax().item()
     return classe_prediction, probabilities
