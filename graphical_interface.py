@@ -50,9 +50,7 @@ def draw_indic(frame, percentages, shot_frames, font, scale):
                     + s[0]
                     + n_shot * (s[0] + 10),
                     x_start_img : x_start_img + s[1],
-                ] = images[
-                    n_shot
-                ]
+                ] = images[n_shot]
         img_level = int(percentages[k] * levels)
         cv2.putText(
             frame,
@@ -84,6 +82,7 @@ def draw_indic(frame, percentages, shot_frames, font, scale):
                 cv2.FILLED,
             )
 
+
 class OpencvInterface:
     """
     Class representing the opencv configuration
@@ -103,16 +102,17 @@ class OpencvInterface:
 
 
     """
-    def __init__(self, video_capture, scale, resolution, font,number_of_class):
+
+    def __init__(self, video_capture, scale, resolution, font, number_of_class):
         self.video_capture = video_capture
         self.scale = scale
         self.height = resolution[0]
         self.width = resolution[1]
         self.resolution = resolution
         self.font = font
-        self.frame=None
-        self.number_of_class=number_of_class
-        self.snapshot=[[] for i in range(number_of_class)]
+        self.frame = None
+        self.number_of_class = number_of_class
+        self.snapshot = [[] for i in range(number_of_class)]
 
     def read_frame(self):
         """
@@ -123,7 +123,7 @@ class OpencvInterface:
 
     def get_image(self):
         """
-        get the current frame 
+        get the current frame
         (TODO : avoid resizing to interface size (separate functions for the camera))
         """
         return self.frame
@@ -169,8 +169,8 @@ class OpencvInterface:
             interpolation=cv2.INTER_AREA,
         )
         self.snapshot[classe].append(image_label)
-    
-    def get_number_snapshot(self,classe):
+
+    def get_number_snapshot(self, classe):
         """
         get the number of snapshot of a given classe"""
         return len(self.snapshot[classe])
@@ -178,7 +178,7 @@ class OpencvInterface:
     def reset_snapshot(self):
         """
         reset the snapshot to initial value"""
-        self.snapshot=[[] for i in range(self.number_of_class)]
+        self.snapshot = [[] for i in range(self.number_of_class)]
 
     def close(self):
         """
@@ -187,10 +187,8 @@ class OpencvInterface:
         self.video_capture.release()
         cv2.destroyAllWindows()
 
-
     def get_key(self):
         """
         if a key was pressed, get the key
         """
         return cv2.waitKey(33) & 0xFF
-    

@@ -1,124 +1,130 @@
+"""
+test the performance of the demo using the cifar10 dataset
+"""
+
 import torch
 import torchvision
-import torchvision.transforms as transforms
+from torchvision import transforms
 import numpy as np
 
-from possible_models import get_model,load_model_weights, get_features,predict_feature
+from few_shot_model import FewShotModel, get_camera_preprocess
 from data_few_shot import DataFewShot
+
 
 def get_loader():
     """
-    get the loader, see : 
+    get the loader, see :
     https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 
     """
 
-    #batch_size = 4
+    # batch_size = 4
 
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                            download=True)
-    
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                        download=True)
-    #testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+    trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=True)
+
+    testset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True)
+    # testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
     #                                        shuffle=False, num_workers=1)
 
-    classes = ('plane', 'car', 'bird', 'cat',
-            'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
-    
-    return trainset,testset,classes
+    classes = (
+        "plane",
+        "car",
+        "bird",
+        "cat",
+        "deer",
+        "dog",
+        "frog",
+        "horse",
+        "ship",
+        "truck",
+    )
 
-def create_data(trainset,backbone,transform,shot_number=1,num_class=10):
+    return trainset, testset, classes
+
+
+def create_data(trainset, shot_number=1, num_class=10):
     """
     create a few_shot data
     """
-    data=DataFewShot(num_class)
-    number_sample=np.zeros(num_class)
-    total_sample=len(trainset)
-    iteration=0
+    data_fewshot = DataFewShot(num_class)
+    number_sample = np.zeros(num_class)
+    total_sample = len(trainset)
+    iteration = 0
 
-    while not(np.all(number_sample==shot_number)) and iteration<total_sample:
-        img,classe=trainset[iteration]
-        if number_sample[classe]<shot_number:
+    while not (np.all(number_sample == shot_number)) and iteration < total_sample:
+        img, classe = trainset[iteration]
+        if number_sample[classe] < shot_number:
             print(f"adding one sample to class {classe}")
-            repr=get_features(img,backbone,DEVICE,transform=transform)
-            data.add_repr(classe,repr)
-            data.add_mean_repr(repr,DEVICE)
-            number_sample[classe]+=1
-        
-        iteration+=1
-    data.aggregate_mean_rep()
-    return data
+            representation = few_shot_model.get_features(img)
+            data_fewshot.add_repr(classe, representation)
+            data_fewshot.add_mean_repr(representation, DEVICE)
+            number_sample[classe] += 1
+        iteration += 1
+    data_fewshot.aggregate_mean_rep()
+    return data_fewshot
 
 
+def get_performance(dataset, data_fewshot):
+    correct_pred = 0
+    incorect_pred = 0
 
+    list_pred = []
+    list_gt = []
+    for i, (img, gt_classe) in enumerate(dataset):
 
-def get_performance(test_set,data,backbone,CLASSIFIER_SPECS,transform=None):
-    correct_pred=0
-    incorect_pred=0
-
-    list_pred=[]
-    list_gt=[]
-    for i,(img,gt_classe) in enumerate(test_set):
-        
-        if i==100:
+        if i == 1000:
             break
 
-        repr=get_features(img,backbone,DEVICE,transform=transform)
-    
-        classe_pred,prediction=predict_feature(data.shot_list,
-            repr,
-            data.mean_features,
-            CLASSIFIER_SPECS["model_name"],
-            **CLASSIFIER_SPECS["args"])
+        classe_pred, prediction = few_shot_model.predict_class(
+            img, data_fewshot.shot_list, data_fewshot.mean_features
+        )
 
         list_pred.append(classe_pred)
         list_gt.append(gt_classe)
 
-        if classe_pred==gt_classe:
-            correct_pred+=1
+        if classe_pred == gt_classe:
+            correct_pred += 1
         else:
-            incorect_pred+=1
-    return correct_pred/(correct_pred+incorect_pred),list_pred,list_gt
-            
+            incorect_pred += 1
+    return correct_pred / (correct_pred + incorect_pred), list_pred, list_gt
 
 
-trainset,testset,classes=get_loader()
+TRAIN, TEST, CLASSES = get_loader()
 
 
-MODEL_SPECS = {
-    "feature_maps": 64,
-    "input_shape": [3, 32, 32],
-    "num_classes": 64,  # 351
-    "few_shot": True,
-    "rotations": False,
+BACKBONE_SPECS = {
+    "model_name": "resnet12",
+    "path": "weight/tieredlong1.pt1",
+    "kwargs": {
+        "feature_maps": 64,
+        "input_shape": [3, 84, 84],
+        "num_classes": 351,  # 64
+        "few_shot": True,
+        "rotations": False,
+    },
 }
-PATH_MODEL = "weight/cifar1.pt1"
+
 
 # model parameters
-CLASSIFIER_SPECS = {
-    "model_name":"knn",
-    "args":{
-        "number_neighboors":1
-    }
-}
+CLASSIFIER_SPECS = {"model_name": "knn", "kwargs": {"number_neighboors": 1}}
 DEVICE = "cuda:0"
+TRANSFORMS = get_camera_preprocess()
+# TRANSFORMS = transforms.Compose(
+#         [transforms.ToTensor(),
+#         transforms.Normalize(
+#             [0.5,0.5,0.5],# np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
+#             [0.5,0.5,0.5]# np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
+#         ),
+#         transforms.Resize(1)])
 
-TRANSFORMS = transforms.Compose(
-        [transforms.ToTensor(), 
-        transforms.Normalize(
-            [0.5,0.5,0.5],# np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
-            [0.5,0.5,0.5]# np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
-        ),
-        transforms.Resize(32)])
+# number to save
+NUMBER_SHOT = 6
 
-#number to save
-NUMBER_SHOT=4
 
+few_shot_model = FewShotModel(BACKBONE_SPECS, CLASSIFIER_SPECS, TRANSFORMS, DEVICE)
 # model related
-backbone = get_model("resnet12", MODEL_SPECS).to(DEVICE)
-load_model_weights(backbone, PATH_MODEL, device=DEVICE)
 
-data=create_data(trainset,backbone,TRANSFORMS,shot_number=NUMBER_SHOT)
+data = create_data(TRAIN, shot_number=NUMBER_SHOT)
 
-print(get_performance(testset,data,backbone,CLASSIFIER_SPECS,transform=TRANSFORMS))
+final_perf, _,_ = get_performance(TEST, data)#final_list_pred, final_list_gt
+print(final_perf)
