@@ -91,34 +91,36 @@ def get_performance(dataset, data_fewshot):
 
 TRAIN, TEST, CLASSES = get_loader()
 
-
 BACKBONE_SPECS = {
     "model_name": "resnet12",
-    "path": "weight/tieredlong1.pt1",
+    "path": "weight/cifar1.pt1",#tieredlong1.pt1",
     "kwargs": {
         "feature_maps": 64,
-        "input_shape": [3, 84, 84],
-        "num_classes": 351,  # 64
+        "input_shape": [3, 32, 32],
+        "num_classes": 64,#351,
         "few_shot": True,
         "rotations": False,
     },
 }
 
 
+
 # model parameters
 CLASSIFIER_SPECS = {"model_name": "knn", "kwargs": {"number_neighboors": 1}}
 DEVICE = "cuda:0"
-TRANSFORMS = get_camera_preprocess()
-# TRANSFORMS = transforms.Compose(
-#         [transforms.ToTensor(),
-#         transforms.Normalize(
-#             [0.5,0.5,0.5],# np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
-#             [0.5,0.5,0.5]# np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
-#         ),
-#         transforms.Resize(1)])
+#TRANSFORMS = get_camera_preprocess()
+TRANSFORMS = transforms.Compose(
+        [transforms.ToTensor(),
+        transforms.Normalize(
+            [0.5,0.5,0.5],# np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
+            [0.5,0.5,0.5]# np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
+        ),
+        # transforms.Resize(42),
+        # transforms.CenterCrop(32)
+        ])
 
 # number to save
-NUMBER_SHOT = 6
+NUMBER_SHOT = 5
 
 
 few_shot_model = FewShotModel(BACKBONE_SPECS, CLASSIFIER_SPECS, TRANSFORMS, DEVICE)
