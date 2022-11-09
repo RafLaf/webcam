@@ -31,7 +31,7 @@ def get_camera_preprocess():
     return all_transforms
 
 
-def load_model_weights(model, path, device=None):
+def load_model_weights(model, path, device=None,verbose=False,raise_error_incomplete=True):
     """
     load the weight given by the path
     if the weight is not correct, raise an errror
@@ -47,6 +47,8 @@ def load_model_weights(model, path, device=None):
     new_dict = {}
     for k, weight in pretrained_dict.items():
         if k in model_dict:
+            if verbose:
+                print(f"loading weight name : {k}",flush=True)
 
             # bn : keep precision (low cost associated)
             # does this work for the fpga ?
@@ -54,6 +56,10 @@ def load_model_weights(model, path, device=None):
                 new_dict[k] = weight
             else:
                 new_dict[k] = weight.to(torch.float16)
+        else:
+            if raise_error_incomplete:
+                raise TypeError("the weights does not correspond to the same model")
+            print("weight with name : {k} not loaded (not in model)")
     model_dict.update(new_dict)
     model.load_state_dict(model_dict)
     print("Model loaded!")
