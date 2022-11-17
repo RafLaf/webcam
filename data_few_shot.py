@@ -14,7 +14,7 @@ class DataFewShot:
 
     def __init__(self,num_class):
         self.num_class=num_class
-        self.shot_list=list(range(num_class))
+        self.shot_list=[]
         self.mean_features=[]
         self.registered_classes=[]
         self.mean_repr=[]
@@ -25,7 +25,7 @@ class DataFewShot:
         """
         if classe not in self.registered_classes:
             self.registered_classes.append(classe)
-            self.shot_list[classe]=repr
+            self.shot_list.append(repr)
         else:
             #TODO : change dtype to numpy array
             self.shot_list[classe] = torch.cat(

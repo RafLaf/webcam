@@ -206,18 +206,19 @@ class FewShotModel:
             probas : probability of belonging to each class
         """
         model_name = self.classifier_specs["model_name"]
+        
 
-        _, probas = self.predict_class(img, shots_list, mean_features)
+        _, current_proba = self.predict_class(img, shots_list, mean_features)
 
-        print("probabilities:", probas)
+        print("probabilities:", current_proba)
 
         if prev_probabilities is None:
-            prev_probabilities = probas
+            probabilities = current_proba
         else:
             if model_name == "ncm":
-                probabilities = prev_probabilities * 0.85 + probas * 0.15
+                probabilities = prev_probabilities * 0.85 + current_proba * 0.15
             elif model_name == "knn":
-                probabilities = prev_probabilities * 0.95 + probas * 0.05
+                probabilities = prev_probabilities * 0.95 + current_proba * 0.05
 
         classe_prediction = probabilities.argmax().item()
         return classe_prediction, probabilities

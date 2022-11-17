@@ -59,7 +59,7 @@ def launch_demo():
     do_reset = False
     prev_frame_time = time.time()
 
-    possible_input = list(range(48, 53))
+    possible_input = list(range(177, 185))
     class_num = len(possible_input)
     # time related variables
     clock = 0
@@ -95,6 +95,7 @@ def launch_demo():
 
         key = cv_interface.get_key()
 
+        print(current_data.shot_list)
         # shot acquisition
         if (
             (key in possible_input or do_registration)
