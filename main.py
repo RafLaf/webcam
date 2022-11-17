@@ -68,7 +68,7 @@ def launch_demo():
 
     # data holding variables
 
-    current_data = DataFewShot(class_num)
+    current_data = DataFewShot(class_num,data_type="demo")
 
     # CV2 related constant
     cap = cv2.VideoCapture(0)
@@ -95,7 +95,7 @@ def launch_demo():
 
         key = cv_interface.get_key()
 
-        print(current_data.shot_list)
+        #print(current_data.shot_list)
         # shot acquisition
         if (
             (key in possible_input or do_registration)
@@ -146,7 +146,7 @@ def launch_demo():
                 do_reset = False
 
         # inference action
-        if key == ord("i") and len(current_data.shot_list) > 0:
+        if key == ord("i") and current_data.is_data_recorded():
             do_inference = True
             probabilities = None
 
@@ -155,7 +155,7 @@ def launch_demo():
             frame = cv_interface.get_image()
 
             classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
-                frame, probabilities, current_data.shot_list, current_data.mean_features
+                frame, probabilities, current_data, current_data.mean_features
             )
 
             print("probabilities after exp moving average:", probabilities)

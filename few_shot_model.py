@@ -133,14 +133,14 @@ class FewShotModel:
         _, features = self.backbone(img.unsqueeze(0))
         return features
 
-    def predict_class(self, img, shots_list, mean_feature):
+    def predict_class(self, img, recorded_data, mean_feature):
         """
         predict the class of a features with a model
         TODO : change dtype to numpy array (4.)
 
         args:
             img(PIL Image or numpy.ndarray) : current img that we will predict
-            shots_list (list[torch.Tensor]) : previous representation for each class
+            recorded_data (list[torch.Tensor]) : previous representation for each class
             model_name : wich model do we use
             **kwargs : additional parameters of the model
         returns :
@@ -149,17 +149,18 @@ class FewShotModel:
         """
         model_name = self.classifier_specs["model_name"]
         model_arguments = self.classifier_specs["kwargs"]
+        shots_list=recorded_data.get_shot_list()
 
         # compute the features and normalization
         features = self.get_features(img)
-        shots = torch.cat(shots_list)
-        shots = feature_preprocess(shots, mean_feature)
+        
         features = feature_preprocess(features, mean_feature)
 
         # class asignement using the corespounding model
 
         if model_name == "ncm":
             shots = torch.stack([s.mean(dim=0) for s in shots_list])
+            shots = feature_preprocess(shots, mean_feature)
             distances = torch.norm(shots - features, dim=1, p=2)
             classe_prediction = distances.argmin().item()
             probas = F.softmax(-20 * distances, dim=0).detach().cpu()
@@ -167,6 +168,9 @@ class FewShotModel:
         elif model_name == "knn":
             number_neighboors = model_arguments["number_neighboors"]
             # create target list of the shots
+
+            shots = torch.cat(shots_list)
+            shots = feature_preprocess(shots, mean_feature)
 
             targets = torch.cat(
                 [
@@ -191,7 +195,7 @@ class FewShotModel:
         return classe_prediction, probas
 
     def predict_class_moving_avg(
-        self, img, prev_probabilities, shots_list, mean_features
+        self, img, prev_probabilities, recorded_data, mean_features
     ):
         """
         TODO : change dtype to numpy array (1.)
@@ -208,7 +212,7 @@ class FewShotModel:
         model_name = self.classifier_specs["model_name"]
         
 
-        _, current_proba = self.predict_class(img, shots_list, mean_features)
+        _, current_proba = self.predict_class(img, recorded_data, mean_features)
 
         print("probabilities:", current_proba)
 
