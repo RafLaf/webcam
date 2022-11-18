@@ -11,8 +11,8 @@ import time
 import cv2
 
 from graphical_interface import OpencvInterface
-from few_shot_model import FewShotModel, get_camera_preprocess
-
+from few_shot_model import FewShotModel
+from backbone import get_camera_preprocess
 from data_few_shot import DataFewShot
 
 print("import done")
@@ -88,7 +88,7 @@ def launch_demo():
 
             current_data.add_mean_repr(features)
             if clock_m == clock_init:
-                current_data.aggregate_mean_rep(DEVICE)
+                current_data.aggregate_mean_rep()
 
             cv_interface.put_text("Initialization")
             clock_m += 1

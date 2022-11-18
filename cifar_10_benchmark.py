@@ -7,7 +7,8 @@ import torchvision
 from torchvision import transforms
 import numpy as np
 
-from few_shot_model import FewShotModel, get_camera_preprocess
+from few_shot_model import FewShotModel
+from backbone import get_camera_preprocess
 from data_few_shot import DataFewShot
 
 
@@ -68,7 +69,7 @@ def create_data(trainset, shot_number=1, num_class=10,mean_computing_type="SNAPS
         iteration += 1
     print("number of image for computing mean : ",len(data_fewshot.mean_features))
     print("number of sample per class",number_sample)
-    data_fewshot.aggregate_mean_rep(DEVICE)
+    data_fewshot.aggregate_mean_rep()
     #print("mean repr",data_fewshot.mean_features)
     return data_fewshot
 
@@ -119,8 +120,8 @@ BACKBONE_SPECS = {
 }
 
 CLASSIFIER_SPECS = {
-    "model_name": "ncm", 
-    "kwargs":{}# {"number_neighboors": 1}
+    "model_name": "knn", 
+    "kwargs": {"number_neighboors": 1}
 }
 DEVICE = "cuda:0"
 
@@ -137,7 +138,7 @@ TRANSFORMS = transforms.Compose(
         ])
 
 # number to save
-NUMBER_SHOT = 5
+NUMBER_SHOT = 100
 
 
 few_shot_model = FewShotModel(BACKBONE_SPECS, CLASSIFIER_SPECS, TRANSFORMS, DEVICE)
