@@ -25,7 +25,6 @@ class DataFewShot:
         
         self.mean_features=[]
         self.registered_classes=[]
-        self.mean_repr=[]
         self.is_recorded=False
 
     def add_repr(self,classe,repr):
@@ -52,21 +51,21 @@ class DataFewShot:
         return self.is_recorded
     
 
-    def aggregate_mean_rep(self):
+    def aggregate_mean_rep(self,device):
         """
         aggregate all saved features
         can only be called once
 
         """
         self.mean_features = torch.cat(self.mean_features, dim=0)
-        self.mean_features = self.mean_features.mean(dim=0)
+        self.mean_features = self.mean_features.mean(dim=0).to(device)
         
-    def add_mean_repr(self,features,device):
+    def add_mean_repr(self,features):
         """
         add a given image to the mean repr of the datas
         """
         
-        self.mean_features.append(features.detach().to(device))
+        self.mean_features.append(features.detach().cpu())
 
     
     def reset(self):

@@ -9,7 +9,7 @@ from torchvision import transforms
 import numpy as np
 
 from resnet12 import ResNet12
-
+from utils import softmax
 
 def get_camera_preprocess():
     """
@@ -99,54 +99,54 @@ class FewShotModel:
     """
     class defining a few shot model
         attributes :
-            - backbone_specs(dict) :
-                specs defining the how to load the backbone
+            - backbone : initialized with backbone_specs(dict), specs defining the how to load the backbone
             - classifier_specs :
                 parameters of the final classification model
-            - transform :
-                transforms used to transform the input img from PIL/numpy
-                into the input of the backbone
-            - device :
-                on wich device we should perform computation
+            - preprocess : how preprocess input image
+            - device : on wich device should the computation take place
     """
 
-    def __init__(self, backbone_specs, classifier_specs, transform, device):
+    def __init__(self, backbone_specs, classifier_specs, preprocess, device):
         self.backbone = get_model(backbone_specs,device)
         self.classifier_specs = classifier_specs
-        self.transform = transform
+        self.preprocess = preprocess
         self.device = device
 
-    def get_features(self, img):
+    def get_features(self, img,augmentation=None):
         """
         wrapper for the backbone
         TODO : return a numpy array (3.)
         args :
             img(PIL Image or numpy.ndarray) : current img
             backbone(torch.nn.Module) : neural network that will output features
-            device(torch.device) : the device on wich the weights should be loaded
-            transform : tranformation to apply to the input. Default to camera setting
         returns :
             features : preprocessed featured of img
         """
+        
+        img = self.preprocess(img)
+        if augmentation:
+            img=augmentation(img)
 
-        img = self.transform(img).to(self.device)
+        img=img.to(self.device)
         _, features = self.backbone(img.unsqueeze(0))
         return features
 
-    def predict_class(self, img, recorded_data, mean_feature):
+    def predict_class(self, img, recorded_data,preprocess_feature=True):
         """
         predict the class of a features with a model
         TODO : change dtype to numpy array (4.)
 
         args:
             img(PIL Image or numpy.ndarray) : current img that we will predict
-            recorded_data (list[torch.Tensor]) : previous representation for each class
+            recorded_data (list[torch.Tensor]) : data used for classification
             model_name : wich model do we use
             **kwargs : additional parameters of the model
         returns :
             classe_prediction : class prediction
             probas : probability of belonging to each class
         """
+
+        mean_feature=recorded_data.mean_features
         model_name = self.classifier_specs["model_name"]
         model_arguments = self.classifier_specs["kwargs"]
         shots_list=recorded_data.get_shot_list()
@@ -154,13 +154,17 @@ class FewShotModel:
         # compute the features and normalization
         features = self.get_features(img)
         
-        features = feature_preprocess(features, mean_feature)
+        
+        if preprocess_feature:
+            
+            features = feature_preprocess(features, mean_feature)
 
         # class asignement using the corespounding model
 
         if model_name == "ncm":
             shots = torch.stack([s.mean(dim=0) for s in shots_list])
-            shots = feature_preprocess(shots, mean_feature)
+            if preprocess_feature:
+                shots = feature_preprocess(shots, mean_feature)
             distances = torch.norm(shots - features, dim=1, p=2)
             classe_prediction = distances.argmin().item()
             probas = F.softmax(-20 * distances, dim=0).detach().cpu()
@@ -170,7 +174,8 @@ class FewShotModel:
             # create target list of the shots
 
             shots = torch.cat(shots_list)
-            shots = feature_preprocess(shots, mean_feature)
+            if preprocess_feature:
+                shots = feature_preprocess(shots, mean_feature)
 
             targets = torch.cat(
                 [
@@ -178,6 +183,10 @@ class FewShotModel:
                     for i in range(len(shots_list))
                 ]
             )
+
+            shots=shots.detach().numpy()
+            features=features.detach().numpy()
+            
             distances = torch.norm(shots - features, dim=1, p=2)
             # get the k nearest neighbors
 
@@ -188,14 +197,15 @@ class FewShotModel:
                 ).sum(dim=0)
                 / number_neighboors
             )
-            classe_prediction = probas.argmax().item()
+            
         else:
             raise NotImplementedError(f"classifier : {model_name} is not implemented")
-
+        
+        classe_prediction = probas.argmax().item()
         return classe_prediction, probas
 
     def predict_class_moving_avg(
-        self, img, prev_probabilities, recorded_data, mean_features
+        self, img, prev_probabilities, recorded_data
     ):
         """
         TODO : change dtype to numpy array (1.)
@@ -203,8 +213,8 @@ class FewShotModel:
         args :
             img(PIL Image or numpy.ndarray) : current img,
             prev_probabilities(?) : probability of each class for previous prediction
-            shots_list (list[torch.Tensor]) : previous representation for each class
-            mean_features (torch.Tensor) : mean of all features
+            recorded_data (list[torch.Tensor]) : data recorded for classification
+
         returns :
             classe_prediction : class prediction
             probas : probability of belonging to each class
@@ -212,7 +222,7 @@ class FewShotModel:
         model_name = self.classifier_specs["model_name"]
         
 
-        _, current_proba = self.predict_class(img, recorded_data, mean_features)
+        _, current_proba = self.predict_class(img, recorded_data)
 
         print("probabilities:", current_proba)
 

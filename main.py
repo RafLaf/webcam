@@ -86,9 +86,9 @@ def launch_demo():
             frame = cv_interface.get_image()
             features = few_shot_model.get_features(frame)
 
-            current_data.add_mean_repr(features, DEVICE)
+            current_data.add_mean_repr(features)
             if clock_m == clock_init:
-                current_data.aggregate_mean_rep()
+                current_data.aggregate_mean_rep(DEVICE)
 
             cv_interface.put_text("Initialization")
             clock_m += 1
@@ -155,8 +155,7 @@ def launch_demo():
             frame = cv_interface.get_image()
 
             classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
-                frame, probabilities, current_data, current_data.mean_features
-            )
+                frame, probabilities, current_data)
 
             print("probabilities after exp moving average:", probabilities)
             cv_interface.put_text(f"Object is from class :{classe_prediction}")
