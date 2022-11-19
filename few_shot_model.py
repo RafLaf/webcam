@@ -1,19 +1,17 @@
 """
 neural network modules
 handle loading, inference and prediction
-TODO : replace the functions with a unique class to avoid unessary parameters
 """
 
 import numpy as np
 
 
-from utils import softmax,one_hot,k_small
-from backbone import get_model
+from utils import softmax, one_hot, k_small
 
 
 def feature_preprocess(features, mean_base_features):
     """
-    
+
     preprocess the feature (normalisation on the unit sphere) for classification
         Args :
             features(np.ndarray) : feature to be preprocessed
@@ -30,39 +28,19 @@ class FewShotModel:
     """
     class defining a few shot model
         attributes :
-            - backbone : initialized with backbone_specs(dict), specs defining the how to load the backbone
+            - backbone : initialized with backbone_specs(dict):
+                specs defining the how to load the backbone
             - classifier_specs :
                 parameters of the final classification model
             - preprocess : how preprocess input image
             - device : on wich device should the computation take place
     """
 
-    def __init__(self, backbone_specs, classifier_specs, preprocess, device):
-        self.backbone = get_model(backbone_specs,device)
+    def __init__(self, classifier_specs):
+
         self.classifier_specs = classifier_specs
-        self.preprocess = preprocess
-        self.device = device
 
-    def get_features(self, img,augmentation=None):
-        """
-        wrapper for the backbone
-        
-        args :
-            img(PIL Image or numpy.ndarray) : current img
-            backbone(torch.nn.Module) : neural network that will output features
-        returns :
-            features : preprocessed featured of img
-        """
-        
-        img = self.preprocess(img)
-        if augmentation:
-            img=augmentation(img)
-
-        img=img.to(self.device)
-        _, features = self.backbone(img.unsqueeze(0))
-        return features.detach().cpu().numpy()
-
-    def predict_class(self, img, recorded_data,preprocess_feature=True):
+    def predict_class_feature(self, features, recorded_data, preprocess_feature=True):
         """
         predict the class of a features with a model
 
@@ -76,74 +54,68 @@ class FewShotModel:
             probas : probability of belonging to each class
         """
 
-        mean_feature=recorded_data.get_mean_features()
+        mean_feature = recorded_data.get_mean_features()
 
         model_name = self.classifier_specs["model_name"]
         model_arguments = self.classifier_specs["kwargs"]
-        shots_list=recorded_data.get_shot_list()
-        
+        shots_list = recorded_data.get_shot_list()
 
-        # compute the features and normalization
-        features = self.get_features(img)
-        
-        
         if preprocess_feature:
-            
+
             features = feature_preprocess(features, mean_feature)
 
         # class asignement using the corespounding model
 
         if model_name == "ncm":
-            
-            shots = np.stack([ np.mean(shot,axis=0) for shot in shots_list],axis=0)
-            #shots=shots.detach().cpu().numpy()
+
+            shots = np.stack([np.mean(shot, axis=0) for shot in shots_list], axis=0)
+            # shots=shots.detach().cpu().numpy()
             if preprocess_feature:
                 shots = feature_preprocess(shots, mean_feature)
 
-
             distances = np.linalg.norm(shots - features, axis=1, ord=2)
-            
-            probas=softmax(-20*distances,dim=0)
-            
+
+            probas = softmax(-20 * distances, dim=0)
+
         elif model_name == "knn":
             number_neighboors = model_arguments["number_neighboors"]
             # create target list of the shots
 
-            
-            shots= np.concatenate(shots_list)
-            
+            shots = np.concatenate(shots_list)
+
             if preprocess_feature:
                 shots = feature_preprocess(shots, mean_feature)
-            
-            targets=np.concatenate(
-                [np.array(i*np.ones(shots_list[i].shape[0],dtype=np.int64)) 
-                    for i in range(len(shots_list))]
-                ,axis=0
+
+            targets = np.concatenate(
+                [
+                    np.array(i * np.ones(shots_list[i].shape[0], dtype=np.int64))
+                    for i in range(len(shots_list))
+                ],
+                axis=0,
             )
 
-            #shots=shots
-            #features=features.detach().cpu().numpy()
+            # shots=shots
+            # features=features.detach().cpu().numpy()
 
-            distances=np.linalg.norm(shots - features,axis=1,ord=2)
-            #distances=(shots - features)@(shots - features)#L2 because unit circle
+            distances = np.linalg.norm(shots - features, axis=1, ord=2)
+            # distances=(shots - features)@(shots - features)
+            # #L2 because unit circle
             # get the k nearest neighbors
 
-            indices=k_small(distances,number_neighboors)
-            
-            probas=one_hot(targets[indices],len(shots_list))
-            probas=np.sum(probas,axis=0)/number_neighboors
-            
+            indices = k_small(distances, number_neighboors)
+
+            probas = one_hot(targets[indices], len(shots_list))
+            probas = np.sum(probas, axis=0) / number_neighboors
+
         else:
             raise NotImplementedError(f"classifier : {model_name} is not implemented")
-        
+
         classe_prediction = probas.argmax()
         return classe_prediction, probas
 
-    def predict_class_moving_avg(
-        self, img, prev_probabilities, recorded_data
-    ):
+    def predict_class_moving_avg(self, features, prev_probabilities, recorded_data):
         """
-       
+
         update the probabily and attribution of having a class, using the current image
         args :
             img(PIL Image or numpy.ndarray) : current img,
@@ -155,9 +127,8 @@ class FewShotModel:
             probas : probability of belonging to each class
         """
         model_name = self.classifier_specs["model_name"]
-        
 
-        _, current_proba = self.predict_class(img, recorded_data)
+        _, current_proba = self.predict_class_feature(features, recorded_data)
 
         print("probabilities:", current_proba)
 

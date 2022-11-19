@@ -12,7 +12,7 @@ import cv2
 
 from graphical_interface import OpencvInterface
 from few_shot_model import FewShotModel
-from backbone import get_camera_preprocess
+from backbone import get_model,get_camera_preprocess
 from data_few_shot import DataFewShot
 
 print("import done")
@@ -49,9 +49,9 @@ def launch_demo():
     """
     initialize the variable and launch the demo
     """
-    few_shot_model = FewShotModel(
-        BACKBONE_SPECS, CLASSIFIER_SPECS, DEFAULT_TRANSFORM, DEVICE
-    )
+    backbone=get_model(BACKBONE_SPECS,DEVICE,preprocess=get_camera_preprocess)
+    few_shot_model = FewShotModel(CLASSIFIER_SPECS)
+
 
     # program related constant
     do_inference = False
@@ -84,7 +84,7 @@ def launch_demo():
 
         if clock_m <= clock_init:
             frame = cv_interface.get_image()
-            features = few_shot_model.get_features(frame)
+            features = backbone(frame)
 
             current_data.add_mean_repr(features)
             if clock_m == clock_init:
@@ -116,7 +116,7 @@ def launch_demo():
                 cv_interface.add_snapshot(classe)
 
             # add the representation to the class
-            features = few_shot_model.get_features(frame)
+            features = backbone(frame)
 
             print("features shape:", features.shape)
 
@@ -153,9 +153,9 @@ def launch_demo():
         # perform inference
         if do_inference and clock_m > clock_init and not do_reset:
             frame = cv_interface.get_image()
-
+            features=backbone(frame)
             classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
-                frame, probabilities, current_data)
+                features, probabilities, current_data)
 
             print("probabilities after exp moving average:", probabilities)
             cv_interface.put_text(f"Object is from class :{classe_prediction}")

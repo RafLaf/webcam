@@ -1,9 +1,9 @@
 import torch
-import torch.nn.functional as F
 from torchvision import transforms
 import numpy as np
 
 from resnet12 import ResNet12
+
 
 def get_camera_preprocess():
     """
@@ -17,14 +17,21 @@ def get_camera_preprocess():
         np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
         np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
     )
-    all_transforms =  transforms.Compose(
+    all_transforms = transforms.Compose(
         [
-        transforms.ToTensor(), transforms.Resize(110), transforms.CenterCrop(100), norm
-    ])
+            transforms.ToTensor(),
+            transforms.Resize(110),
+            transforms.CenterCrop(100),
+            norm,
+        ]
+    )
 
     return all_transforms
 
-def load_model_weights(model, path, device=None,verbose=False,raise_error_incomplete=True):
+
+def load_model_weights(
+    model, path, device=None, verbose=False, raise_error_incomplete=True
+):
     """
     load the weight given by the path
     if the weight is not correct, raise an errror
@@ -41,7 +48,7 @@ def load_model_weights(model, path, device=None,verbose=False,raise_error_incomp
     for k, weight in pretrained_dict.items():
         if k in model_dict:
             if verbose:
-                print(f"loading weight name : {k}",flush=True)
+                print(f"loading weight name : {k}", flush=True)
 
             # bn : keep precision (low cost associated)
             # does this work for the fpga ?
@@ -58,11 +65,43 @@ def load_model_weights(model, path, device=None,verbose=False,raise_error_incomp
     print("Model loaded!")
 
 
+class ModelWrapper:
+    """
+    wrap the backbone and return a numpy array representing features
+    Attributes :
+    - model(torch.nn.Module) : neural network that will output features
+    - preprocess : how should the input image should be preprocessed
+    """
+
+    def __init__(self, backbone, preprocess, device):
+        self.backbone = backbone
+        self.preprocess = preprocess
+        self.device = device
+
+    def __call__(self, img, augmentation=None):
+        """
+        return the features from an img
+
+        args :
+            - img : a single img
+            - augmentation : optional additional transformation to apply
+        """
+        img = self.preprocess(img)
+        if augmentation:
+            img = augmentation(img)
+
+        img = img.to(self.device)
+        _, features = self.backbone(img.unsqueeze(0))
+        return features.detach().cpu().numpy()
 
 
-def get_model(model_specs, device):
+def get_model(model_specs, device, preprocess):
     """
     get the model specified in input
+    args :
+        - model_specs
+        - device
+        - preprocess(transformation)
     returns :
         resnet(torch.nn.Module) : neural network corespounding to parameters
     """
@@ -72,4 +111,4 @@ def get_model(model_specs, device):
     else:
         raise NotImplementedError(f"model {name_model} is not implemented")
     load_model_weights(model, model_specs["path"], device=device)
-    return model
+    return ModelWrapper(model, preprocess, device)

@@ -9,7 +9,8 @@ class DataFewShot:
     attributes :
         num_classe : max number of class handled
         data_type : how to initialize unseen class (demo/cifar)
-        mean_features(np.ndarray or list(np.ndarray)) : mean of the feature / list of feature to aggregate 
+        mean_features(np.ndarray or list(np.ndarray)) :
+            mean of the feature / list of feature to aggregate
         registered_classes : registered class
         shot_list : list of the regitered data
     """
@@ -23,39 +24,60 @@ class DataFewShot:
         else:
             raise NotImplementedError(f"datatype {data_type} is not implemented")
         self.num_class=num_class
-        
         self.mean_features=[]
         self.registered_classes=[]
         self.is_recorded=False
+
+    def replace_with_array(self,array):
+        """
+        args :
+            - array(np.ndarray) (n_classes,n_shots,dim_repr)
+        """
+
+        shape=array.shape
+        assert len(shape)==3
+        (num_class,_,_)=shape
+        self.num_class=num_class
+
+        #all classe are already recorded
+        self.registered_classes=list(range(num_class))
+        self.is_recorded=True
+        self.mean_features=np.mean(array,axis=(0,1))#mean along class and snapshot
+        self.shot_list=[array[i] for i in range(num_class)]
 
     def add_repr(self,classe,repr):
         """
         add the given repr to the given classe
         """
         self.is_recorded=True
-        repr=repr#.detach().cpu().numpy()
-
         if classe not in self.registered_classes:
             self.registered_classes.append(classe)
             if self.data_type=="demo":
                 self.shot_list.append(repr)
             elif self.data_type=="cifar":
                 self.shot_list[classe]=repr
-            
+
         else:
-            #TODO : change dtype to numpy array
             self.shot_list[classe] = np.concatenate(
                 (self.shot_list[classe], repr), axis=0
             )
     def get_shot_list(self):
+        """
+        getter for shot_list
+        """
         return self.shot_list#[shot.detach().cpu().numpy() for shot in self.shot_list]
 
     def get_mean_features(self):
+        """
+        getter for the mean features
+        """
         return self.mean_features
 
     def is_data_recorded(self):
+        """
+        is there any data recorded
+        """
         return self.is_recorded
-    
 
     def aggregate_mean_rep(self):
         """
@@ -66,19 +88,16 @@ class DataFewShot:
         self.mean_features=np.concatenate(self.mean_features,axis=0)
         self.mean_features=self.mean_features.mean(axis=0)
 
-  
-        
     def add_mean_repr(self,features):
         """
-        add a given image to the mean repr of the datas
+        add a given featu to the mean repr of the datas
         """
-        
         self.mean_features.append(features)
 
-    
     def reset(self):
         """
         reset the saved image, but not the mean repr
         """
         self.shot_list=list(range(self.num_class))
         self.registered_classes=[]
+        self.is_recorded=False

@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import random
 
 def linear(indim, outdim):
     return nn.Linear(indim, outdim)
@@ -52,7 +53,7 @@ class ResNet12(nn.Module):
 
     def forward(self, x, index_mixup = None, lam = -1):
         if lam != -1:
-            mixup_layer = torch.random.randint(0, 3)
+            mixup_layer = random.randint(0, 3)
         else:
             mixup_layer = -1
         out = x
