@@ -45,7 +45,7 @@ class FewShotModel:
         predict the class of a features with a model
 
         args:
-            img(PIL Image or numpy.ndarray) : current img that we will predict
+            features(np.ndarray((1,n_features))) : features of the current img
             recorded_data (DataFewShot) : data used for classification
             model_name : wich model do we use
             **kwargs : additional parameters of the model
@@ -118,7 +118,7 @@ class FewShotModel:
 
         update the probabily and attribution of having a class, using the current image
         args :
-            img(PIL Image or numpy.ndarray) : current img,
+            features(np.ndarray((1,n_features))) : features of the current img
             prev_probabilities(?) : probability of each class for previous prediction
             recorded_data (DataFewShot) : data recorded for classification
 

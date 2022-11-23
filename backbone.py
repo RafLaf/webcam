@@ -93,6 +93,7 @@ class ModelWrapper:
         img = img.to(self.device)
         _, features = self.backbone(img.unsqueeze(0))
         return features.detach().cpu().numpy()
+    
 
 
 def get_model(model_specs, device, preprocess):
@@ -111,4 +112,5 @@ def get_model(model_specs, device, preprocess):
     else:
         raise NotImplementedError(f"model {name_model} is not implemented")
     load_model_weights(model, model_specs["path"], device=device)
+    model.eval()
     return ModelWrapper(model, preprocess, device)
