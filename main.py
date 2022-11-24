@@ -42,14 +42,16 @@ BACKBONE_SPECS = {
 # model parameters
 CLASSIFIER_SPECS = {"model_name": "knn", "kwargs": {"number_neighboors": 5}}
 DEVICE = "cuda:0"
-DEFAULT_TRANSFORM = get_camera_preprocess()
+#DEFAULT_TRANSFORM = get_camera_preprocess()
 
 
 def launch_demo():
     """
     initialize the variable and launch the demo
     """
-    backbone=get_model(BACKBONE_SPECS,DEVICE,preprocess=get_camera_preprocess)
+
+    preprocess=get_camera_preprocess()
+    backbone=get_model(BACKBONE_SPECS,DEVICE)
     few_shot_model = FewShotModel(CLASSIFIER_SPECS)
 
 
@@ -84,6 +86,7 @@ def launch_demo():
 
         if clock_m <= clock_init:
             frame = cv_interface.get_image()
+            frame=preprocess(frame)
             features = backbone(frame)
 
             current_data.add_mean_repr(features)
@@ -116,6 +119,7 @@ def launch_demo():
                 cv_interface.add_snapshot(classe)
 
             # add the representation to the class
+            frame=preprocess(frame)
             features = backbone(frame)
 
             print("features shape:", features.shape)
@@ -153,9 +157,13 @@ def launch_demo():
         # perform inference
         if do_inference and clock_m > clock_init and not do_reset:
             frame = cv_interface.get_image()
+            frame=preprocess(frame)
             features=backbone(frame)
             classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
-                features, probabilities, current_data)
+                features, probabilities,
+                current_data.get_shot_list(),
+                current_data.get_mean_features()
+            )
 
             print("probabilities after exp moving average:", probabilities)
             cv_interface.put_text(f"Object is from class :{classe_prediction}")

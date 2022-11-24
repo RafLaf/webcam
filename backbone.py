@@ -1,3 +1,13 @@
+"""
+Contains the backbone (neural net) of the model. 
+
+In embedded setting, we want to use another framework than pytorch to make inference. 
+
+-> input : numpy or torch tensor img (preprocessed)
+-> output : numpy img
+"""
+
+
 import torch
 from torchvision import transforms
 import numpy as np
@@ -65,52 +75,57 @@ def load_model_weights(
     print("Model loaded!")
 
 
-class ModelWrapper:
-    """
-    wrap the backbone and return a numpy array representing features
-    Attributes :
-    - model(torch.nn.Module) : neural network that will output features
-    - preprocess : how should the input image should be preprocessed
-    """
-
-    def __init__(self, backbone, preprocess, device):
-        self.backbone = backbone
-        self.preprocess = preprocess
-        self.device = device
-
-    def __call__(self, img, augmentation=None):
-        """
-        return the features from an img
-
-        args :
-            - img : a single img
-            - augmentation : optional additional transformation to apply
-        """
-        img = self.preprocess(img)
-        if augmentation:
-            img = augmentation(img)
-
-        img = img.to(self.device)
-        _, features = self.backbone(img.unsqueeze(0))
-        return features.detach().cpu().numpy()
-    
 
 
-def get_model(model_specs, device, preprocess):
+def get_model(model_specs, device,use_batch=False):
     """
     get the model specified in input
     args :
         - model_specs
         - device
-        - preprocess(transformation)
     returns :
         resnet(torch.nn.Module) : neural network corespounding to parameters
     """
+    
     name_model = model_specs["model_name"]
     if name_model == "resnet12":
         model = ResNet12(**model_specs["kwargs"]).to(device)
     else:
         raise NotImplementedError(f"model {name_model} is not implemented")
     load_model_weights(model, model_specs["path"], device=device)
-    model.eval()
-    return ModelWrapper(model, preprocess, device)
+    
+
+    def model_wrapper(img):
+        """
+        return the features from an img
+        args :
+            - img : a single img
+        """
+        model.eval()
+        img = img.to(device)
+
+        with torch.no_grad():
+            if len(img.shape)==3:
+                _, features = model(img.unsqueeze(0))
+            else:
+                _, features = model(img)
+
+        return features.cpu().numpy()
+
+    def model_wrapper_batch(img):
+        """
+        return the features from an img
+        args :
+            - img : a single img
+        """
+        model.eval()
+        
+        img = img.to(device)
+        with torch.no_grad():
+            _, features = model(img)
+        return features.cpu().numpy()
+
+    if use_batch:
+        return model_wrapper_batch
+    else:
+        return model_wrapper

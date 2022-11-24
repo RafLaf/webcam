@@ -17,33 +17,12 @@ class DataFewShot:
 
     def __init__(self,num_class,data_type="cifar"):
         self.data_type=data_type
-        if self.data_type=="demo":
-            self.shot_list=[]
-        elif self.data_type=="cifar":
-            self.shot_list=[[] for i in range(num_class)]
-        else:
-            raise NotImplementedError(f"datatype {data_type} is not implemented")
+        self.shot_list=[]
         self.num_class=num_class
         self.mean_features=[]
         self.registered_classes=[]
         self.is_recorded=False
 
-    def replace_with_array(self,array):
-        """
-        args :
-            - array(np.ndarray) (n_classes,n_shots,dim_repr)
-        """
-
-        shape=array.shape
-        assert len(shape)==3
-        (num_class,_,_)=shape
-        self.num_class=num_class
-
-        #all classe are already recorded
-        self.registered_classes=list(range(num_class))
-        self.is_recorded=True
-        self.mean_features=np.mean(array,axis=(0,1))#mean along class and snapshot
-        self.shot_list=[array[i] for i in range(num_class)]
 
     def add_repr(self,classe,repr):
         """

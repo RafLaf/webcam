@@ -9,7 +9,8 @@ def softmax(x,dim=0):
         - x (np.array(np.ndarray [...]) : array with at least dim+1 dimensions
         - dim : dim allong wich to perform softmax
     """
-    e_x = np.exp(x - np.max(x))
+    e_x = np.exp(x - np.max(x))#stability trick( cond of exp(x)=x
+    
     return e_x/np.sum(e_x,axis=dim)
 
 def one_hot(array,num_classes,dtype=np.int64):
@@ -23,12 +24,16 @@ def one_hot(array,num_classes,dtype=np.int64):
     return np.identity(num_classes,dtype)[array]
 
 
-def k_small(distance,number):
+def k_small(distance,number,axis=-1):
     """
     ref : https://stackoverflow.com/questions/34226400/find-the-index-of-the-k-smallest-values-of-a-numpy-array
     args: 
         - distance : 
         - number : number of indices to outputs
+        - axis :  on wich axis should we look for the k smallest values
     
     """
-    return np.argpartition(distance, number)[:number]
+
+    semi_sorted_dist=np.argpartition(distance, number,axis=axis)
+    return np.take(semi_sorted_dist,np.arange(0,number),axis=axis)
+   

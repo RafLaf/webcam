@@ -103,7 +103,7 @@ def parse_dataset_feature(parser):
     parser.add_argument("--batch-size", type=int, default=64, help="batch size")
 
     parser.add_argument("--n-ways", type=int, default=5, help="number of few-shot ways")
-    parser.add_argument("--dataset", type=str, default="cifarfs", help="dataset to use")
+    parser.add_argument("--dataset", type=str, default="cifar10", help="dataset to use")
     parser.add_argument("--dataset-size", type=int, default=-1, help="number of training samples (using a subset for classical classification, and reducing size of epochs for few-shot)")
     parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
     parser.add_argument("--episodic", action="store_true", help="use episodic training")
@@ -113,7 +113,7 @@ def parse_few_shot_params(parser):
     parser.add_argument("--batch-fs", type=int, default=20, help="batch size for few shot runs")
 
     parser.add_argument("--n-shots", type=str, default="[1,5]", help="how many shots per few-shot run, can be int or list of ints. In case of episodic training, use first item of list as number of shots.")
-    parser.add_argument("--n-runs", type=int, default=10000, help="number of few-shot runs")
+    parser.add_argument("--n-runs", type=int, default=1000, help="number of few-shot runs")
     parser.add_argument("--n-queries", type=int, default=15, help="number of few-shot queries")
 
 
