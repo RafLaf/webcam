@@ -7,8 +7,6 @@ EASY - Ensemble Augmented-Shot Y-shaped Learning: State-Of-The-Art Few-Shot Clas
 
 import argparse
 import os
-import random
-import numpy as np
 
 #TODO : change description
 parser = argparse.ArgumentParser(description="""Optimized code for training usual datasets/model
@@ -98,12 +96,12 @@ parser.add_argument("--device", type=str, default="cuda:0", help="device(s) to u
 def parse_dataset_feature(parser):
 
     parser.add_argument("--dataset-path", type=str, default=os.getcwd()+"/data/", help="dataset path")
-    parser.add_argument("--dataset-device", type=str, default="", help="use a different device for storing the datasets (use 'cpu' if you are lacking VRAM)")
+    parser.add_argument("--dataset-device", type=str, default="cpu", help="use a different device for storing the datasets (use 'cpu' if you are lacking VRAM)")
 
     parser.add_argument("--batch-size", type=int, default=64, help="batch size")
 
     parser.add_argument("--n-ways", type=int, default=5, help="number of few-shot ways")
-    parser.add_argument("--dataset", type=str, default="cifar10", help="dataset to use")
+    parser.add_argument("--dataset", type=str, default="cifarfs", help="dataset to use")
     parser.add_argument("--dataset-size", type=int, default=-1, help="number of training samples (using a subset for classical classification, and reducing size of epochs for few-shot)")
     parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
     parser.add_argument("--episodic", action="store_true", help="use episodic training")
@@ -117,10 +115,13 @@ def parse_few_shot_params(parser):
     parser.add_argument("--n-queries", type=int, default=15, help="number of few-shot queries")
 
 
+def parse_backbone_params(params):
+    parser.add_argument("--backbone_type",default="cifar_small",help="model to load")
+
 
 parse_dataset_feature(parser)
 parse_few_shot_params(parser)
-
+parse_backbone_params(parser)
 try :
     get_ipython()
     args = parser.parse_args(args=[])

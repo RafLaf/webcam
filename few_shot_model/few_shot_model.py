@@ -2,11 +2,12 @@
 neural network modules
 handle loading, inference and prediction
 """
+#on veut que le truc soit capable de gérer des trucs de la forme: 
 
 import numpy as np
 
 
-from utils import softmax, one_hot, k_small
+from few_shot_model.numpy_utils import softmax, one_hot, k_small
 
 
 def feature_preprocess(features, mean_base_features):
@@ -20,7 +21,7 @@ def feature_preprocess(features, mean_base_features):
             features(np.ndarray) : normalized feature
     """
     features = features - mean_base_features
-    features = features / np.linalg.norm(features, axis=1, keepdims=True)
+    features = features / np.linalg.norm(features, axis=-1, keepdims=True)
     return features
 
 
@@ -71,22 +72,96 @@ class FewShotModel:
                 parameters of the final classification model
             - preprocess : how preprocess input image
             - device : on wich device should the computation take place
+
+    2 possible types of prediction (batchified or not)
     """
 
     def __init__(self, classifier_specs):
 
         self.classifier_specs = classifier_specs
 
+
+    def predict_class_batch(self,features,shot_array,mean_feature,preprocess_feature=True):
+        """
+        predict the class of a features
+        args:
+            features :
+                - (np.ndarray(n_batch,nways,n_queries,n_features)) : features of the current img
+            shot_array :
+                - array(n_batch,n_ways,n_shots,n_features) (each element of sequence = 1 class)
+            mean_feature :
+                - array(n_batch,n_features)
+            model_name : wich model do we use
+            **kwargs : additional parameters of the model
+        returns :
+            classe_prediction : class prediction
+            probas (1,n_features) : probability of belonging to each class
+
+        """
+
+        model_name = self.classifier_specs["model_name"]
+        model_arguments = self.classifier_specs.get("kwargs",{})
+        #shots_list = recorded_data.get_shot_list()
+       
+        
+        
+        if preprocess_feature:
+            #(n_batch,1,1,n_features)
+            features = feature_preprocess(features, np.expand_dims(mean_feature,axis=(1,2)))
+
+        # class asignement using the correspounding model
+        
+        
+        if model_name == "ncm":
+
+            shots = np.mean(shot_array,axis=2)#mean of the shots
+            # (n_batch,n_ways,n_features)
+            # shots=shots.detach().cpu().numpy()
+            if preprocess_feature:
+                #(n_batch,1,n_features)
+                shots = feature_preprocess(shots, np.expand_dims(mean_feature,axis=1))
+            shots=np.expand_dims(shots,axis=(1,2))
+            # (_batch,1,1,n_ways,n_features)
+
+            probas=ncm(shots,features)
+            
+        elif model_name == "knn":
+            number_neighboors = model_arguments["number_neighboors"]
+            # create target list of the shots
+            n_ways=shot_array.shape[1]
+            n_shots=shot_array.shape[2]
+            shots = np.reshape(shot_array,axis=(shot_array.shape[0],n_ways*n_shots,shot_array.shape[3]))
+            #shots : (n_batch,n_exemples,nfeatures)
+            if preprocess_feature:
+                shots = feature_preprocess(shots, np.expand_dims(mean_feature,axis=1))
+            shots=np.expand_dims(shots,axis=(2,3))
+            # (_batch,n_ways,1,n_features)
+            
+            targets = np.concatenate(
+                [
+                    class_id * np.ones(n_shots, dtype=np.int64)for class_id in range(n_ways)
+                ],
+                axis=0,
+            )
+            
+            probas=knn(shots,features,targets,number_neighboors)
+
+        else:
+            raise NotImplementedError(f"classifier : {model_name} is not implemented")
+        
+        classe_prediction = np.argmax(probas,axis=-1)
+        return classe_prediction, probas
+
     def predict_class_feature(self, features, shots_list,mean_feature, preprocess_feature=True):
         """
-        predict the class of a features with a model
+        predict the class of a features
 
         args:
             features :
-                - (np.ndarray((1,n_features))) : features of the current img
-            shot_list :  
-                - sequence( array(n_shots_i,n_features)) (each element of sequence = 1 class)
-            mean_feature : 
+                - (np.ndarray(n_features)) : features of the current img
+            shot_list :
+                - sequence(array(n_shots_i,n_features)) (each element of sequence = 1 class)
+            mean_feature :
                 - array(n_features)
             model_name : wich model do we use
             **kwargs : additional parameters of the model
@@ -109,7 +184,7 @@ class FewShotModel:
 
         if model_name == "ncm":
 
-            shots = np.stack([np.mean(shot, axis=0) for shot in shots_list], axis=0)
+            shots = np.stack([np.mean(shot, axis=0) for shot in shots_list], axis=0) #sequence -> array
             #shots : (nclass,nfeatures)
             # shots=shots.detach().cpu().numpy()
             if preprocess_feature:
@@ -120,7 +195,7 @@ class FewShotModel:
             number_neighboors = model_arguments["number_neighboors"]
             # create target list of the shots
 
-            shots = np.concatenate(shots_list,axis=0)#sequence -> numpy
+            shots = np.concatenate(shots_list,axis=0)#sequence -> array
             #shots : (n_exemples,nfeatures)
 
             if preprocess_feature:

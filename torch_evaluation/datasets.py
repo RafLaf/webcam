@@ -9,6 +9,8 @@ from args import args
 import numpy as np
 import torch
 import os
+from PIL import Image
+
 
 class CPUDataset():
     def __init__(self, data, targets, transforms = [], batch_size = args.batch_size, use_hd = False):
@@ -136,7 +138,7 @@ class EpisodicDataset():
 def iterator(data, target, transforms, forcecpu = False, shuffle = True, use_hd = False):
     if args.dataset_device == "cpu" or forcecpu:
         dataset = CPUDataset(data, target, transforms, use_hd = use_hd)
-        return torch.utils.data.DataLoader(dataset, batch_size = args.batch_size, shuffle = shuffle, num_workers = min(8, os.cpu_count()))
+        return torch.utils.data.DataLoader(dataset, batch_size = args.batch_size, shuffle = shuffle)#, num_workers = min(8, os.cpu_count()))#do not work on windows
     else:
         return Dataset(data, target, transforms, shuffle = shuffle)
 
@@ -153,7 +155,6 @@ def create_dataset(train_data, test_data, train_targets, test_targets, train_tra
     test_loader = iterator(test_data, test_targets, transforms = test_transforms)
     return train_loader, val_loader, test_loader
 
-import random
 def mnist():
     train_loader = datasets.MNIST(args.dataset_path, train = True, download = True)
     train_data = (train_loader.data.float() / 256).unsqueeze(1)
@@ -241,7 +242,6 @@ def cifar100(data_augmentation = True):
     loaders = create_dataset(train_data, test_data, train_targets, test_targets, list_trans_train, norm)
     return loaders, train_data.shape[1:], torch.max(train_targets).item() + 1, False, True
 
-from PIL import Image
 
 def cifarfs(use_hd=True, data_augmentation=True):
     """

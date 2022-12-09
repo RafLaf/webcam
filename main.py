@@ -10,12 +10,39 @@ DEMO of few shot learning:
 import time
 import cv2
 
-from graphical_interface import OpencvInterface
-from few_shot_model import FewShotModel
-from backbone import get_model,get_camera_preprocess
-from data_few_shot import DataFewShot
+from demo.graphical_interface import OpencvInterface
+from few_shot_model.few_shot_model import FewShotModel
+from torch_evaluation.backbone_loader import get_model
+from few_shot_model.data_few_shot import DataFewShot
 
 print("import done")
+
+
+
+def get_camera_preprocess():
+    """
+    preprocess a given image into a Tensor (rescaled and center crop + normalized)
+        Args :
+            img(PIL Image or numpy.ndarray): Image to be prepocess.
+        returns :
+            img(torch.Tensor) : preprocessed Image
+    """
+    norm = transforms.Normalize(
+        np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
+        np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
+    )
+    all_transforms = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Resize(110),
+            transforms.CenterCrop(100),
+            norm,
+        ]
+    )
+
+    return all_transforms
+
+
 
 # addr_cam = "rtsp://admin:brain2021@10.29.232.40"
 # cap = cv2.VideoCapture(addr_cam)
@@ -50,8 +77,8 @@ def launch_demo():
     initialize the variable and launch the demo
     """
 
-    preprocess=get_camera_preprocess()
-    backbone=get_model(BACKBONE_SPECS,DEVICE)
+    preprocess=get_camera_preprocess()#TODO : update this
+    backbone=get_model(BACKBONE_SPECS,DEVICE)#TODO : update this
     few_shot_model = FewShotModel(CLASSIFIER_SPECS)
 
 
@@ -70,7 +97,7 @@ def launch_demo():
 
     # data holding variables
 
-    current_data = DataFewShot(class_num,data_type="demo")
+    current_data = DataFewShot(class_num)
 
     # CV2 related constant
     cap = cv2.VideoCapture(0)
@@ -87,7 +114,7 @@ def launch_demo():
         if clock_m <= clock_init:
             frame = cv_interface.get_image()
             frame=preprocess(frame)
-            features = backbone(frame)
+            features = backbone(frame)#TODO : update this
 
             current_data.add_mean_repr(features)
             if clock_m == clock_init:
@@ -119,7 +146,7 @@ def launch_demo():
                 cv_interface.add_snapshot(classe)
 
             # add the representation to the class
-            frame=preprocess(frame)
+            frame=preprocess(frame)#TODO : update this
             features = backbone(frame)
 
             print("features shape:", features.shape)
@@ -157,7 +184,7 @@ def launch_demo():
         # perform inference
         if do_inference and clock_m > clock_init and not do_reset:
             frame = cv_interface.get_image()
-            frame=preprocess(frame)
+            frame=preprocess(frame)#TODO : update this
             features=backbone(frame)
             classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
                 features, probabilities,

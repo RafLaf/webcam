@@ -15,8 +15,7 @@ class DataFewShot:
         shot_list : list of the regitered data
     """
 
-    def __init__(self,num_class,data_type="cifar"):
-        self.data_type=data_type
+    def __init__(self,num_class):
         self.shot_list=[]
         self.num_class=num_class
         self.mean_features=[]
@@ -31,11 +30,8 @@ class DataFewShot:
         self.is_recorded=True
         if classe not in self.registered_classes:
             self.registered_classes.append(classe)
-            if self.data_type=="demo":
-                self.shot_list.append(repr)
-            elif self.data_type=="cifar":
-                self.shot_list[classe]=repr
-
+            self.shot_list.append(repr)
+        
         else:
             self.shot_list[classe] = np.concatenate(
                 (self.shot_list[classe], repr), axis=0

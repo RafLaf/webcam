@@ -1,5 +1,9 @@
 """
 test the performance of the demo using the cifar10 dataset
+
+Metric used to test : accuracy on the validation class (not a few-shot setting)
+
+use torch for the metrics
 """
 
 import torch
@@ -7,8 +11,8 @@ import torchvision
 from torchvision import transforms
 import numpy as np
 
-from few_shot_model import FewShotModel
-from backbone import get_model#get_camera_preprocess
+from few_shot_model.few_shot_model import FewShotModel
+from torch_evaluation.backbone_loader import get_model
 
 
 
@@ -62,7 +66,7 @@ def get_performance(model, few_shot_model, shots, dataset):
     mean_shots=np.mean(shots,axis=(0,1))
     for i, (img, gt_classe) in enumerate(dataset):
 
-        if i == 10:
+        if i == 1000:
             break
 
         features = model(img)
@@ -120,7 +124,7 @@ TRANSFORMS = transforms.Compose(
         # transforms.CenterCrop(32)
     ]
 )
-
+raise UserWarning("this file was not updated. neither in a few shot setting, and do not work")
 # number to save
 NUMBER_SHOT = 5
 

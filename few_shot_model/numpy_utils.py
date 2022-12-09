@@ -1,3 +1,10 @@
+"""
+Redefine some equivalent of classical torch function not implemented in numpy
+"""
+
+
+
+
 import numpy as np
 
 
@@ -11,7 +18,7 @@ def softmax(x,dim=0):
     """
     e_x = np.exp(x - np.max(x))#stability trick( cond of exp(x)=x
     
-    return e_x/np.sum(e_x,axis=dim)
+    return e_x/np.sum(e_x,axis=dim,keepdims=True)
 
 def one_hot(array,num_classes,dtype=np.int64):
     """
