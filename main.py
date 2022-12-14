@@ -10,6 +10,7 @@ DEMO of few shot learning:
 import time
 import cv2
 import numpy as np
+import cProfile
 
 from demo.graphical_interface import OpencvInterface
 from few_shot_model.few_shot_model import FewShotModel
@@ -44,14 +45,18 @@ print("import done")
 #     return all_transforms
 
 
-def preprocess(img,dtype=np.float32,shape_input=(32,32)):
+def preprocess(img,dtype=np.float32,shape_input=(84,84)):
     """
     Args: 
-        img : np.ndarray
+        img(np.ndarray(h,w,c)) : 
     """
+    assert len(img.shape)==3
+    assert img.shape[-1]==3
+    print(img.shape)
 
     img=img.astype(dtype)
     img=cv2.resize(img,dsize=shape_input,interpolation=cv2.INTER_CUBIC)
+    img=img[None,:]
     return (img/255-np.array([0.485, 0.456, 0.406],dtype=dtype))/ np.array([0.229, 0.224, 0.225],dtype=dtype)
 
 # addr_cam = "rtsp://admin:brain2021@10.29.232.40"
@@ -67,7 +72,7 @@ BACKBONE_SPECS = {
     "model_name": "resnet12",
     "path": "weight/tieredlong1.pt1",
     "device":"cuda:0",
-    "type":"",
+    "type":"pytorch_batch",
     "kwargs": {
         "feature_maps": 64,
         "input_shape": [3, 84, 84],
@@ -89,7 +94,7 @@ def launch_demo():
     """
 
     #preprocess=get_camera_preprocess()#TODO : update this
-    backbone=lambda x:x#get_model(BACKBONE_SPECS)#TODO : update this
+    backbone=get_model(BACKBONE_SPECS)#TODO : update this
     few_shot_model = FewShotModel(CLASSIFIER_SPECS)
 
 
@@ -189,6 +194,7 @@ def launch_demo():
 
         # inference action
         if key == ord("i") and current_data.is_data_recorded():
+            print("doing inference")
             do_inference = True
             probabilities = None
 
@@ -218,6 +224,5 @@ def launch_demo():
         if key == ord("q"):
             break
     cv_interface.close()
-
 
 launch_demo()

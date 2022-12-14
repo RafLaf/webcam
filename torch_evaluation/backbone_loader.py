@@ -31,7 +31,5 @@ def get_model(model_specs):
         path_weight=model_specs["path"]
         kwargs=model_specs["kwargs"]
         return TorchBatchModelWrapper(device,model_name,path_weight,kwargs)
-
-    
-
-  
+    else:
+        raise UserWarning("model type="+model_specs["type"]+"is not defined")

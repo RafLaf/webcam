@@ -1,9 +1,10 @@
+print("importing torch")
 import torch
 import numpy as np
 
 from torch_evaluation.backbone.resnet12 import ResNet12
 
-
+print("torch imported")
 
 
 def load_model_weights(
@@ -55,6 +56,7 @@ class TorchBatchModelWrapper:
         load_model_weights(model, path_weight, device=device)
         self.model=model
         self.device=device
+        self.input_shape=kwargs["input_shape"]
     
     def __call__(self,img):
         """
@@ -62,11 +64,14 @@ class TorchBatchModelWrapper:
         args :
             - img(np.ndarray) : represent a batch of image (channel last convention)
         """
+
         assert len(img.shape)==4
+
         self.model.eval()
 
         #convertion to tensor with channel first convention
         img=np.transpose(img,(0,3,1,2))
+
         img=torch.from_numpy(img)   
 
 

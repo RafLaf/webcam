@@ -6,6 +6,11 @@ import numpy as np
 
 
 def draw_indic(frame, percentages, shot_frames, font, scale):
+    """
+    Args :
+        percentages : (np.ndarray(1,n_features) ) : probability of belonging to each class
+    """
+    percentages=percentages[0]#not clean, 
     def percentage_to_color(p):
         return 0, 255 - (255 * p), 255 * p
 
