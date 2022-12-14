@@ -65,7 +65,6 @@ class ResNet12(nn.Module):
             if mixup_layer == i + 1:
                 out = lam * out + (1 - lam) * out[index_mixup]
             out = self.mp(F.leaky_relu(out, negative_slope = 0.1))
-        print(out.shape)
         out = F.avg_pool2d(out, (self.input_shape[1]//16,self.input_shape[2]//16))#out.shape[2])
         features = out.view(out.size(0), -1)
         out = self.linear(features)

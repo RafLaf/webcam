@@ -9,6 +9,7 @@ DEMO of few shot learning:
 
 import time
 import cv2
+import numpy as np
 
 from demo.graphical_interface import OpencvInterface
 from few_shot_model.few_shot_model import FewShotModel
@@ -19,30 +20,39 @@ print("import done")
 
 
 
-def get_camera_preprocess():
+# def get_camera_preprocess():
+#     """
+#     preprocess a given image into a Tensor (rescaled and center crop + normalized)
+#         Args :
+#             img(PIL Image or numpy.ndarray): Image to be prepocess.
+#         returns :
+#             img(torch.Tensor) : preprocessed Image
+#     """
+#     norm = transforms.Normalize(
+#         np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
+#         np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
+#     )
+#     all_transforms = transforms.Compose(
+#         [
+#             transforms.ToTensor(),
+#             transforms.Resize(110),
+#             transforms.CenterCrop(100),
+#             norm,
+#         ]
+#     )
+
+#     return all_transforms
+
+
+def preprocess(img,dtype=np.float32,shape_input=(32,32)):
     """
-    preprocess a given image into a Tensor (rescaled and center crop + normalized)
-        Args :
-            img(PIL Image or numpy.ndarray): Image to be prepocess.
-        returns :
-            img(torch.Tensor) : preprocessed Image
+    Args: 
+        img : np.ndarray
     """
-    norm = transforms.Normalize(
-        np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
-        np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
-    )
-    all_transforms = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Resize(110),
-            transforms.CenterCrop(100),
-            norm,
-        ]
-    )
 
-    return all_transforms
-
-
+    img=img.astype(dtype)
+    img=cv2.resize(img,dsize=shape_input,interpolation=cv2.INTER_CUBIC)
+    return (img/255-np.array([0.485, 0.456, 0.406],dtype=dtype))/ np.array([0.229, 0.224, 0.225],dtype=dtype)
 
 # addr_cam = "rtsp://admin:brain2021@10.29.232.40"
 # cap = cv2.VideoCapture(addr_cam)
@@ -56,6 +66,8 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 BACKBONE_SPECS = {
     "model_name": "resnet12",
     "path": "weight/tieredlong1.pt1",
+    "device":"cuda:0",
+    "type":"",
     "kwargs": {
         "feature_maps": 64,
         "input_shape": [3, 84, 84],
@@ -68,7 +80,6 @@ BACKBONE_SPECS = {
 
 # model parameters
 CLASSIFIER_SPECS = {"model_name": "knn", "kwargs": {"number_neighboors": 5}}
-DEVICE = "cuda:0"
 #DEFAULT_TRANSFORM = get_camera_preprocess()
 
 
@@ -77,8 +88,8 @@ def launch_demo():
     initialize the variable and launch the demo
     """
 
-    preprocess=get_camera_preprocess()#TODO : update this
-    backbone=get_model(BACKBONE_SPECS,DEVICE)#TODO : update this
+    #preprocess=get_camera_preprocess()#TODO : update this
+    backbone=lambda x:x#get_model(BACKBONE_SPECS)#TODO : update this
     few_shot_model = FewShotModel(CLASSIFIER_SPECS)
 
 
