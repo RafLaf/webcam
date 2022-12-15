@@ -1,251 +1,235 @@
+"""
+DEMO of few shot learning:
+    connect to the camera and prints prediction in an interface
+    press :
+    1, 2, 3... : the program will register the current image as an instance of the given class
+    i : will start inference
+    q : quit the program
+"""
 
-print("importing cv2")
+import time
 import cv2
 import numpy as np
-print("importing torch")
-import torch
-from torchvision import transforms, datasets
-from resnet12 import ResNet12
-import time
-import torch.nn.functional as F
-from utils import opencv_interface
-import copy
+import cProfile
+
+from demo.graphical_interface import OpencvInterface
+from few_shot_model.few_shot_model import FewShotModel
+from torch_evaluation.backbone_loader import get_model
+from few_shot_model.data_few_shot import DataFewShot
 
 print("import done")
 
-#addr_cam = "rtsp://admin:brain2021@10.29.232.40"
-device = 'cuda:0'
-
-# 1, 2, 3... for every class we're adding
-# i for starting inference, it will be run every 1 second
-# q for exiting the program
-
-# Apply transformations
-def image_preprocess(img):
-    img = transforms.ToTensor()(img)
-    norm = transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
-    all_transforms = torch.nn.Sequential(transforms.Resize(110), transforms.CenterCrop(100), norm)
-    img = all_transforms(img)
-    return img
-
-def feature_preprocess(features, mean_base_features=None):
-    features = features - mean_base_features
-    features = features / torch.norm(features, dim = 1, keepdim = True)
-    return features
-
-# Get the model
-model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
-#model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
-
-def load_model_weights(model, path, device):
-    pretrained_dict = torch.load(path, map_location=device)
-    model_dict = model.state_dict()
-    #pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-    new_dict = {}
-    for k, v in pretrained_dict.items():
-        if k in model_dict:
-
-            #bn : keep precision (low cost associated)
-            #does this work for the fpga ?
-            if 'bn' in k:
-                new_dict[k] = v
-            else:
-                new_dict[k] = v.to(torch.float16)
-    model_dict.update(new_dict) 
-    model.load_state_dict(model_dict)
-    print('Model loaded!')
-
-def save_feature(data,classe,features):
-    if classe not in data["registered_classes"]:
-        data["registered_classes"].append(classe)
-        data["shot_list"].append(features)
-    else:
-        data["shot_list"][classe] = torch.cat((data["shot_list"][classe], features), dim = 0)
-        print('------------:', data["shot_list"][classe].shape)
 
 
+# def get_camera_preprocess():
+#     """
+#     preprocess a given image into a Tensor (rescaled and center crop + normalized)
+#         Args :
+#             img(PIL Image or numpy.ndarray): Image to be prepocess.
+#         returns :
+#             img(torch.Tensor) : preprocessed Image
+#     """
+#     norm = transforms.Normalize(
+#         np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]),
+#         np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]),
+#     )
+#     all_transforms = transforms.Compose(
+#         [
+#             transforms.ToTensor(),
+#             transforms.Resize(110),
+#             transforms.CenterCrop(100),
+#             norm,
+#         ]
+#     )
 
-def predict(shots_list, features, model_name):
-    if model_name == 'ncm':
-        shots = torch.stack([s.mean(dim=0) for s in shots_list])
-        distances = torch.norm(shots-features, dim = 1, p=2)
-        classe_prediction = distances.argmin().item()
-        probas = F.softmax(-20*distances, dim=0).detach().cpu()
-    elif model_name == 'knn':
-        shots = torch.cat(shots_list)
-        #create target list of the shots
-        targets = torch.cat([torch.Tensor([i]*shots_list[i].shape[0]) for i in range(len(shots_list))])
-        distances = torch.norm(shots-features, dim = 1, p=2)
-        #get the k nearest neighbors
-
-        _, indices = distances.topk(K_nn, largest=False)
-        probas = F.one_hot(targets[indices].to(torch.int64), num_classes=len(shots_list)).sum(dim=0)/K_nn
-        classe_prediction = probas.argmax().item()
-    return probas, classe_prediction
-
-def predict_class_moving_avg(img,data,model_name,probabilities):
-     
-    _, features = model(img.unsqueeze(0))
-    
-    features = feature_preprocess(features, mean_base_features= data["mean_features"])
-    
-    probas, _ = predict(data["shot_list"], features, model_name=model_name)
-    print('probabilities:', probas)
-    
-    if probabilities == None:
-        probabilities = probas
-    else:
-        if model_name == 'ncm':
-            probabilities = probabilities*0.85 + probas*0.15
-        elif model_name == 'knn':
-            probabilities = probabilities*0.95 + probas*0.05
-
-    classe_prediction = probabilities.argmax().item()
-    return classe_prediction,probabilities
+#     return all_transforms
 
 
-#model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
-#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/tieredlong1.pt1', map_location=device))
-#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', map_location=device))
+def preprocess(img,dtype=np.float32,shape_input=(84,84)):
+    """
+    Args: 
+        img(np.ndarray(h,w,c)) : 
+    """
+    assert len(img.shape)==3
+    assert img.shape[-1]==3
+    print(img.shape)
 
-path_model="weight/tieredlong1.pt1"
-load_model_weights(model, path_model, device)
+    img=img.astype(dtype)
+    img=cv2.resize(img,dsize=shape_input,interpolation=cv2.INTER_CUBIC)
+    img=img[None,:]
+    return (img/255-np.array([0.485, 0.456, 0.406],dtype=dtype))/ np.array([0.229, 0.224, 0.225],dtype=dtype)
 
-#mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
+# addr_cam = "rtsp://admin:brain2021@10.29.232.40"
+# cap = cv2.VideoCapture(addr_cam)
 
-#cap = cv2.VideoCapture(addr_cam)
+# constant of the program
+SCALE = 1
+RES_OUTPUT = (1920, 1080)  # resolution = (1280,720)
+FONT = cv2.FONT_HERSHEY_SIMPLEX
 
-#CV2 related constant
-cap = cv2.VideoCapture(0)
-scale = 1
-resolution_output = (1920,1080)#resolution = (1280,720)
-font = cv2.FONT_HERSHEY_SIMPLEX
+# model constant
+# BACKBONE_SPECS = {
+#     "model_name": "resnet12",
+#     "path": "weight/tieredlong1.pt1",
+#     "device":"cuda:0",
+#     "type":"pytorch_batch",
+#     "kwargs": {
+#         "feature_maps": 64,
+#         "input_shape": [3, 84, 84],
+#         "num_classes": 351,  # 64
+#         "few_shot": True,
+#         "rotations": False,
+#     },
+# }
 
-cv_interface=opencv_interface(cap,scale,resolution_output,font)
 
-#program related constant
-do_inference = False
-do_registration = False
-do_reset = False
-prev_frame_time = time.time()
+BACKBONE_SPECS = {
+    "type":"tensil_model"
+    "path_bit":"",
+    "path_tmodel":""
 
-possible_input=[i for i in range(48, 53)]
-
-#data holding variables
-empty_data={
-    
-    "registered_classes":[],
-    "shot_frames":[[] for i in range(len(possible_input))],
-    "shot_list":[],
-    "mean_features" : []
 }
-data=copy.deepcopy(empty_data)
+
+# model parameters
+CLASSIFIER_SPECS = {"model_name": "knn", "kwargs": {"number_neighboors": 5}}
+#DEFAULT_TRANSFORM = get_camera_preprocess()
 
 
-#time related variables
-clock = 0
-clock_M = 0
-clock_init = 20
+def launch_demo():
+    """
+    initialize the variable and launch the demo
+    """
 
-#model parameters
-K_nn = 5
-model_name = 'knn'
+    #preprocess=get_camera_preprocess()#TODO : update this
+    backbone=get_model(BACKBONE_SPECS)#TODO : update this
+    few_shot_model = FewShotModel(CLASSIFIER_SPECS)
 
 
+    # program related constant
+    do_inference = False
+    do_registration = False
+    do_reset = False
+    prev_frame_time = time.time()
 
-while(True):
-    cv_interface.read_frame()
-    
-    new_frame_time = time.time()
-    #print('clock: ', clock)    
-    fps = int(1/(new_frame_time-prev_frame_time))
-    prev_frame_time = new_frame_time
-    
-    if clock_M <= clock_init:
-        frame=cv_interface.get_image()
-        img = image_preprocess(frame).to(device)
-        _, features = model(img.unsqueeze(0))
-        data["mean_features"].append(features.detach().to(device))
-        if clock_M == clock_init:
-            data["mean_features"] = torch.cat(data["mean_features"], dim = 0)
-            data["mean_features"] = data["mean_features"].mean(dim = 0)
+    possible_input = list(range(177, 185))
+    class_num = len(possible_input)
+    # time related variables
+    clock = 0
+    clock_m = 0
+    clock_init = 20
 
-        cv_interface.put_text(f'Initialization')
+    # data holding variables
 
-        clock_M += 1        
+    current_data = DataFewShot(class_num)
 
-    key = cv2.waitKey(33) & 0xFF
-    
-    # shot acquisition
-    if (key in possible_input or do_registration) and clock_M>clock_init and not do_reset:
-        do_inference = False
-        
-        if key in possible_input:
-            classe = possible_input.index(key)
-            last_detected = clock*1 #time.time()
+    # CV2 related constant
+    cap = cv2.VideoCapture(0)
+    cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
 
-        print('class :', classe)
-        frame=cv_interface.get_image()
-        img = image_preprocess(frame).to(device)
-        _, features = model(img.unsqueeze(0))
+    while True:
+        cv_interface.read_frame()
 
-        # preprocess features
-        features = feature_preprocess(features, mean_base_features= data["mean_features"])
-        print('features:', features.shape)
-        if key in possible_input:
-            print(f"saving snapshot of class {classe}")
-            cv_interface.add_snapshot(data,classe)
-        #add the representation to the class
-        
-        save_feature(data,classe,features)
-        if abs(clock-last_detected)<10:
-            do_registration = True
-            text=f'Class :{classe} registered. Number of shots: {len(data["shot_frames"][classe])}'
-            cv_interface.put_text(text)
-        else:
+        new_frame_time = time.time()
+        # print('clock: ', clock)
+        fps = int(1 / (new_frame_time - prev_frame_time))
+        prev_frame_time = new_frame_time
+
+        if clock_m <= clock_init:
+            frame = cv_interface.get_image()
+            frame=preprocess(frame)
+            features = backbone(frame)#TODO : update this
+
+            current_data.add_mean_repr(features)
+            if clock_m == clock_init:
+                current_data.aggregate_mean_rep()
+
+            cv_interface.put_text("Initialization")
+            clock_m += 1
+
+        key = cv_interface.get_key()
+
+        #print(current_data.shot_list)
+        # shot acquisition
+        if (
+            (key in possible_input or do_registration)
+            and clock_m > clock_init
+            and not do_reset
+        ):
+            do_inference = False
+
+            if key in possible_input:
+                classe = possible_input.index(key)
+                last_detected = clock * 1  # time.time()
+
+            print("class :", classe)
+            frame = cv_interface.get_image()
+
+            if key in possible_input:
+                print(f"saving snapshot of class {classe}")
+                cv_interface.add_snapshot(classe)
+
+            # add the representation to the class
+            frame=preprocess(frame)#TODO : update this
+            features = backbone(frame)
+
+            print("features shape:", features.shape)
+
+            current_data.add_repr(classe, features)
+
+            if abs(clock - last_detected) < 10:
+                do_registration = True
+                text = f"Class :{classe} registered. \
+                Number of shots: {cv_interface.get_number_snapshot(classe)}"
+                cv_interface.put_text(text)
+            else:
+                do_registration = False
+
+        # reset action
+        if key == ord("r"):
             do_registration = False
-    
-    #reset action
-    if key == ord('r'):
-        do_registration = False
-        do_inference = False
-        mean_features=data["mean_features"]
-        data=copy.deepcopy(empty_data)
-        data["mean_features"]=mean_features
-        reset_clock = 0
-        do_reset  = True
-        
-    if do_reset:
-        cv_interface.put_text("Resnet background inference")
-        reset_clock += 1
-        if reset_clock > 20:
-            do_reset = False
-    
-    #inference actionfont
-    if key == ord('i') and len(data["shot_list"])>0:
-        do_inference = True
-        probabilities = None
-    
-    #perform infernece
-    if do_inference and clock_M>clock_init and not do_reset:
-        frame= cv_interface.get_image()
-        img = image_preprocess(frame).to(device)
-       
-        classe_prediction,probabilities=predict_class_moving_avg(img,data,model_name,probabilities)
-        
-        print('probabilities after exp moving average:', probabilities)
-        cv_interface.put_text(f'Object is from class :{classe_prediction}')
-        #f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
-        cv_interface.draw_indicator(probabilities,data["shot_frames"])
+            do_inference = False
+            current_data.reset()
+            cv_interface.reset_snapshot()
+            reset_clock = 0
+            do_reset = True
 
-    #interface
-    cv_interface.put_text(f"fps:{fps}",bottom_pos_x=0.05,bottom_pos_y=0.1)
-    cv_interface.put_text(f"clock:{clock}",bottom_pos_x=0.8,bottom_pos_y=0.1)
-    cv_interface.show()
-    
-    clock += 1
-    # reset clock
-    #if clock == 100: clock = 0
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-cv_interface.close()
+        if do_reset:
+            cv_interface.put_text("Resnet background inference")
+            reset_clock += 1
+            if reset_clock > 20:
+                do_reset = False
+
+        # inference action
+        if key == ord("i") and current_data.is_data_recorded():
+            print("doing inference")
+            do_inference = True
+            probabilities = None
+
+        # perform inference
+        if do_inference and clock_m > clock_init and not do_reset:
+            frame = cv_interface.get_image()
+            frame=preprocess(frame)#TODO : update this
+            features=backbone(frame)
+            classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
+                features, probabilities,
+                current_data.get_shot_list(),
+                current_data.get_mean_features()
+            )
+
+            print("probabilities after exp moving average:", probabilities)
+            cv_interface.put_text(f"Object is from class :{classe_prediction}")
+            # f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
+            cv_interface.draw_indicator(probabilities)
+
+        # interface
+        cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
+        cv_interface.put_text(f"clock:{clock}", bottom_pos_x=0.8, bottom_pos_y=0.1)
+        cv_interface.show()
+
+        clock += 1
+
+        if key == ord("q"):
+            break
+    cv_interface.close()
+
+launch_demo()

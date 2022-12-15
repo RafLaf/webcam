@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import random
 
 def linear(indim, outdim):
     return nn.Linear(indim, outdim)
@@ -34,6 +35,7 @@ class ResNet12(nn.Module):
     def __init__(self, feature_maps, input_shape, num_classes, few_shot, rotations):
         super(ResNet12, self).__init__()
         layers = []
+        self.input_shape=input_shape
         layers.append(BasicBlockRN12(input_shape[0], feature_maps))
         layers.append(BasicBlockRN12(feature_maps, int(2.5 * feature_maps)))
         layers.append(BasicBlockRN12(int(2.5 * feature_maps), 5 * feature_maps))
@@ -63,7 +65,7 @@ class ResNet12(nn.Module):
             if mixup_layer == i + 1:
                 out = lam * out + (1 - lam) * out[index_mixup]
             out = self.mp(F.leaky_relu(out, negative_slope = 0.1))
-        out = F.avg_pool2d(out, out.shape[2])
+        out = F.avg_pool2d(out, (self.input_shape[1]//16,self.input_shape[2]//16))#out.shape[2])
         features = out.view(out.size(0), -1)
         out = self.linear(features)
         if self.rotations:
