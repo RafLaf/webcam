@@ -25,7 +25,7 @@ class backbone_tensil_wrapper:
         c,h,w=img.shape
 
         
-        img=np.transpose(img.reshape((c, h, w)), axes=[1, 2, 0])
+        #img=np.transpose(img.reshape((c, h, w)), axes=[1, 2, 0])
         img=np.pad(img, [(0, 0), (0, 0), (0, self.tcu.arch.array_size - 3)], 'constant', constant_values=0)
         img=img.reshape((-1, self.tcu.arch.array_size))
 
