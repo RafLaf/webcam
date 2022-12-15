@@ -68,20 +68,27 @@ RES_OUTPUT = (1920, 1080)  # resolution = (1280,720)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 # model constant
-BACKBONE_SPECS = {
-    "model_name": "resnet12",
-    "path": "weight/tieredlong1.pt1",
-    "device":"cuda:0",
-    "type":"pytorch_batch",
-    "kwargs": {
-        "feature_maps": 64,
-        "input_shape": [3, 84, 84],
-        "num_classes": 351,  # 64
-        "few_shot": True,
-        "rotations": False,
-    },
-}
+# BACKBONE_SPECS = {
+#     "model_name": "resnet12",
+#     "path": "weight/tieredlong1.pt1",
+#     "device":"cuda:0",
+#     "type":"pytorch_batch",
+#     "kwargs": {
+#         "feature_maps": 64,
+#         "input_shape": [3, 84, 84],
+#         "num_classes": 351,  # 64
+#         "few_shot": True,
+#         "rotations": False,
+#     },
+# }
 
+
+BACKBONE_SPECS = {
+    "type":"tensil_model"
+    "path_bit":"",
+    "path_tmodel":""
+
+}
 
 # model parameters
 CLASSIFIER_SPECS = {"model_name": "knn", "kwargs": {"number_neighboors": 5}}

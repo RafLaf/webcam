@@ -31,5 +31,9 @@ def get_model(model_specs):
         path_weight=model_specs["path"]
         kwargs=model_specs["kwargs"]
         return TorchBatchModelWrapper(device,model_name,path_weight,kwargs)
+    elif model_specs["type"]=="tensil_model":
+        from torch_evaluation.backbone_tensil import backbone_tensil_wrapper
+        
+        return backbone_tensil_wrapper(model_specs["path_bit"],model_specs["path_tmodel"])
     else:
         raise UserWarning("model type="+model_specs["type"]+"is not defined")
