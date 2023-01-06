@@ -1,9 +1,11 @@
-from args import args
-from memory_profiler import profile
+import numpy as np
 
+
+#from memory_profiler import profile
+
+from args import args
 from few_shot_model.few_shot_eval import get_features_numpy
 from few_shot_model.dataset_numpy import get_dataset_numpy
-import numpy as np
 from torch_evaluation.backbone_loader import get_model
 from few_shot_model.few_shot_eval import define_runs#,get_features_few_shot_ds,
 from few_shot_model.few_shot_model import FewShotModel
@@ -26,7 +28,9 @@ def launch_program(BACKBONE_SPECS):
     # else:
     #     train_loader, val_loader, test_loader = loaders
         
-    data=get_dataset_numpy("data/cifar-10-batches-py/test_batch")
+    #data=get_dataset_numpy("data/cifar-10-batches-py/test_batch")
+    data=get_dataset_numpy(args.dataset_path)
+    
     #features=get_features_few_shot_ds(backbone,test_loader,n_aug=args.sample_aug)
     data=(data/255-np.array([0.485, 0.456, 0.406],dtype=data.dtype))/ np.array([0.229, 0.224, 0.225],dtype=data.dtype)
     features=get_features_numpy(backbone,data)
@@ -55,12 +59,8 @@ def launch_program(BACKBONE_SPECS):
     #mean features : 9mb
 
     bs=15
-
-
-
-
-
-    CLASSIFIER_SPECS = {"model_name": "ncm",}
+    
+    CLASSIFIER_SPECS = args.classifier_specs
     fs_model=FewShotModel(CLASSIFIER_SPECS)
     perf=[]
     for i in range(args.n_runs//bs):
@@ -79,32 +79,34 @@ def launch_program(BACKBONE_SPECS):
     
 
 
-BACKBONE_SPECS={
-    "type":"pytorch_batch",
-    "device":"cuda:0",
-    "model_name": "resnet12",  
-    "kwargs": {
-        "input_shape": [3, 32, 32],
-        "num_classes": 64,  # 351,
-        "few_shot": True,
-        "rotations": False,
-    },
+# BACKBONE_SPECS={
+#     "type":"pytorch_batch",
+#     "device":"cuda:0",
+#     "model_name": "resnet12",  
+#     "kwargs": {
+#         "input_shape": [3, 32, 32],
+#         "num_classes": 64,  # 351,
+#         "few_shot": True,
+#         "rotations": False,
+#     },
 
-}
+# }
+
+BACKBONE_SPECS = args.backbone_specs
+
 # tieredlong1.pt1",
-if args.backbone_type=="cifar_small":
-    BACKBONE_SPECS["path"]="weight/smallcifar1.pt1"
-    BACKBONE_SPECS["kwargs"]["feature_maps"]=45
+# if args.backbone_type=="cifar_small":
+#     BACKBONE_SPECS["path"]="weight/smallcifar1.pt1"
+#     BACKBONE_SPECS["kwargs"]["feature_maps"]=45
 
-elif args.backbone_type=="cifar":
-    BACKBONE_SPECS["path"]="weight/cifar1.pt1"
-    
-    BACKBONE_SPECS["kwargs"]["feature_maps"]=64
+# elif args.backbone_type=="cifar":
+#     BACKBONE_SPECS["path"]="weight/cifar1.pt1"
+#     BACKBONE_SPECS["kwargs"]["feature_maps"]=64
 
-elif args.backbone_type=="cifar_tiny":
-    BACKBONE_SPECS["path"]="weight/tinycifar1.pt1"
-    BACKBONE_SPECS["kwargs"]["feature_maps"]=32
-    print(BACKBONE_SPECS)
+# elif args.backbone_type=="cifar_tiny":
+#     BACKBONE_SPECS["path"]="weight/tinycifar1.pt1"
+#     BACKBONE_SPECS["kwargs"]["feature_maps"]=32
+#     print(BACKBONE_SPECS)
 
 
 if __name__=="__main__":

@@ -78,7 +78,6 @@ def get_features_few_shot_ds_pytorch(model, loader, n_aug = 1):
             features_total += np.concatenate(all_features, dim = 0).reshape(num_classes, -1, all_features[0].shape[1])
     return features_total / n_aug
 
-import torch
 
 def get_features_numpy(model, data,batch_size=5):
     """
