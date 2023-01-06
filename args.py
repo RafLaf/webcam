@@ -140,8 +140,8 @@ if args.framework_backbone=="pytorch_batch":
     if args.dataset_device == "":
         args.dataset_device = args.device
 
-    if args.dataset_path[-1] != '/':
-        args.dataset_path += "/"
+    #if args.dataset_path[-1] != '/':
+    #    args.dataset_path += "/"
 
     if args.device[:5] == "cuda:" and len(args.device) > 5:
         args.devices = []
@@ -164,19 +164,19 @@ if args.framework_backbone=="pytorch_batch":
      },
     }
     if args.backbone_type=="cifar_small":
-        BACKBONE_SPECS["path"]="weight/smallcifar1.pt1"
-        BACKBONE_SPECS["kwargs"]["feature_maps"]=45
+        args.backbone_specs["path"]="weight/smallcifar1.pt1"
+        args.backbone_specs["kwargs"]["feature_maps"]=45
 
     elif args.backbone_type=="cifar":
-        BACKBONE_SPECS["path"]="weight/cifar1.pt1"
-        BACKBONE_SPECS["kwargs"]["feature_maps"]=64
+        args.backbone_specs["path"]="weight/cifar1.pt1"
+        args.backbone_specs["kwargs"]["feature_maps"]=64
 
     elif args.backbone_type=="cifar_tiny":
-        BACKBONE_SPECS["path"]="weight/tinycifar1.pt1"
-        BACKBONE_SPECS["kwargs"]["feature_maps"]=32
+        args.backbone_specs["path"]="weight/tinycifar1.pt1"
+        args.backbone_specs["kwargs"]["feature_maps"]=32
     else:
         raise UserWarning("parameters for this backbone type is not completed in args.py")
-    print(BACKBONE_SPECS)
+    print(args.backbone_specs)
     
 
 elif args.framework_backbone=="tensil_model":
