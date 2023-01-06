@@ -7,36 +7,12 @@ EASY - Ensemble Augmented-Shot Y-shaped Learning: State-Of-The-Art Few-Shot Clas
 
 import argparse
 import os
+import sys
 
-#TODO : change description
-parser = argparse.ArgumentParser(description="""Optimized code for training usual datasets/model
-Examples of use (to reach peak accuracy, not for fastest prototyping):
-To train MNIST with 99.64% accuracy (5 minutes):
-python main.py --epochs 30 --milestones 10 --dataset MNIST --feature-maps 8
-To train MNIST with 10% database and 99.31% accuracy (10 minutes):
-python main.py --epochs 300 --dataset MNIST --dataset-size 6000 --model wideresnet --feature-maps 4 --skip-epochs 300
-To train Fashion-MNIST with 96% accuracy (2 hours):
-python main.py --dataset fashion --mixup
-To train CIFAR10 with 95.90% accuracy (1 hour):
-python main.py --mixup
-To train CIFAR100 with 78.55% accuracy (93.54% top-5) (1hour):
-python main.py --mixup --dataset cifar100
-To train CIFAR100 with 80.12% accuracy (94.70% top-5) (4h):
-python main.py --mixup --model wideresnet --feature-maps 16 --dataset CIFAR100
-To train Omniglot (few-shot) with 99.85% accuracy (99.39% in 1-shot) (10minutes):
-python main.py --dataset omniglotfs --dataset-device cpu --feature-maps 16 --milestones 10 --epochs 30 --preprocessing "PEME"
-To train CUBFS (few-shot) with 85.24% accuracy (68.14% in 1-shot) (2h):
-python main.py --dataset cubfs --mixup --rotations --preprocessing "PEME"
-To train CIFARFS (few-shot) with 84.87% accuracy (70.43% in 1-shot) (1h):
-python main.py --dataset cifarfs --mixup --rotations --skip-epochs 300 --preprocessing "PEME"
-To train CIFARFS (few-shot) with 86.83% accuracy (70.27% in 1-shot) (3h):
-python main.py --dataset cifarfs --mixup --model wideresnet --feature-maps 16 --skip-epochs 300 --rotations --preprocessing "PEME"
-To train MiniImageNet (few-shot) with 80.43% accuracy (64.11% in 1-shot) (2h):
-python main.py --dataset miniimagenet --model resnet12 --gamma 0.2 --milestones 30 --epochs 120 --batch-size 128 --preprocessing 'EME'
-To train MiniImageNet (few-shot) with rotations and 81.63% accuracy (65.64% in 1-shot) (2h):
-python main.py --dataset miniimagenet --model resnet12 --milestones 60 --epochs 240 --cosine --gamma 1 --rotations --skip-epochs 200
-To train MiniImageNet (few-shot) with 83.18% accuracy (66.78% in 1-shot) (40h):
-python main.py --device cuda:012 --dataset miniimagenet --model S2M2R --lr -0.001 --milestones 0 --epochs 600 --feature-maps 16 --rotations --manifold-mixup 400 --skip-epochs 600 --preprocessing "PEME"
+
+
+parser = argparse.ArgumentParser(description="""
+    Launch the demo/ the evaluation of the dataset. 
 """, formatter_class=argparse.RawTextHelpFormatter)
 
 ### hyperparameters
@@ -61,7 +37,7 @@ python main.py --device cuda:012 --dataset miniimagenet --model S2M2R --lr -0.00
 #parser.add_argument("--ema", type=float, default=0, help="use exponential moving average with specified decay (default, 0 which means do not use)")
 
 ### pytorch options
-parser.add_argument("--device", type=str, default="cuda:0", help="device(s) to use, for multiple GPUs try cuda:ijk, will not work with 10+ GPUs")
+
 #parser.add_argument("--deterministic", action="store_true", help="use desterministic randomness for reproducibility")
 
 ### run options
@@ -92,7 +68,6 @@ parser.add_argument("--device", type=str, default="cuda:0", help="device(s) to u
 
 
 
-
 def parse_dataset_feature(parser):
 
     parser.add_argument("--dataset-path", type=str, default=os.getcwd()+"/data/", help="dataset path")
@@ -106,22 +81,48 @@ def parse_dataset_feature(parser):
     parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
     parser.add_argument("--episodic", action="store_true", help="use episodic training")
 
-def parse_few_shot_params(parser):
+def parse_few_shot_eval_params(parser):
     ### few-shot parameters
     parser.add_argument("--batch-fs", type=int, default=20, help="batch size for few shot runs")
-
     parser.add_argument("--n-shots", type=str, default="[1,5]", help="how many shots per few-shot run, can be int or list of ints. In case of episodic training, use first item of list as number of shots.")
     parser.add_argument("--n-runs", type=int, default=1000, help="number of few-shot runs")
     parser.add_argument("--n-queries", type=int, default=15, help="number of few-shot queries")
 
 
-def parse_backbone_params(params):
+def parse_backbone_params(parser):
+
     parser.add_argument("--backbone_type",default="cifar_small",help="model to load")
+    
+    
+    #only usefull for the pynk
+    parser.add_argument("--path_bit",default="/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit",type=str)
+    parser.add_argument("--path_tmodel",default="/home/xilinx/resnet12_32_32_small_onnx_pynqz1.tmodel",type=str)
+    
+    #only usefull for pytorch
+def parse_fs_model_params(parser):
+    parser.add_argument("--classifier_type",default="ncm",type=str)
+    parser.add_argument("--number_neiboors",default=5,type=int)
+    
+def parse_mode_args(parser):
+    #parser.add_argument("--mode",type=str,default="", help="in what mode should it run (demo or perf)")
+    parser.add_argument("--framework_backbone",type=str,default="tensil_model ", help="wich module should we use")
+    pass
 
-
+#generl paramters
+parse_mode_args(parser)
+    
+#usefull only for performance
 parse_dataset_feature(parser)
-parse_few_shot_params(parser)
+parse_few_shot_eval_params(parser)
+
+#always usefull
 parse_backbone_params(parser)
+parse_fs_model_params(parser)
+
+
+parser.add_argument("--device", type=str, default="cuda:0", help="device(s) to use, for multiple GPUs try cuda:ijk, will not work with 10+ GPUs")
+
+
 try :
     get_ipython()
     args = parser.parse_args(args=[])
@@ -131,19 +132,60 @@ except :
 print("input args : ",args)
 
 ### process arguments
-if args.dataset_device == "":
-    args.dataset_device = args.device
-    
-if args.dataset_path[-1] != '/':
-    args.dataset_path += "/"
 
-if args.device[:5] == "cuda:" and len(args.device) > 5:
-    args.devices = []
-    for i in range(len(args.device) - 5):
-        args.devices.append(int(args.device[i+5]))
-    args.device = args.device[:6]
-else:
-    args.devices = [args.device]
+
+
+if args.framework_backbone=="pytorch_batch":
+    
+    if args.dataset_device == "":
+        args.dataset_device = args.device
+
+    if args.dataset_path[-1] != '/':
+        args.dataset_path += "/"
+
+    if args.device[:5] == "cuda:" and len(args.device) > 5:
+        args.devices = []
+        for i in range(len(args.device) - 5):
+            args.devices.append(int(args.device[i+5]))
+        args.device = args.device[:6]
+    else:
+        args.devices = [args.device]
+        
+    #backbone arguments :
+    args.backbone_specs={
+        "type":args.framework_backbone,
+        "device":args.device,
+        "model_name":"resnet12",
+        "kwargs": {
+         "input_shape": [3, 32, 32],
+         "num_classes": 64,  # 351,
+         "few_shot": True,
+         "rotations": False,
+     },
+    }
+    if args.backbone_type=="cifar_small":
+        BACKBONE_SPECS["path"]="weight/smallcifar1.pt1"
+        BACKBONE_SPECS["kwargs"]["feature_maps"]=45
+
+    elif args.backbone_type=="cifar":
+        BACKBONE_SPECS["path"]="weight/cifar1.pt1"
+        BACKBONE_SPECS["kwargs"]["feature_maps"]=64
+
+    elif args.backbone_type=="cifar_tiny":
+        BACKBONE_SPECS["path"]="weight/tinycifar1.pt1"
+        BACKBONE_SPECS["kwargs"]["feature_maps"]=32
+    else:
+        raise UserWarning("parameters for this backbone type is not completed in args.py")
+    print(BACKBONE_SPECS)
+    
+
+elif args.framework_backbone=="tensil_model":
+    #backbone arguments :
+    args.backbone_specs={
+        "type":args.framework_backbone,
+        "path_bit":args.path_bit,
+        "path_tmodel":args.path_tmodel
+    }
 
 
 try:
@@ -151,7 +193,27 @@ try:
     args.n_shots = [n_shots]
 except:
     args.n_shots = eval(args.n_shots)
+    
+if args.device=="pynk":
+    print("adding path to local variable")
+    sys.path.append('/home/xilinx')
+    sys.path.append('/home/xilinx/jupyter_notebooks/l20leche')
+    sys.path.append('/usr/local/lib/python3.8/dist-packages')
+    sys.path.append('/root/.ipython')
+    sys.path.append('/usr/local/share/pynq-venv/lib/python3.8/site-packages/IPython/extensions')
+    sys.path.append('/usr/lib/python3/dist-packages')
+    sys.path.append('/usr/local/share/pynq-venv/lib/python3.8/site-packages')
+    sys.path.append('/usr/lib/python3.8/dist-packages')
 
+
+
+#classifier arguments
+args.classifier_specs={"model_name":args.classifier_type}
+
+if args.classifier_type=="knn":
+    args.classifier_specs["kwargs"]={"number_neighboors":args.number_neiboors}
+    
+    
 # if args.seed == -1:
 #     args.seed = random.randint(0, 1000000000)
 

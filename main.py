@@ -7,15 +7,19 @@ DEMO of few shot learning:
     q : quit the program
 """
 
+
+#'/usr/local/share/pynq-venv/lib/python3.8/site-packages', '', '', '/usr/lib/python3.8/dist-packages', '', '', '/home/xilinx'
 import time
 import cv2
 import numpy as np
-import cProfile
+
+#import cProfile
 
 from demo.graphical_interface import OpencvInterface
 from few_shot_model.few_shot_model import FewShotModel
 from torch_evaluation.backbone_loader import get_model
 from few_shot_model.data_few_shot import DataFewShot
+from args import args
 
 print("import done")
 
@@ -83,15 +87,18 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 # }
 
 
-BACKBONE_SPECS = {
-    "type":"tensil_model"
-    "path_bit":"",
-    "path_tmodel":""
+BACKBONE_SPECS = args.backbone_specs
 
-}
+#{
+#    "type":args.backbone_type,
+#    "path_bit":args.path_bit,
+#    "path_tmodel":args.path_tmodel
+
+#}
 
 # model parameters
-CLASSIFIER_SPECS = {"model_name": "knn", "kwargs": {"number_neighboors": 5}}
+CLASSIFIER_SPECS = args.classifier_specs#{"model_name": "knn", "kwargs": {"number_neighboors": 5}}
+print(CLASSIFIER_SPECS)
 #DEFAULT_TRANSFORM = get_camera_preprocess()
 
 
@@ -165,7 +172,7 @@ def launch_demo():
             frame = cv_interface.get_image()
 
             if key in possible_input:
-                print(f"saving snapshot of class {classe}")
+                print("saving snapshot of class", classe)
                 cv_interface.add_snapshot(classe)
 
             # add the representation to the class
@@ -217,14 +224,14 @@ def launch_demo():
             )
 
             print("probabilities after exp moving average:", probabilities)
-            cv_interface.put_text(f"Object is from class :{classe_prediction}")
+            cv_interface.put_text(f"Object is from class :",classe_prediction)
             # f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
             cv_interface.draw_indicator(probabilities)
 
         # interface
         cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
         cv_interface.put_text(f"clock:{clock}", bottom_pos_x=0.8, bottom_pos_y=0.1)
-        cv_interface.show()
+        #cv_interface.show()
 
         clock += 1
 
