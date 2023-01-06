@@ -12,14 +12,17 @@ class backbone_tensil_wrapper:
             - path_bit : path qui mêne au bitstream, e.g : home/xilinx/bitstream.bit
             - path_tmodel : path qui mène aui tmodel, e.g : home/xilinx/model.tmodel
         """
+        print(f"path to bitstream : {path_bit}")
         overlay=Overlay(path_bit)
+        print(f"dma 0 : {overlay.axi_dma_0}")
         self.tcu = Driver(pynqz1, overlay.axi_dma_0)
+        print("tcu succefullt loaded")
         self.tcu.load_model(path_tmodel)
 
     def __call__(self,img):
         assert img.shape[0]==1
         assert len(img.shape)==4
-        assert img.shape[1]==3
+        assert img.shape[-1]==3
 
         img=img[0]
         c,h,w=img.shape
