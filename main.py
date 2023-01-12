@@ -12,12 +12,13 @@ DEMO of few shot learning:
 import time
 import cv2
 import numpy as np
+import os
 
 #import cProfile
 
-from demo.graphical_interface import OpencvInterface
+from graphical_manipulation.graphical_interface import OpencvInterface
 from few_shot_model.few_shot_model import FewShotModel
-from torch_evaluation.backbone_loader import get_model
+from backbone_loader.backbone_loader import get_model
 from few_shot_model.data_few_shot import DataFewShot
 from args import args
 
@@ -48,16 +49,31 @@ print("import done")
 
 #     return all_transforms
 
+def compute_and_add_feature_saved_image(backbone,cv_interface,current_data,path_sample):
+    classe_idx=0
+    for class_name in os.listdir(path_sample):
+        path_class=os.path.join(path_sample,class_name)
 
-def preprocess(img,dtype=np.float32,shape_input=(84,84)):
+        for name_image in os.listdir(path_class):
+            
+            path_image=os.path.join(path_class,name_image)
+            image=cv2.imread(path_image)
+            cv_interface.add_snapshot(classe_idx,frame_to_add=image)
+            image=preprocess(image)
+            feature=backbone(image)
+            current_data.add_repr(classe_idx,feature)
+        classe_idx+=1
+
+            
+
+
+def preprocess(img,dtype=np.float32,shape_input=(32,32)):
     """
     Args: 
         img(np.ndarray(h,w,c)) : 
     """
     assert len(img.shape)==3
     assert img.shape[-1]==3
-    print(img.shape)
-
     img=img.astype(dtype)
     img=cv2.resize(img,dsize=shape_input,interpolation=cv2.INTER_CUBIC)
     img=img[None,:]
@@ -130,16 +146,36 @@ def launch_demo():
     current_data = DataFewShot(class_num)
 
     # CV2 related constant
-    cap = cv2.VideoCapture(0)
+    if not(args.camera_specification is None):
+            
+        cap = cv2.VideoCapture(args.camera_specification)
+    
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
 
-    while True:
-        cv_interface.read_frame()
+    if args.save_video:
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out = cv2.VideoWriter('output.avi', fourcc, 30.0, RES_OUTPUT)
 
+    number_image=1
+    while True:
+
+        
         new_frame_time = time.time()
         # print('clock: ', clock)
         fps = int(1 / (new_frame_time - prev_frame_time))
+        if not(args.max_number_of_frame is None) and number_image>args.max_number_of_frame:
+            break
+        try:
+            cv_interface.read_frame()
+            print(f"reading image n°{number_image}")
+            print(f"fps : {fps}")
+            number_image=number_image+1
+        except:
+            print("failed to get next image")
+            break
+
         prev_frame_time = new_frame_time
+        key = cv_interface.get_key()
 
         if clock_m <= clock_init:
             frame = cv_interface.get_image()
@@ -149,12 +185,15 @@ def launch_demo():
             current_data.add_mean_repr(features)
             if clock_m == clock_init:
                 current_data.aggregate_mean_rep()
+                if args.use_saved_sample:
+                    path_sample=args.path_shots_video
+                    compute_and_add_feature_saved_image(backbone,cv_interface,current_data,path_sample)
+                    key=ord("i")#simulate press of the key for inference
 
             cv_interface.put_text("Initialization")
             clock_m += 1
 
-        key = cv_interface.get_key()
-
+        
         #print(current_data.shot_list)
         # shot acquisition
         if (
@@ -168,19 +207,18 @@ def launch_demo():
                 classe = possible_input.index(key)
                 last_detected = clock * 1  # time.time()
 
-            print("class :", classe)
+            
             frame = cv_interface.get_image()
 
             if key in possible_input:
-                print("saving snapshot of class", classe)
+                #print("saving snapshot of class", classe)
                 cv_interface.add_snapshot(classe)
 
             # add the representation to the class
             frame=preprocess(frame)#TODO : update this
             features = backbone(frame)
 
-            print("features shape:", features.shape)
-
+            
             current_data.add_repr(classe, features)
 
             if abs(clock - last_detected) < 10:
@@ -223,20 +261,36 @@ def launch_demo():
                 current_data.get_mean_features()
             )
 
-            print("probabilities after exp moving average:", probabilities)
+            #print("probabilities after exp moving average:", probabilities)
             cv_interface.put_text(f"Object is from class :",classe_prediction)
             # f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
             cv_interface.draw_indicator(probabilities)
+            
+            if args.no_display:
+                print("probabilities after exp moving average:", probabilities)#,end="\r")
 
         # interface
         cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
         cv_interface.put_text(f"clock:{clock}", bottom_pos_x=0.8, bottom_pos_y=0.1)
-        #cv_interface.show()
-
+        if not(args.no_display):
+            cv_interface.show()
+       
+        if args.save_video:
+            frame_to_save=cv_interface.frame
+            #frame_to_save = cv2.flip(frame_to_save, 0)
+            
+            out.write(frame_to_save)
+        
+        
         clock += 1
 
         if key == ord("q"):
             break
+
+    
     cv_interface.close()
+    if args.save_video:
+        out.release()
+
 
 launch_demo()

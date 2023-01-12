@@ -6,7 +6,7 @@ import numpy as np
 from args import args
 from few_shot_model.few_shot_eval import get_features_numpy
 from few_shot_model.dataset_numpy import get_dataset_numpy
-from torch_evaluation.backbone_loader import get_model
+from backbone_loader.backbone_loader import get_model
 from few_shot_model.few_shot_eval import define_runs#,get_features_few_shot_ds,
 from few_shot_model.few_shot_model import FewShotModel
 
@@ -16,9 +16,10 @@ def launch_program(BACKBONE_SPECS):
   
     #from lim_ram import set_limit
     backbone = get_model(BACKBONE_SPECS)
+    
 
     #set_limit(6000*1024*1024)
-     #import torch_evaluation.datasets as datasets
+    # import backbone_loader.datasets as datasets
     # loaders, input_shape, num_classes, few_shot, top_5 = datasets.get_dataset(args.dataset)
 
 
@@ -31,18 +32,16 @@ def launch_program(BACKBONE_SPECS):
     #data=get_dataset_numpy("data/cifar-10-batches-py/test_batch")
     data=get_dataset_numpy(args.dataset_path)
     
-    #features=get_features_few_shot_ds(backbone,test_loader,n_aug=args.sample_aug)
     data=(data/255-np.array([0.485, 0.456, 0.406],dtype=data.dtype))/ np.array([0.229, 0.224, 0.225],dtype=data.dtype)
     
-    backbone = get_model(BACKBONE_SPECS)
-    features=get_features_numpy(backbone,data)
+    features=get_features_numpy(backbone,data,args.batch_size)
  
     #features=torch.load("weight/cifarfeatures1.    pt11",map_location="cpu").cpu().numpy()[80:]
 
 
     sample_per_class=features.shape[1]
-    nshots=5
-    num_classes=10
+    nshots=args.n_shots
+    num_classes=args.num_classes_dataset
     #sample_per_class=600
     classe,index=define_runs(args.n_runs,args.n_ways, nshots, args.n_queries, num_classes, [sample_per_class]*num_classes) 
     #cifar10 : 122mb
@@ -60,7 +59,7 @@ def launch_program(BACKBONE_SPECS):
     mean_feature=np.mean(extracted_shots,axis=(1,2))
     #mean features : 9mb
 
-    bs=15
+    bs=args.batch_size_fs
     
     CLASSIFIER_SPECS = args.classifier_specs
     fs_model=FewShotModel(CLASSIFIER_SPECS)
@@ -68,8 +67,6 @@ def launch_program(BACKBONE_SPECS):
     for i in range(args.n_runs//bs):
         #view, no data
         batch_q=extracted_queries[i*bs:(i+1)*bs]
-        
-
         batch_shot=extracted_shots[i*bs:(i+1)*bs]
         batch_mean_feature=mean_feature[i*bs:(i+1)*bs]
 

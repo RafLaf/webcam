@@ -12,7 +12,7 @@ from torchvision import transforms
 import numpy as np
 
 from few_shot_model.few_shot_model import FewShotModel
-from torch_evaluation.backbone_loader import get_model
+from backbone_loader.backbone_loader import get_model
 
 
 

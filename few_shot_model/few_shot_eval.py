@@ -10,7 +10,7 @@ import tqdm
 from few_shot_model.numpy_utils import *
 
 n_runs = args.n_runs
-batch_few_shot_runs = args.batch_fs
+batch_few_shot_runs = args.batch_size
 assert(n_runs % batch_few_shot_runs == 0)
 
 def define_runs(n_runs,n_ways, n_shots, n_queries, num_classes, elements_per_class):
@@ -79,7 +79,7 @@ def get_features_few_shot_ds_pytorch(model, loader, n_aug = 1):
     return features_total / n_aug
 
 
-def get_features_numpy(model, data,batch_size=5):
+def get_features_numpy(model, data,batch_size):
     """
     get the features given by a model
     adapted from the Easy repo to work with numpy array

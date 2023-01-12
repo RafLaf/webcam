@@ -164,12 +164,14 @@ class OpencvInterface:
         """
         draw_indic(self.frame, probabilities, self.snapshot, self.font, self.scale)
 
-    def add_snapshot(self, classe):
+    def add_snapshot(self, classe,frame_to_add=None):
         """
         add a snapshot to memmory
         """
+        if frame_to_add is None:
+            frame_to_add=self.frame
         image_label = cv2.resize(
-            self.frame,
+            frame_to_add,
             (int(self.height // 10), int(self.width // 10)),
             interpolation=cv2.INTER_AREA,
         )

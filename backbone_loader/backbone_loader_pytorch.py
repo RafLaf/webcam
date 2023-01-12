@@ -2,7 +2,7 @@ print("importing torch")
 import torch
 import numpy as np
 
-from torch_evaluation.backbone.resnet12 import ResNet12
+from backbone_loader.backbone.resnet12 import ResNet12
 
 print("torch imported")
 

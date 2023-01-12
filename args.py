@@ -70,48 +70,69 @@ parser = argparse.ArgumentParser(description="""
 
 def parse_dataset_feature(parser):
 
-    parser.add_argument("--dataset-path", type=str, default=os.getcwd()+"/data/", help="dataset path")
-    parser.add_argument("--dataset-device", type=str, default="cpu", help="use a different device for storing the datasets (use 'cpu' if you are lacking VRAM)")
+    parser.add_argument("--dataset-path", type=str, default="/data/", help="dataset path")
+    parser.add_argument("--batch-size", type=int, default=1, help="batch size")
+    parser.add_argument("--num-classes-dataset", type=int, default=10, help="number of class in dataset")
 
-    parser.add_argument("--batch-size", type=int, default=64, help="batch size")
-
-    parser.add_argument("--n-ways", type=int, default=5, help="number of few-shot ways")
-    parser.add_argument("--dataset", type=str, default="cifarfs", help="dataset to use")
-    parser.add_argument("--dataset-size", type=int, default=-1, help="number of training samples (using a subset for classical classification, and reducing size of epochs for few-shot)")
-    parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
-    parser.add_argument("--episodic", action="store_true", help="use episodic training")
-
+    
+    # to be incoreporate (pytorch dataset): 
+    #parser.add_argument("--dataset", type=str, default="cifarfs", help="dataset to use")
+    #parser.add_argument("--episodic", action="store_true", help="use episodic training")#legacy code, pytorch training dataset are constructed but not used
+    #parser.add_argument("--dataset-size", type=int, default=-1, help="number of training samples (using a subset for classical classification, and reducing size of epochs for few-shot)")
+    
 def parse_few_shot_eval_params(parser):
     ### few-shot parameters
-    parser.add_argument("--batch-fs", type=int, default=20, help="batch size for few shot runs")
-    parser.add_argument("--n-shots", type=str, default="[1,5]", help="how many shots per few-shot run, can be int or list of ints. In case of episodic training, use first item of list as number of shots.")
+
+   
+    parser.add_argument("--n-ways", type=int, default=5, help="number of few-shot ways")
+    parser.add_argument("--n-shots", type=int, default=5, help="how many shots per few-shot run, can be int or list of ints. In case of episodic training, use first item of list as number of shots.")
     parser.add_argument("--n-runs", type=int, default=1000, help="number of few-shot runs")
     parser.add_argument("--n-queries", type=int, default=15, help="number of few-shot queries")
-
+    parser.add_argument("--batch-size-fs",type=int,default=20)
+    #to be incorporate (to evaluation and demonstration):
+    #parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
+    
 
 def parse_backbone_params(parser):
-
+   
+   
+    #usefull only for pytorch
     parser.add_argument("--backbone_type",default="cifar_small",help="model to load")
-    
     
     #only usefull for the pynk
     parser.add_argument("--path_bit",default="/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit",type=str)
     parser.add_argument("--path_tmodel",default="/home/xilinx/resnet12_32_32_small_onnx_pynqz1.tmodel",type=str)
     
-    #only usefull for pytorch
+    #only usefull for onnx
+
+    parser.add_argument("--path-onnx",default="weight/resnet12_32_32_64.onnx",type=str)
+
+
 def parse_fs_model_params(parser):
     parser.add_argument("--classifier_type",default="ncm",type=str)
     parser.add_argument("--number_neiboors",default=5,type=int)
     
 def parse_mode_args(parser):
     #parser.add_argument("--mode",type=str,default="", help="in what mode should it run (demo or perf)")
-    parser.add_argument("--framework_backbone",type=str,default="tensil_model ", help="wich module should we use")
-    pass
+    parser.add_argument("--framework_backbone",type=str,default="tensil_model", help="wich module should we use")
 
+def parse_hyperparameter_demonstration(parser):
+    parser.add_argument("--camera-specification",type=str,default="0")
+    parser.add_argument("--no-display",action="store_true")
+    parser.add_argument("--save-video",action="store_true")
+    
+    parser.add_argument("--video-format",type=str,default="DIVX")
+    parser.add_argument("--max_number_of_frame",type=int)
+    parser.add_argument("--use-saved-sample",action="store_true")
+    parser.add_argument("--path_shots_video",type=str,default="data/catvsdog")
+    
 #generl paramters
 parse_mode_args(parser)
     
-#usefull only for performance
+#usefull only for demonstration
+parse_hyperparameter_demonstration(parser)
+
+#usefull only for performance evaluation
 parse_dataset_feature(parser)
 parse_few_shot_eval_params(parser)
 
@@ -132,13 +153,19 @@ except :
 print("input args : ",args)
 
 ### process arguments
+if args.camera_specification=="None":
+    args.camera_specification=None
+else:
+    try:
+        args.camera_specification=int(args.camera_specification)
+    except:
+        print("using a video file")
 
-
-
+args.dataset_path=os.path.join(os.getcwd(),args.dataset_path)
 if args.framework_backbone=="pytorch_batch":
     
-    if args.dataset_device == "":
-        args.dataset_device = args.device
+    # if args.dataset_device == "":
+    #     args.dataset_device = args.device
 
     #if args.dataset_path[-1] != '/':
     #    args.dataset_path += "/"
@@ -186,14 +213,14 @@ elif args.framework_backbone=="tensil_model":
         "path_bit":args.path_bit,
         "path_tmodel":args.path_tmodel
     }
+elif args.framework_backbone=="onnx":
+    args.backbone_specs={
+        "type":args.framework_backbone,
+        "path_onnx":args.path_onnx
+    }
 
 
-try:
-    n_shots = int(args.n_shots)
-    args.n_shots = [n_shots]
-except:
-    args.n_shots = eval(args.n_shots)
-    
+
 if args.device=="pynk":
     print("adding path to local variable")
     sys.path.append('/home/xilinx')
