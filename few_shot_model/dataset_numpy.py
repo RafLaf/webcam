@@ -44,19 +44,33 @@ def get_dataset_numpy(dataset_path,dtype=np.float32,number_sample_per_class=1000
         
         transformed_group=map(lambda d:d[1],group)#remove key
         type_iter=np.dtype((np.float16,size))#dim_img
-
-
+        
+        group_iterators=itertools.chain.from_iterable(transformed_group)
+        
         numpy_data=np.concatenate([
             numpy_data,
-            
             np.transpose(
-                np.fromiter(transformed_group,type_iter)
+                np.fromiter(group_iterators,float)
                 .reshape(-1,*dim_img),
                 (0,2,3,1)
             ).astype(dtype)
             [None,:]
             ])
-        #print(key," :",list(group))
+
+
+
+        print("shape : ",numpy_data.shape)
+        # numpy_data=np.concatenate([
+        #     numpy_data,
+            
+        #     np.transpose(
+        #         np.fromiter(transformed_group,type_iter)
+        #         .reshape(-1,*dim_img),
+        #         (0,2,3,1)
+        #     ).astype(dtype)
+        #     [None,:]
+        #     ])
+        # #print(key," :",list(group))
         #print(key,group)
     return numpy_data
 

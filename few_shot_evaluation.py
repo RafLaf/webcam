@@ -33,6 +33,8 @@ def launch_program(BACKBONE_SPECS):
     
     #features=get_features_few_shot_ds(backbone,test_loader,n_aug=args.sample_aug)
     data=(data/255-np.array([0.485, 0.456, 0.406],dtype=data.dtype))/ np.array([0.229, 0.224, 0.225],dtype=data.dtype)
+    
+    backbone = get_model(BACKBONE_SPECS)
     features=get_features_numpy(backbone,data)
  
     #features=torch.load("weight/cifarfeatures1.    pt11",map_location="cpu").cpu().numpy()[80:]
