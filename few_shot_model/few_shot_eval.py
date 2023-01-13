@@ -93,9 +93,9 @@ def get_features_numpy(model, data,batch_size):
     empty_output=model(np.zeros((1,height,width,channel),dtype=data.dtype))#perform empty forward to get number of filter and type
     
     total_filter=np.zeros((num_classes,num_img,empty_output.shape[-1]),empty_output.dtype)
-    for classe in tqdm.tqdm(range(num_classes)):
+    for classe in range(num_classes):
         number_full_batch=num_img//batch_size
-        for batch_number in range(number_full_batch):
+        for batch_number in tqdm.tqdm(range(number_full_batch)):
 
             data_sample=data[classe,batch_size*batch_number:batch_size*(batch_number+1)]
             output=model(data_sample)
