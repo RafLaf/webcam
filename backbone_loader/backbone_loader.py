@@ -5,8 +5,6 @@ get the backbone with the specified framework, using argument from
 -> output : numpy img
 """
 
-
-        
     
 
 def get_model(model_specs):
@@ -37,6 +35,5 @@ def get_model(model_specs):
         from backbone_loader.backbone_onnx import backbone_onnx_wrapper
         return backbone_onnx_wrapper(model_specs["path_onnx"])
 
-        
     else:
         raise UserWarning("model type="+model_specs["type"]+"is not defined")

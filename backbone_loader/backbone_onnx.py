@@ -2,7 +2,6 @@
 import numpy as np
 import onnxruntime as ort
 
-
 class backbone_onnx_wrapper:
 
     def __init__(self,model_path):
@@ -10,7 +9,6 @@ class backbone_onnx_wrapper:
         Args :
 
             model_path : path to the onnx file
-
             
         """
         print(f"path to model : {model_path}")
@@ -20,7 +18,7 @@ class backbone_onnx_wrapper:
         """
         img : batchified numpy img with channel last convention
         """
-
+        
 
         assert img.shape[0]==1
         assert len(img.shape)==4

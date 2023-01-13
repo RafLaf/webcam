@@ -13,6 +13,23 @@ This repository contains the code to perform online Few shot with a webcam on fp
     To run the code :
         python main.py + args
     ![plot](./static/demo_webcam.png)
+
+# Data installation :
+## weights of the neural network : 
+- see this repo : https://github.com/ybendou/easy
+
+## data :
+- used : test set of cifar-10 
+## video : 
+in order to setup a video
+1. download a video and put it in this repo. 
+2. put reference images inside a folder with the folowing structure :
+    -folder
+        -class1_name
+        -class2_name
+3. add the path as argument when you call the function
+
+
 # args : 
 ## specify few_shot model used
     args :

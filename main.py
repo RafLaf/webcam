@@ -13,6 +13,7 @@ import time
 import cv2
 import numpy as np
 import os
+import time
 
 #import cProfile
 
@@ -64,8 +65,6 @@ def compute_and_add_feature_saved_image(backbone,cv_interface,current_data,path_
             current_data.add_repr(classe_idx,feature)
         classe_idx+=1
 
-            
-
 
 def preprocess(img,dtype=np.float32,shape_input=(32,32)):
     """
@@ -74,17 +73,27 @@ def preprocess(img,dtype=np.float32,shape_input=(32,32)):
     """
     assert len(img.shape)==3
     assert img.shape[-1]==3
-    img=img.astype(dtype)
-    img=cv2.resize(img,dsize=shape_input,interpolation=cv2.INTER_CUBIC)
+    #img=img.astype(dtype)
+    img=cv2.resize(img,dsize=shape_input,interpolation=cv2.INTER_LINEAR)#linear is faster than cubic
+    
+    if img.dtype!=dtype:
+        img=img.astype(dtype)
     img=img[None,:]
     return (img/255-np.array([0.485, 0.456, 0.406],dtype=dtype))/ np.array([0.229, 0.224, 0.225],dtype=dtype)
+
+def print_time(previous_t,text):
+    if args.verbose:
+        print(text,time.perf_counter()-previous_t)
+
+
+
 
 # addr_cam = "rtsp://admin:brain2021@10.29.232.40"
 # cap = cv2.VideoCapture(addr_cam)
 
 # constant of the program
 SCALE = 1
-RES_OUTPUT = (1920, 1080)  # resolution = (1280,720)
+RES_OUTPUT = (1280, 720)  # resolution = (1280,720)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 # model constant
@@ -146,6 +155,7 @@ def launch_demo():
     current_data = DataFewShot(class_num)
 
     # CV2 related constant
+    
     if not(args.camera_specification is None):
             
         cap = cv2.VideoCapture(args.camera_specification)
@@ -157,8 +167,9 @@ def launch_demo():
         out = cv2.VideoWriter('output.avi', fourcc, 30.0, RES_OUTPUT)
 
     number_image=1
-    while True:
 
+    while True:
+        t=time.perf_counter()
         
         new_frame_time = time.time()
         # print('clock: ', clock)
@@ -175,7 +186,10 @@ def launch_demo():
             break
 
         prev_frame_time = new_frame_time
+        print_time(t,"time for image capture +")
+
         key = cv_interface.get_key()
+        print_time(t,"get_key time +")
 
         if clock_m <= clock_init:
             frame = cv_interface.get_image()
@@ -193,8 +207,8 @@ def launch_demo():
             cv_interface.put_text("Initialization")
             clock_m += 1
 
+       
         
-        #print(current_data.shot_list)
         # shot acquisition
         if (
             (key in possible_input or do_registration)
@@ -209,6 +223,7 @@ def launch_demo():
 
             
             frame = cv_interface.get_image()
+
 
             if key in possible_input:
                 #print("saving snapshot of class", classe)
@@ -252,35 +267,52 @@ def launch_demo():
 
         # perform inference
         if do_inference and clock_m > clock_init and not do_reset:
+            print_time(t,"begining inference at +")
+
             frame = cv_interface.get_image()
-            frame=preprocess(frame)#TODO : update this
+
+            print_time(t,"image taken at")
+            
+            frame=preprocess(frame)
+            print_time(t,"feature is preprocessed at")
             features=backbone(frame)
+            print_time(t,"feature is predicted at +")
             classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
                 features, probabilities,
                 current_data.get_shot_list(),
                 current_data.get_mean_features()
             )
+            print_time(t,"class is predicted at +")
+
 
             #print("probabilities after exp moving average:", probabilities)
             cv_interface.put_text(f"Object is from class :",classe_prediction)
             # f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}'
             cv_interface.draw_indicator(probabilities)
             
-            if args.no_display:
-                print("probabilities after exp moving average:", probabilities)#,end="\r")
+            if args.no_display and not(args.save_video):
+                
+                print("probabilities :", probabilities)#
 
         # interface
+        print_time(t,"before adding text, +")
+
+
         cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
         cv_interface.put_text(f"clock:{clock}", bottom_pos_x=0.8, bottom_pos_y=0.1)
+        print_time(t,"text is added at +")
+
         if not(args.no_display):
             cv_interface.show()
-       
+        
+        
+        
         if args.save_video:
             frame_to_save=cv_interface.frame
             #frame_to_save = cv2.flip(frame_to_save, 0)
-            
             out.write(frame_to_save)
-        
+        print_time(t,"video is saved at    +")
+
         
         clock += 1
 
