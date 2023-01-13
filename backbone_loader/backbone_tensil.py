@@ -34,5 +34,5 @@ class backbone_tensil_wrapper:
 
         inputs = {'input.1': img}
         outputs = self.tcu.run(inputs)
-        return  outputs['Output']
+        return  outputs['Output'][None,:]
     
