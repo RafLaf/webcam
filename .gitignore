@@ -2,3 +2,7 @@ __pycache__/*
 data/
 weight/
 test.ipynb
+*.mp4
+*.avi
+*.yml
+*/__pycache__/
