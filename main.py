@@ -18,6 +18,7 @@ import time
 # import cProfile
 
 from graphical_manipulation.graphical_interface import OpencvInterface
+from Input_Output.BoutonsManager import BoutonsManager
 from few_shot_model.few_shot_model import FewShotModel
 from backbone_loader.backbone_loader import get_model
 from few_shot_model.data_few_shot import DataFewShot
@@ -102,7 +103,8 @@ def launch_demo():
 
     # cv_interface manage graphical manipulation
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
-
+    if  args.button_keyboard == "button" :
+        btn_manager=BoutonsManager(args.overlay.btns_gpio)
     if args.save_video:
         fourcc = cv2.VideoWriter_fourcc(*"XVID")
         out = cv2.VideoWriter("output.avi", fourcc, 30.0, RES_OUTPUT)
@@ -133,19 +135,16 @@ def launch_demo():
             break
 
         prev_frame_time = new_frame_time
-        print_time(t,"time for image capture +")
+
         
         if args.button_keyboard=="keyboard" :
             key = cv_interface.get_key()
             key = chr(key)  # key convertion to char
         elif args.button_keyboard == "button" :
-            btn_manager = BoutonsManager(args.overlay.btns_gpio)
             key = btn_manager.change_state()
         else :
             print("L'argument button_keyboard n'est pas valide")
         
-        print_time(t,"get_key time +")
-
         if clock_m <= clock_init:
             frame = cv_interface.get_image()
             frame = preprocess(frame, shape_input=args.resolution_input)
@@ -159,7 +158,7 @@ def launch_demo():
                     compute_and_add_feature_saved_image(
                         backbone, cv_interface, current_data, path_sample
                     )
-                    key = ord("i")  # simulate press of the key for inference
+                    key = "i"  # simulate press of the key for inference
 
             cv_interface.put_text("Initialization")
             clock_m += 1
@@ -196,7 +195,7 @@ def launch_demo():
                 do_registration = False
 
         # reset action
-        if key == ord("r"):
+        if key == 'r':
             do_registration = False
             do_inference = False
             current_data.reset()
@@ -211,7 +210,7 @@ def launch_demo():
                 do_reset = False
 
         # inference action
-        if key == ord("i") and current_data.is_data_recorded():
+        if key == 'i' and current_data.is_data_recorded():
             print("doing inference")
             do_inference = True
             probabilities = None
@@ -251,7 +250,7 @@ def launch_demo():
             out.write(frame_to_save)
         clock += 1
 
-        if key == ord("q"):
+        if key == 'q':
             break
 
     cv_interface.close()
