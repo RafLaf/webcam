@@ -6,3 +6,4 @@ test.ipynb
 *.avi
 *.yml
 */__pycache__/
+few_shot_model/__pycache__/*

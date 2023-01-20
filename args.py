@@ -56,6 +56,7 @@ def parse_backbone_params(parser):
 
     # usefull only for pytorch
     parser.add_argument("--backbone_type", default="cifar_small", help="model to load")
+    parser
 
     # only usefull for the pynk
     parser.add_argument(
@@ -72,6 +73,10 @@ def parse_backbone_params(parser):
     # only usefull for onnx
     parser.add_argument(
         "--path-onnx", default="weight/resnet12_32_32_64.onnx", type=str
+    )
+    #only usefull for pytorch
+    parser.add_argument(
+        "--path-pytorch-weight",default="weight/cifartiny1.pt",type=str
     )
 
 
@@ -131,7 +136,7 @@ print("input args : ", args)
 ### process arguments
 
 # resolution
-if len(parser.resolution_input) == 1:
+if len(args.resolution_input) == 1:
 
     res_x = args.resolution_input[0]
     args.resolution_input = (res_x, res_x)
@@ -147,7 +152,8 @@ else:
         print("using a video file")
 
 args.dataset_path = os.path.join(os.getcwd(), args.dataset_path)
-if args.framework_backbone == "pytorch_batch":
+print(args.dataset_path)
+if args.framework_backbone == "pytorch":
 
     # backbone arguments :
     args.backbone_specs = {
@@ -155,22 +161,22 @@ if args.framework_backbone == "pytorch_batch":
         "device": args.device_pytorch,
         "model_name": "resnet12",
         "kwargs": {
-            "input_shape": [3, 32, 32],
+            "input_shape": [3, args.resolution_input[0], args.resolution_input[1]],
             "num_classes": 64,  # 351,
             "few_shot": True,
             "rotations": False,
         },
     }
     if args.backbone_type == "cifar_small":
-        args.backbone_specs["path"] = "weight/smallcifar1.pt1"
+        args.backbone_specs["path"] = "weight/smallcifar.pt1"
         args.backbone_specs["kwargs"]["feature_maps"] = 45
 
     elif args.backbone_type == "cifar":
-        args.backbone_specs["path"] = "weight/cifar1.pt1"
+        args.backbone_specs["path"] = "weight/cifar.pt1"
         args.backbone_specs["kwargs"]["feature_maps"] = 64
 
     elif args.backbone_type == "cifar_tiny":
-        args.backbone_specs["path"] = "weight/tinycifar1.pt1"
+        args.backbone_specs["path"] = "weight/tinycifar.pt1"
         args.backbone_specs["kwargs"]["feature_maps"] = 32
     else:
         raise UserWarning(
@@ -196,7 +202,7 @@ elif args.framework_backbone=="onnx":
 
 
 
-if args.device=="pynk":
+if args.framework_backbone=="pynk":
     print("adding path to local variable")
     sys.path.append("/home/xilinx")
     sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")

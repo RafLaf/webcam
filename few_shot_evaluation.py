@@ -79,7 +79,7 @@ def launch_program(BACKBONE_SPECS):
 
 
 # BACKBONE_SPECS={
-#     "type":"pytorch_batch",
+#     "type":"pytorch",
 #     "device":"cuda:0",
 #     "model_name": "resnet12",  
 #     "kwargs": {
