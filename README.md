@@ -36,15 +36,15 @@ in order to setup a video
         --classifier_type ncm(default)/knn : type of classifier for the feature
         --number_neiboors (default 5) : number of neighboors if the knn algorithm is choosed
         --framework_backbone tensil_model(default)/pytorch_batch/onnx : wich framework should be used
-        --device pynk/cpu/cuda:0(default)!  device on wich the backbone is stored
+        --resolution-input : resolution of the input data
 ### tensil specific arguments
     --path_bit : path for the bitstream
     --path_tmodel : path for the tmodel
 ### pytorch specific argument :
     --backbone_type cifar/cifar_small(default)/cifar_tiny : used to specify the model used
+    --device pynk/cpu/cuda:0(default)!  device on wich the backbone is stored
 ### onnx specific argument :
     --path-onnx : path on wich we have the model
-
 
 
 ## task-related
