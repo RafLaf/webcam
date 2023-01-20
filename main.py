@@ -134,6 +134,7 @@ def launch_demo():
 
     #preprocess=get_camera_preprocess()#TODO : update this
     backbone=get_model(BACKBONE_SPECS)#TODO : update this
+    overlay=Overlay(args.path_bit)
     few_shot_model = FewShotModel(CLASSIFIER_SPECS)
 
 
@@ -187,8 +188,15 @@ def launch_demo():
 
         prev_frame_time = new_frame_time
         print_time(t,"time for image capture +")
-
-        key = cv_interface.get_key()
+        
+        if args.button_keyboard=="keyboard" :
+            key = cv_interface.get_key()
+        elif args.button_keyboard == "button" :
+            btn_manager = BoutonsManager(overlay.btns_gpio)
+            key = btn_manager.change_state()
+        else :
+            print("L'argument button_keyboard n'est pas valide")
+        
         print_time(t,"get_key time +")
 
         if clock_m <= clock_init:

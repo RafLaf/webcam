@@ -127,6 +127,7 @@ def parse_hyperparameter_demonstration(parser):
     parser.add_argument("--path_shots_video",type=str,default="data/catvsdog")
 
     parser.add_argument("--verbose",action="store_true")
+    parser.add_argument("--button-keyboard", default="keyboard")
 
     
 #generl paramters
