@@ -6,14 +6,12 @@ from tcu_pynq.architecture import pynqz1
 
 class backbone_tensil_wrapper:
 
-    def __init__(self,path_bit,path_tmodel):
+    def __init__(self,overlay,path_tmodel):
         """
         Args :
             - path_bit : path qui mêne au bitstream, e.g : home/xilinx/bitstream.bit
             - path_tmodel : path qui mène aui tmodel, e.g : home/xilinx/model.tmodel
         """
-        print(f"path to bitstream : {path_bit}")
-        overlay=Overlay(path_bit)
         print(f"dma 0 : {overlay.axi_dma_0}")
         self.tcu = Driver(pynqz1, overlay.axi_dma_0)
         print("tcu succefullt loaded")

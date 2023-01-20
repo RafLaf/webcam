@@ -212,9 +212,11 @@ if args.framework_backbone=="pytorch_batch":
 
 elif args.framework_backbone=="tensil_model":
     #backbone arguments :
+    import Overlay
+    args.overlay = Overlay(args.path_bit)
     args.backbone_specs={
         "type":args.framework_backbone,
-        "path_bit":args.path_bit,
+        "overlay":args.overlay,
         "path_tmodel":args.path_tmodel
     }
 elif args.framework_backbone=="onnx":
