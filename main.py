@@ -18,7 +18,6 @@ import time
 # import cProfile
 
 from graphical_manipulation.graphical_interface import OpencvInterface
-from Input_Output.BoutonsManager import BoutonsManager
 from few_shot_model.few_shot_model import FewShotModel
 from backbone_loader.backbone_loader import get_model
 from few_shot_model.data_few_shot import DataFewShot
@@ -82,6 +81,8 @@ def launch_demo():
     few_shot_model = FewShotModel(args.classifier_specs)
 
     # data holding variables
+    possible_input = [str(i) for i in range(177, 185)]
+    class_num = len(possible_input)
     current_data = DataFewShot(class_num)
 
     # program related constant
@@ -90,8 +91,7 @@ def launch_demo():
     do_reset = False
     prev_frame_time = time.time()
 
-    possible_input = [str(i) for i in range(177, 185)]
-    class_num = len(possible_input)
+    
     # time related variables
     clock = 0
     clock_m = 0
@@ -104,6 +104,7 @@ def launch_demo():
     # cv_interface manage graphical manipulation
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
     if  args.button_keyboard == "button" :
+        from Input_Output.BoutonsManager import BoutonsManager
         btn_manager=BoutonsManager(args.overlay.btns_gpio)
     if args.save_video:
         fourcc = cv2.VideoWriter_fourcc(*"XVID")
