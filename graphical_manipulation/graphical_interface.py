@@ -93,6 +93,8 @@ class OpencvInterface:
     """
     Class representing the opencv configuration
     (Manage the camera and the graphical interface)
+    this class also has the frame attribute since it needs ownership (to modify it)
+    once the image is modified, you can no longer access it
     ...
 
     Attributes :
@@ -105,6 +107,7 @@ class OpencvInterface:
         frame : current captured frame
         number_of_class : number of possible class
         snapshot : saved snapshots
+        is_available_frame : weither the frame is available for capture
 
 
     """
@@ -118,6 +121,7 @@ class OpencvInterface:
         self.frame=None
         self.number_of_class=number_of_class
         self.snapshot=[[] for i in range(number_of_class)]
+        self.is_present_original_frame=False
 
     def read_frame(self):
         """
@@ -125,13 +129,21 @@ class OpencvInterface:
         """
         _, frame = self.video_capture.read()
         self.frame = cv2.resize(frame, self.resolution, interpolation=cv2.INTER_AREA)
+        self.is_present_original_frame=True
 
-    def get_image(self):
+
+    def get_copy_captured_image(self,resolution):
         """
-        get the current frame 
-        (TODO : avoid resizing to interface size (separate functions for the camera))
+        return a resized copy of the captured image if it still present in the data
         """
-        return self.frame
+
+        if self.is_present_original_frame:
+            return cv2.resize(
+                self.frame, dsize=resolution, interpolation=cv2.INTER_LINEAR
+            )  # linear is faster than cubic
+        else:
+            raise Exception("original frame is not available")
+            
 
     def put_text(self, text, bottom_pos_x=0.4, bottom_pos_y=0.1):
         """
@@ -141,6 +153,7 @@ class OpencvInterface:
                 bottom_pos_x(float) : x position of the bottom left pixel (% of the whole frame)
                 bottom_pos_y(float) : y position of the bottom left pixel (% of the whole frame)
         """
+        self.is_present_original_frame=False
         cv2.putText(
             self.frame,
             text,
@@ -162,6 +175,7 @@ class OpencvInterface:
         """
         wrapper of draw_indic
         """
+        self.is_present_original_frame=False
         draw_indic(self.frame, probabilities, self.snapshot, self.font, self.scale)
 
     def add_snapshot(self, classe,frame_to_add=None):
