@@ -102,7 +102,11 @@ def launch_demo():
         cap = cv2.VideoCapture(args.camera_specification)
 
     # cv_interface manage graphical manipulation
+    
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
+
+
+
     if  args.button_keyboard == "button" :
         from Input_Output.BoutonsManager import BoutonsManager
         btn_manager=BoutonsManager(args.overlay.btns_gpio)

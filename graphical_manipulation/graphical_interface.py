@@ -93,6 +93,7 @@ class OpencvInterface:
     """
     Class representing the opencv configuration
     (Manage the camera and the graphical interface)
+    this class also has the frame attribute since it needs ownership (to modify it)
     ...
 
     Attributes :
@@ -129,7 +130,7 @@ class OpencvInterface:
     def get_image(self):
         """
         get the current frame 
-        (TODO : avoid resizing to interface size (separate functions for the camera))
+        (not that )
         """
         return self.frame
 
