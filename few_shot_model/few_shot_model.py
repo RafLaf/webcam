@@ -77,7 +77,6 @@ class FewShotModel:
     """
 
     def __init__(self, classifier_specs):
-
         self.classifier_specs = classifier_specs
 
 
@@ -98,22 +97,17 @@ class FewShotModel:
             probas (1,n_features) : probability of belonging to each class
 
         """
-
         model_name = self.classifier_specs["model_name"]
         model_arguments = self.classifier_specs.get("kwargs",{})
         #shots_list = recorded_data.get_shot_list()
        
-        
-        
         if preprocess_feature:
             #(n_batch,1,1,n_features)
             features = feature_preprocess(features, np.expand_dims(mean_feature,axis=(1,2)))
 
         # class asignement using the correspounding model
         
-        
         if model_name == "ncm":
-
             shots = np.mean(shot_array,axis=2)#mean of the shots
             # (n_batch,n_ways,n_features)
             # shots=shots.detach().cpu().numpy()
@@ -122,7 +116,6 @@ class FewShotModel:
                 shots = feature_preprocess(shots, np.expand_dims(mean_feature,axis=1))
             shots=np.expand_dims(shots,axis=(1,2))
             # (_batch,1,1,n_ways,n_features)
-
             probas=ncm(shots,features)
             
         elif model_name == "knn":
@@ -139,7 +132,7 @@ class FewShotModel:
             
             targets = np.concatenate(
                 [
-                    class_id * np.ones(n_shots, dtype=np.int64)for class_id in range(n_ways)
+                    class_id * np.ones(n_shots, dtype=np.int64) for class_id in range(n_ways)
                 ],
                 axis=0,
             )

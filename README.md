@@ -15,13 +15,15 @@ This repository contains the code to perform online Few shot with a webcam on fp
 
     exemples :
     - run demo with onnx and camera (note that onnx should be downloaded and correspond to the specified resolution)
-        python main.py --framework_backbone onnx --camera-specification 0 --no-display --save-video --use-saved-sample --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
+        python main.py --framework_backbone onnx --camera-specification 0 --no-display --save-video --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
+    - run demo with onnx and video (note that onnx should be downloaded and correspond to the specified resolution)
+        python main.py --framework_backbone onnx --camera-specification catvsdog.mp4 --no-display --save-video --use-saved-sample --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
     - run demo with opencv output and pytorch on cpu (note that the weight be downloaded and correspond to the specified model)
         python main.py --framework_backbone pytorch --device-pytorch cpu --backbone_type cifar_small --path-pytorch-weight --path-pytorch-weight weight/cifartiny1.pt --resolution-input 64
     - run demo with tensil for 300 frames(path of driver is hardcoded)
         python main.py --framework_backbone tensil --camera-specification catvsdog.mp4 --no-display --save-video --use-saved-sample --max_number_of_frame 300 --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
     - run evaluation with onnx 
-        python few_shot_evaluation.py --framework_backbone onnx --path-onnx weight/resnet12_32_32_64.onnx --dataset-path /data/cifar-10-batches-py/test_batch
+        python few_shot_evaluation.py --framework_backbone onnx --path-onnx weight/resnet12_32_32_64.onnx --dataset-path data/cifar-10-batches-py/test_batch
 
 ![plot](./static/demo_webcam.png)
 

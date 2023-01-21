@@ -31,6 +31,5 @@ class backbone_onnx_wrapper:
             {"input.1": img.astype(np.float32)},
 
         )
-        print(outputs[1].shape)
         
         return outputs[1]#return only the feature part (second part of the tuple output)
