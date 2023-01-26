@@ -108,6 +108,7 @@ def parse_backbone_params(parser):
     parser.add_argument("--path-onnx",default="weight/resnet12_32_32_64.onnx",type=str)
 
 
+
 def parse_fs_model_params(parser):
     parser.add_argument("--classifier_type",default="ncm",type=str)
     parser.add_argument("--number_neiboors",default=5,type=int)
@@ -120,6 +121,7 @@ def parse_hyperparameter_demonstration(parser):
     parser.add_argument("--camera-specification",type=str,default="0")
     parser.add_argument("--no-display",action="store_true")
     parser.add_argument("--save-video",action="store_true")
+    parser.add_argument("--hdmi-display",action="store_true")
     
     parser.add_argument("--video-format",type=str,default="DIVX")
     parser.add_argument("--max_number_of_frame",type=int)
@@ -128,6 +130,7 @@ def parse_hyperparameter_demonstration(parser):
 
     parser.add_argument("--verbose",action="store_true")
     parser.add_argument("--button-keyboard", default="keyboard")
+    
 
     
 #generl paramters

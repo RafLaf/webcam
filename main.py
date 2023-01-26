@@ -311,8 +311,15 @@ def launch_demo():
 
         if not(args.no_display):
             cv_interface.show()
-        
-        
+            
+            if (args.hdmi_display):
+                hdmi_out = args.overlay.video.hdmi_out
+                mode = VideoMode(1920, 1080, 24)
+                hdmi_out.configure(mode)
+                hdmi_out.start()
+                frame = cv_interface.frame
+                hdmi_out.writeframe(frame)
+
         
         if args.save_video:
             frame_to_save=cv_interface.frame
