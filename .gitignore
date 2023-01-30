@@ -2,8 +2,10 @@ __pycache__/*
 data/
 weight/
 test.ipynb
+
 *.mp4
 *.avi
 *.yml
 */__pycache__/
+onnx/*
 few_shot_model/__pycache__/*

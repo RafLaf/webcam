@@ -95,8 +95,8 @@ torch.manual_seed(0)
 
 
 BACKBONE_SPECS = {
-    "model_name": "resnet12",
-    "path": "weight/cifar1.pt1",  # tieredlong1.pt1",
+    "model_name": "easy-resnet12",
+    "weight": "weight/cifar1.pt1",  # tieredlong1.pt1",
     "kwargs": {
         "feature_maps": 64,
         "input_shape": [3, 32, 32],

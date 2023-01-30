@@ -5,13 +5,8 @@ function to evaluate a dataset in the few shot setting
 """
 
 import numpy as np
-from args import args
 import tqdm
 from few_shot_model.numpy_utils import *
-
-n_runs = args.n_runs
-batch_few_shot_runs = args.batch_size
-assert(n_runs % batch_few_shot_runs == 0)
 
 def define_runs(n_runs,n_ways, n_shots, n_queries, num_classes, elements_per_class):
 

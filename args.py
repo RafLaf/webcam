@@ -10,18 +10,9 @@ import os
 import sys
 
 
-parser = argparse.ArgumentParser(
-    description="""
-    Launch the demo/ the evaluation of the dataset. 
-""",
-    formatter_class=argparse.RawTextHelpFormatter,
-)
+def parse_evaluation_args(parser):
 
-### hyperparameters
-
-
-def parse_dataset_feature(parser):
-
+    # dataset features
     parser.add_argument(
         "--dataset-path", type=str, default="/data/", help="dataset path"
     )
@@ -30,8 +21,6 @@ def parse_dataset_feature(parser):
         "--num-classes-dataset", type=int, default=10, help="number of class in dataset"
     )
 
-
-def parse_few_shot_eval_params(parser):
     ### few-shot parameters
 
     parser.add_argument("--n-ways", type=int, default=5, help="number of few-shot ways")
@@ -52,11 +41,24 @@ def parse_few_shot_eval_params(parser):
     # parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
 
 
-def parse_backbone_params(parser):
+def parse_model_params(parser):
+    parser.add_argument(
+        "--framework_backbone",
+        type=str,
+        default="tensil_model",
+        help="wich module should we use",
+    )
 
     # usefull only for pytorch
-    parser.add_argument("--backbone_type", default="cifar_small", help="model to load")
-    parser
+
+    parser.add_argument(
+        "--device-pytorch",
+        type=str,
+        default="cuda:0",
+        help="for pytorch only. Device on wich the backbone will be run",
+    )
+
+    parser.add_argument("--backbone_type", default="easy-resnet12-cifar", help="model to load")
 
     # only usefull for the pynk
     parser.add_argument(
@@ -74,160 +76,172 @@ def parse_backbone_params(parser):
     parser.add_argument(
         "--path-onnx", default="weight/resnet12_32_32_64.onnx", type=str
     )
-    #only usefull for pytorch
+    # only usefull for pytorch
     parser.add_argument(
-        "--path-pytorch-weight",default="weight/cifartiny1.pt",type=str
+        "--path-pytorch-weight", default=None, type=str
     )
 
-
-def parse_fs_model_params(parser):
+    # classification head
     parser.add_argument("--classifier_type", default="ncm", type=str)
     parser.add_argument("--number_neiboors", default=5, type=int)
 
 
-def parse_mode_args(parser):
-    # parser.add_argument("--mode",type=str,default="", help="in what mode should it run (demo or perf)")
-    parser.add_argument(
-        "--framework_backbone",
-        type=str,
-        default="tensil_model",
-        help="wich module should we use",
-    )
-
-
-def parse_hyperparameter_demonstration(parser):
-    parser.add_argument("--camera-specification",type=str,default="0")
-    parser.add_argument("--no-display",action="store_true")
-    parser.add_argument("--save-video",action="store_true")
-    parser.add_argument("--video-format",type=str,default="DIVX")
-    parser.add_argument("--max_number_of_frame",type=int)
-    parser.add_argument("--use-saved-sample",action="store_true")
-    parser.add_argument("--path_shots_video",type=str,default="data/catvsdog")
-    parser.add_argument("--verbose",action="store_true")
+def parse_args_demonstration(parser):
+    parser.add_argument("--camera-specification", type=str, default="0")
+    parser.add_argument("--no-display", action="store_true")
+    parser.add_argument("--save-video", action="store_true")
+    parser.add_argument("--video-format", type=str, default="DIVX")
+    parser.add_argument("--max_number_of_frame", type=int)
+    parser.add_argument("--use-saved-sample", action="store_true")
+    parser.add_argument("--path_shots_video", type=str, default="data/catvsdog")
+    parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--button-keyboard", default="keyboard")
-    
-#generl paramters
-parse_mode_args(parser)
-
-# usefull only for demonstration
-parse_hyperparameter_demonstration(parser)
-
-# usefull only for performance evaluation
-parse_dataset_feature(parser)
-parse_few_shot_eval_params(parser)
-
-# always usefull
-parse_backbone_params(parser)
-parse_fs_model_params(parser)
 
 
-parser.add_argument(
-    "--device-pytorch",
-    type=str,
-    default="cuda:0",
-    help="for pytorch only. Device on wich the backbone will be run",
-)
-parser.add_argument("--resolution-input", type=int, nargs="+", default=[32, 32])
+def process_arguments(args):
+    """
+    process relative to both demo and cifar evaluation
+    """
 
-args = parser.parse_args()
+    if args.framework_backbone == "pytorch":
 
-print("input args : ", args)
+        # backbone arguments :
+        args.backbone_specs = {
+            "type": args.framework_backbone,
+            "device": args.device_pytorch,
+            "model_name": args.backbone_type,
+        }
 
-### process arguments
+        #weights hardcoded for convinience
 
-# resolution
-if len(args.resolution_input) == 1:
+        if args.path_pytorch_weight is None:
+            
+            if args.backbone_type == "easy-resnet12-small-cifar":
+                args.backbone_specs["weight"] = "weight/smallcifar1.pt1"
+            elif args.backbone_type == "easy-resnet12-cifar":
+                args.backbone_specs["weight"] = "weight/cifar1.pt1"
+            elif args.backbone_type == "easy-resnet12-tiny-cifar":
+                args.backbone_specs["weight"] = "weight/tinycifar1.pt1"
+            else:
+                raise UserWarning(
+                    f"weights for {args.backbone_type} is not hardcoded, provide the path yourself or check name validity"
+                )
+        else:
+            args.backbone_specs["weight"]=args.path_pytorch_weight
+        print(args.backbone_specs)
 
-    res_x = args.resolution_input[0]
-    args.resolution_input = (res_x, res_x)
-args.resolution_input = tuple(args.resolution_input)
+    elif args.framework_backbone == "tensil_model":
+        # backbone arguments :
+        import Overlay
 
+        args.overlay = Overlay(args.path_bit)
+        args.backbone_specs = {
+            "type": args.framework_backbone,
+            "overlay": args.overlay,
+            "path_tmodel": args.path_tmodel,
+        }
+    elif args.framework_backbone == "onnx":
+        args.backbone_specs = {
+            "type": args.framework_backbone,
+            "path_onnx": args.path_onnx,
+        }
 
-if args.camera_specification == "None":
-    args.camera_specification = None
-else:
-    try:
-        args.camera_specification = int(args.camera_specification)
-    except:
-        print("using a video file")
-
-args.dataset_path = os.path.join(os.getcwd(), args.dataset_path)
-print(args.dataset_path)
-if args.framework_backbone == "pytorch":
-
-    # backbone arguments :
-    args.backbone_specs = {
-        "type": args.framework_backbone,
-        "device": args.device_pytorch,
-        "model_name": "resnet12",
-        "kwargs": {
-            "input_shape": [3, args.resolution_input[0], args.resolution_input[1]],
-            "num_classes": 64,  # 351,
-            "few_shot": True,
-            "rotations": False,
-        },
-    }
-    if args.backbone_type == "cifar_small":
-        args.backbone_specs["path"] = "weight/smallcifar.pt1"
-        args.backbone_specs["kwargs"]["feature_maps"] = 45
-
-    elif args.backbone_type == "cifar":
-        args.backbone_specs["path"] = "weight/cifar.pt1"
-        args.backbone_specs["kwargs"]["feature_maps"] = 64
-
-    elif args.backbone_type == "cifar_tiny":
-        args.backbone_specs["path"] = "weight/tinycifar.pt1"
-        args.backbone_specs["kwargs"]["feature_maps"] = 32
-    else:
-        raise UserWarning(
-            "parameters for this backbone type is not completed in args.py"
+    if args.framework_backbone == "pynk":
+        print("adding path to local variable")
+        sys.path.append("/home/xilinx")
+        sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")
+        sys.path.append("/usr/local/lib/python3.8/dist-packages")
+        sys.path.append("/root/.ipython")
+        sys.path.append(
+            "/usr/local/share/pynq-venv/lib/python3.8/site-packages/IPython/extensions"
         )
-    print(args.backbone_specs)
+        sys.path.append("/usr/lib/python3/dist-packages")
+        sys.path.append("/usr/local/share/pynq-venv/lib/python3.8/site-packages")
+        sys.path.append("/usr/lib/python3.8/dist-packages")
+        # backbone arguments :
+        args.backbone_specs = {
+            "type": args.framework_backbone,
+            "path_bit": args.path_bit,
+            "path_tmodel": args.path_tmodel,
+        }
+    elif args.framework_backbone == "onnx":
+        args.backbone_specs = {
+            "type": args.framework_backbone,
+            "path_onnx": args.path_onnx,
+        }
+
+    # classifier arguments
+    args.classifier_specs = {"model_name": args.classifier_type}
+
+    if args.classifier_type == "knn":
+        args.classifier_specs["kwargs"] = {"number_neighboors": args.number_neiboors}
 
 
-elif args.framework_backbone=="tensil_model":
-    #backbone arguments :
-    import Overlay
-    args.overlay = Overlay(args.path_bit)
-    args.backbone_specs={
-        "type":args.framework_backbone,
-        "overlay":args.overlay,
-        "path_tmodel":args.path_tmodel
-    }
-elif args.framework_backbone=="onnx":
-    args.backbone_specs={
-        "type":args.framework_backbone,
-        "path_onnx":args.path_onnx
-    }
+def process_args_evaluation(args):
+    process_arguments(args)
+    args.dataset_path = os.path.join(os.getcwd(), args.dataset_path)
+    return args
 
 
-
-if args.framework_backbone=="pynk":
-    print("adding path to local variable")
-    sys.path.append("/home/xilinx")
-    sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")
-    sys.path.append("/usr/local/lib/python3.8/dist-packages")
-    sys.path.append("/root/.ipython")
-    sys.path.append(
-        "/usr/local/share/pynq-venv/lib/python3.8/site-packages/IPython/extensions"
+def get_args_evaluation():
+    parser = argparse.ArgumentParser(
+        description="""
+        Launch the evaluation of the dataset
+        """,
+        formatter_class=argparse.RawTextHelpFormatter,
     )
-    sys.path.append("/usr/lib/python3/dist-packages")
-    sys.path.append("/usr/local/share/pynq-venv/lib/python3.8/site-packages")
-    sys.path.append("/usr/lib/python3.8/dist-packages")
-    # backbone arguments :
-    args.backbone_specs = {
-        "type": args.framework_backbone,
-        "path_bit": args.path_bit,
-        "path_tmodel": args.path_tmodel,
-    }
-elif args.framework_backbone == "onnx":
-    args.backbone_specs = {"type": args.framework_backbone, "path_onnx": args.path_onnx}
+
+    # specifics args
+    parse_evaluation_args(parser)
+    parse_model_params(parser)
+
+    args = parser.parse_args()
+    process_args_evaluation(args)
+
+    print("input args : ", args)
+    return args
 
 
-# classifier arguments
-args.classifier_specs = {"model_name": args.classifier_type}
+def process_args_demo(args):
+    process_arguments(args)
+    ### process remaining arguments
 
-if args.classifier_type == "knn":
-    args.classifier_specs["kwargs"] = {"number_neighboors": args.number_neiboors}
+    # resolution
+    if len(args.resolution_input) == 1:
+
+        res_x = args.resolution_input[0]
+        args.resolution_input = (res_x, res_x)
+    args.resolution_input = tuple(args.resolution_input)
+
+    if args.camera_specification == "None":
+        args.camera_specification = None
+    else:
+        try:
+            args.camera_specification = int(args.camera_specification)
+        except:
+            print("using a video file")
+
+    print("input args : ", args)
+    return args
 
 
+def get_args_demo():
+
+    parser = argparse.ArgumentParser(
+        description="""
+        Launch the evaluation of the dataset
+        """,
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+
+    # specifics args
+    parse_args_demonstration(parser)
+    parse_model_params(parser)
+
+    args = parser.parse_args()
+    print("input args : ", args)
+    args = process_args_demo(args)
+    return args
+
+
+# print(args.dataset_path)

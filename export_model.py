@@ -10,7 +10,7 @@ backbone_type="cifar_tiny"
 BACKBONE_SPECS={
     "type":"pytorch",
     "device":"cuda:0",
-    "model_name": "resnet12",  
+    "model_name": "easy-resnet12",  
     "kwargs": {
         "input_shape": [3, 32, 32],
         "num_classes": 64,  # 351,
@@ -20,16 +20,16 @@ BACKBONE_SPECS={
 
 }
 if backbone_type=="cifar_small":
-    BACKBONE_SPECS["path"]="weight/smallcifar1.pt1"
+    BACKBONE_SPECS["weight"]="weight/smallcifar1.pt1"
     BACKBONE_SPECS["kwargs"]["feature_maps"]=45
 
 elif backbone_type=="cifar":
-    BACKBONE_SPECS["path"]="weight/cifar1.pt1"
+    BACKBONE_SPECS["weight"]="weight/cifar1.pt1"
     
     BACKBONE_SPECS["kwargs"]["feature_maps"]=64
 
 elif backbone_type=="cifar_tiny":
-    BACKBONE_SPECS["path"]="weight/tinycifar1.pt1"
+    BACKBONE_SPECS["weight"]="weight/tinycifar1.pt1"
     BACKBONE_SPECS["kwargs"]["feature_maps"]=32
     print(BACKBONE_SPECS)
 
@@ -42,6 +42,6 @@ feature_map=BACKBONE_SPECS["kwargs"]["feature_maps"]
 name_onnx=f"resnet12_{h}_{w}_{feature_map}.onnx" 
 batch_size=1 
 model=ResNet12(**BACKBONE_SPECS["kwargs"])
-load_model_weights(model,BACKBONE_SPECS["path"],device=BACKBONE_SPECS["device"])
+load_model_weights(model,BACKBONE_SPECS["weight"],device=BACKBONE_SPECS["device"])
 dummy_input = torch.randn(batch_size, 3, 32,32, device="cpu") 
 torch.onnx.export(model, dummy_input, name_onnx, verbose=True, opset_version=10, output_names=output_names)

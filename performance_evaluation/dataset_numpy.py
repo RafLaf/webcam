@@ -26,7 +26,6 @@ def get_dataset_numpy(dataset_path,dtype=np.float32,number_sample_per_class=1000
     print("opening dataset :",dataset_path)
     with open(dataset_path, 'rb') as fo:
         d = pickle.load(fo, encoding='latin1')
-    print("dataset loaded")
 
     iterator=zip(d["labels"],d["data"])
 

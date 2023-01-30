@@ -17,11 +17,11 @@ import time
 
 # import cProfile
 
-from graphical_manipulation.graphical_interface import OpencvInterface
+from Input_Output.graphical_interface import OpencvInterface
 from few_shot_model.few_shot_model import FewShotModel
 from backbone_loader.backbone_loader import get_model
 from few_shot_model.data_few_shot import DataFewShot
-from args import args
+from args import get_args_demo
 
 print("import done")
 
@@ -71,7 +71,7 @@ RES_OUTPUT = (1280, 720)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 
-def launch_demo():
+def launch_demo(args):
     """
     initialize the variable and launch the demo
     """
@@ -252,5 +252,6 @@ def launch_demo():
     if args.save_video:
         out.release()
 
-
-launch_demo()
+if __name__=="__main__":
+    args=get_args_demo()
+    launch_demo(args)
