@@ -95,6 +95,8 @@ def launch_demo():
     number_frame_init = 20
 
     # CV2 related constant
+
+    
     if not (args.camera_specification is None):
         cap = cv2.VideoCapture(args.camera_specification)
 
@@ -102,6 +104,8 @@ def launch_demo():
 
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
 
+    if (args.hdmi_display):
+        from pynk.lib.video import VideoMode
     if args.button_keyboard == "button":
         from Input_Output.BoutonsManager import BoutonsManager
 
@@ -242,8 +246,19 @@ def launch_demo():
         # outputs
 
         if not (args.no_display):
-            cv_interface.show()
+            
+            
+            if (args.hdmi_display):
+                hdmi_out = args.overlay.video.hdmi_out
+                mode = VideoMode(1920, 1080, 24)
+                hdmi_out.configure(mode)
+                hdmi_out.start()
+                frame = cv_interface.frame
+                hdmi_out.writeframe(frame)
+            else:
+                cv_interface.show()
 
+        
         if args.save_video:
             frame_to_save = cv_interface.frame
             out.write(frame_to_save)

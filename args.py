@@ -99,12 +99,16 @@ def parse_hyperparameter_demonstration(parser):
     parser.add_argument("--camera-specification",type=str,default="0")
     parser.add_argument("--no-display",action="store_true")
     parser.add_argument("--save-video",action="store_true")
+    parser.add_argument("--hdmi-display",action="store_true")
+    
     parser.add_argument("--video-format",type=str,default="DIVX")
     parser.add_argument("--max_number_of_frame",type=int)
     parser.add_argument("--use-saved-sample",action="store_true")
     parser.add_argument("--path_shots_video",type=str,default="data/catvsdog")
     parser.add_argument("--verbose",action="store_true")
     parser.add_argument("--button-keyboard", default="keyboard")
+    
+
     
 #generl paramters
 parse_mode_args(parser)
