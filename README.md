@@ -12,7 +12,20 @@ This repository contains the code to perform online Few shot with a webcam on fp
 
     To run the code :
         python main.py + args
-    ![plot](./static/demo_webcam.png)
+
+    exemples :
+    - run demo with onnx and camera (note that onnx should be downloaded and correspond to the specified resolution)
+        python main.py --framework_backbone onnx --camera-specification 0 --no-display --save-video --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
+    - run demo with onnx and video (note that onnx should be downloaded and correspond to the specified resolution)
+        python main.py --framework_backbone onnx --camera-specification catvsdog.mp4 --no-display --save-video --use-saved-sample --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
+    - run demo with opencv output and pytorch on cpu (note that the weight be downloaded and correspond to the specified model)
+        python main.py --framework_backbone pytorch --device-pytorch cpu --backbone_type cifar_small --path-pytorch-weight --path-pytorch-weight weight/cifartiny1.pt --resolution-input 64
+    - run demo with tensil for 300 frames(path of driver is hardcoded)
+        python main.py --framework_backbone tensil --camera-specification catvsdog.mp4 --no-display --save-video --use-saved-sample --max_number_of_frame 300 --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
+    - run evaluation with onnx 
+        python few_shot_evaluation.py --framework_backbone onnx --path-onnx weight/resnet12_32_32_64.onnx --dataset-path data/cifar-10-batches-py/test_batch
+
+![plot](./static/demo_webcam.png)
 
 # Data installation :
 ## weights of the neural network : 
@@ -32,23 +45,21 @@ in order to setup a video
 
 # args : 
 ## specify few_shot model used
-    args :
-        --classifier_type ncm(default)/knn : type of classifier for the feature
-        --number_neiboors (default 5) : number of neighboors if the knn algorithm is choosed
-        --framework_backbone tensil_model(default)/pytorch_batch/onnx : wich framework should be used
-        --device pynk/cpu/cuda:0(default)!  device on wich the backbone is stored
+    --classifier_type ncm(default)/knn : type of classifier for the feature
+    --number_neiboors (default 5) : number of neighboors if the knn algorithm is choosed
+    --framework_backbone tensil_model(default)/pytorch/onnx : wich framework should be used
+    --resolution-input : resolution of the input data
 ### tensil specific arguments
     --path_bit : path for the bitstream
     --path_tmodel : path for the tmodel
 ### pytorch specific argument :
-    --backbone_type cifar/cifar_small(default)/cifar_tiny : used to specify the model used
+    --backbone_type resnet-usuall/cifar_small(default)/cifar_tiny : used to specify the model used
+    --path-pytorch-weight : path of the weight for pytorch
+    --device-pytorch pynk/cpu/cuda:0(default)!  device on wich the backbone is stored
 ### onnx specific argument :
     --path-onnx : path on wich we have the model
 
-
-
 ## task-related
-
 ### inference on cifar-test specifics
     dataset parameters: 
     --dataset-path : path of the data
@@ -70,3 +81,6 @@ in order to setup a video
     --max_number_of_frame : number of frame after wich to stop the video (for testing purpuses)
     --use-saved-sample: if true, will add samples from a directory once the inference is done
     --path_shots_video : path to the directory containing directories with the shots to be use (inside the directory, one directory per class)
+
+# notes
+    - do not put / before path if using relative path

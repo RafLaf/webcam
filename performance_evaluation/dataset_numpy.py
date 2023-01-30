@@ -57,22 +57,6 @@ def get_dataset_numpy(dataset_path,dtype=np.float32,number_sample_per_class=1000
             ).astype(dtype)
             [None,:]
             ])
-
-
-
-        print("shape : ",numpy_data.shape)
-        # numpy_data=np.concatenate([
-        #     numpy_data,
-            
-        #     np.transpose(
-        #         np.fromiter(transformed_group,type_iter)
-        #         .reshape(-1,*dim_img),
-        #         (0,2,3,1)
-        #     ).astype(dtype)
-        #     [None,:]
-        #     ])
-        # #print(key," :",list(group))
-        #print(key,group)
     return numpy_data
 
 if __name__=="__main__":
