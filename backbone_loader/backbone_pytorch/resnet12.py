@@ -32,7 +32,7 @@ class BasicBlockRN12(nn.Module):
         return out
     
 class ResNet12(nn.Module):
-    def __init__(self, feature_maps, num_classes, few_shot, rotations):
+    def __init__(self, feature_maps, num_classes):
         super(ResNet12, self).__init__()
         layers = []
         layers.append(BasicBlockRN12(3, feature_maps))
@@ -41,7 +41,6 @@ class ResNet12(nn.Module):
         layers.append(BasicBlockRN12(5 * feature_maps, 10 * feature_maps))
         self.layers = nn.Sequential(*layers)
         self.linear = linear(10 * feature_maps, num_classes)
-        self.rotations = rotations
         self.linear_rot = linear(10 * feature_maps, 4)
         self.mp = nn.MaxPool2d((2,2))
         for m in self.modules():
@@ -66,8 +65,5 @@ class ResNet12(nn.Module):
             out = self.mp(F.leaky_relu(out, negative_slope = 0.1))
         out=torch.mean(out,axis=(-2,-1))#out = F.avg_pool2d(out, (self.input_shape[1]//16,self.input_shape[2]//16))#out.shape[2])
         features = out.view(out.size(0), -1)
-        out = self.linear(features)
-        if self.rotations:
-            out_rot = self.linear_rot(features)
-            return (out, out_rot), features
-        return out, features
+        
+        return features

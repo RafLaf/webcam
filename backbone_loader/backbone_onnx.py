@@ -32,4 +32,4 @@ class backbone_onnx_wrapper:
 
         )
         
-        return outputs[1]#return only the feature part (second part of the tuple output)
+        return outputs[0]

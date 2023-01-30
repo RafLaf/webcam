@@ -32,20 +32,17 @@ EASY_SPECS={
     "easy-resnet12-small-cifar":{
         "feature_maps":45, 
         "num_classes":64, 
-        "few_shot":True, 
-        "rotations":False
+
     },
     "easy-resnet12-cifar":{
         "feature_maps":64, 
         "num_classes":64, 
-        "few_shot":True, 
-        "rotations":False
+
     },
     "easy-resnet12-tiny-cifar":{
         "feature_maps":32, 
         "num_classes":64, 
-        "few_shot":True, 
-        "rotations":False
+
     }
 }
 
@@ -87,7 +84,7 @@ def load_model_weights(
     print("Model loaded!")
 
 
-def load_model_pytorch_hub(model_name,weights):
+def load_model_pytorch_hub(model_name,weights,device="cpu"):
     """
 
         load a model. currently only pytorch-hub keyword supported : pretrained and weights
@@ -99,12 +96,12 @@ def load_model_pytorch_hub(model_name,weights):
 
     if weights=="pretrained":
         model=torch.hub.load(MODEL_LOC[model_name],model_name,pretrained=True)
-    if weights=="random-init":
+    elif weights=="random-init":
         model=torch.hub.load(MODEL_LOC[model_name],model_name,pretrained=False)
     else:
         weights=MODEL_WEIGHT[f"{model_name}_{weights}"]
         model=torch.hub.load(MODEL_LOC[model_name],model_name,weights=weights)
-    model.cpu()
+    model.to(device)
 
 
     return model
@@ -113,13 +110,13 @@ def load_model_pytorch_hub(model_name,weights):
 
 
 def get_model(model_name,weight,device="cpu"):
-
+    
     if model_name.find("easy-resnet12")>=0:#if str contains the model
 
         model = ResNet12(**EASY_SPECS[model_name]).to(device)
         load_model_weights(model, weight, device=device)
     elif model_name in MODEL_LOC.keys():
-        return load_model_pytorch_hub(model_name,weight)
+        return load_model_pytorch_hub(model_name,weight,device=device)
     else:
         raise NotImplementedError(f"model {model_name} is not implemented")
     return model

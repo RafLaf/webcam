@@ -14,7 +14,7 @@ def parse_evaluation_args(parser):
 
     # dataset features
     parser.add_argument(
-        "--dataset-path", type=str, default="/data/", help="dataset path"
+        "--dataset-path", type=str, default="data/", help="dataset path"
     )
     parser.add_argument("--batch-size", type=int, default=1, help="batch size")
     parser.add_argument(
@@ -58,7 +58,7 @@ def parse_model_params(parser):
         help="for pytorch only. Device on wich the backbone will be run",
     )
 
-    parser.add_argument("--backbone_type", default="easy-resnet12-cifar", help="model to load")
+    parser.add_argument("--backbone-type", default="easy-resnet12-cifar", help="model to load")
 
     # only usefull for the pynk
     parser.add_argument(

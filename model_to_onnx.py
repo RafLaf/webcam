@@ -2,8 +2,7 @@
 """
 script will load models, generate torchinfos and onnx (simplified version) for each resolution
 python model_to_onnx.py --input-resolution 32 64 128 256 --model-type "mnasnet0_75" --weight-name "random-init" --weight-description "weight trained on imagenet" 
-python model_to_onnx.py --input-resolution 32 64 128 256 --model-type "mobilenet_v2" --weight-name "pretrained" --weight-description "weight trained on imagenet" 
-
+python model_to_onnx.py --input-resolution 32 64 128 256 --model-type "mobilenet_v2" --weight-name "pretrained" --weight-description "weight trained on imagenet" --perform-evaluation
 
 available models (*=tested):
 
@@ -22,16 +21,18 @@ available models (*=tested):
 """
 import argparse
 import json
-import argparse
 from pathlib import Path
-import sys
-import subprocess
+#import sys
+#import subprocess
+import os
 import torchinfo
 import onnx
 from onnxsim import simplify
-
 import torch
+
 from backbone_loader.backbone_pytorch.model import get_model
+from backbone_loader.backbone_loader_pytorch import TorchBatchModelWrapper
+from few_shot_evaluation import evaluate_model
 
 def save_weight_description(path_description,weight_name, weight_desc):
     # Load the existing data from the JSON file
@@ -92,6 +93,31 @@ def model_to_onnx(args):
             to_write= str(ans)
             file.write(to_write)
 
+        if args.perform_evaluation:
+            #TODO :better compatibility
+            
+            #wrapp model and call function
+        
+            # TODO : save the evaluation parameters (folder)
+            device="cuda:0"
+            test_model=TorchBatchModelWrapper(args.model_type,args.weight_name,device=device)
+            kwargs={
+                "device":device,
+                "dataset_path":os.path.join(os.getcwd(), "data/cifar-10-batches-py/test_batch"),
+                "batch_size":1,
+                "num_classes-dataset":10,
+                "n_ways":5,
+                "n_shots":5,
+                "n_runs":1000, 
+                "n_queries":15,
+                "batch_size_fs":20,
+                "classifier_type":"ncm",
+                "number_neiboors":5,
+                "resolution_input":(input_resolution,input_resolution)
+            }
+            kwargs=argparse.Namespace(**kwargs)
+            mean,std,time=evaluate_model(test_model,kwargs)
+
 
         # generate onnx
         path_model=resolution_folder/ f"{model_name}-{input_resolution}_{input_resolution}.onnx"
@@ -123,7 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("--weight-description", required=True, help="Description of the weight file")
     parser.add_argument("--output-names",default="Output", help="Name of the output layer")
     #TODO : add evaluation args
-    #parser.add_argument("--perform-evaluation",default=False, help="Name of the output layer")
+    parser.add_argument("--perform-evaluation",action='store_true', help="if specified, will perform inference")
     # Parse the command line arguments
     args = parser.parse_args()
     model_to_onnx(args)

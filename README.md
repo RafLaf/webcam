@@ -53,7 +53,7 @@ in order to setup a video
     --path_bit : path for the bitstream
     --path_tmodel : path for the tmodel
 ### pytorch specific argument :
-    --backbone_type resnet-usuall/cifar_small(default)/cifar_tiny : used to specify the model used
+    --backbone-type easy-resnet12-cifar-(small/tiny/) : used to specify the model used
     --path-pytorch-weight : path of the weight for pytorch
     --device-pytorch pynk/cpu/cuda:0(default)!  device on wich the backbone is stored
 ### onnx specific argument :
