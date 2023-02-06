@@ -18,11 +18,16 @@ def parse_evaluation_args(parser):
     )
     parser.add_argument("--batch-size", type=int, default=1, help="batch size")
     parser.add_argument(
-        "--num-classes-dataset", type=int, default=10, help="number of class in dataset"
+        "--num-classes", type=int, default=10, help="number of class in dataset"
     )
 
-    ### few-shot parameters
+    
 
+    parser.add_argument(
+        "--sample-per-class", type=int, default=1000, help=" number of sample to take into acount"
+    )  
+
+    ### few-shot parameters
     parser.add_argument("--n-ways", type=int, default=5, help="number of few-shot ways")
     parser.add_argument(
         "--n-shots",
@@ -39,7 +44,6 @@ def parse_evaluation_args(parser):
     parser.add_argument("--batch-size-fs", type=int, default=20)
     # to be incorporate (to evaluation and demonstration):
     # parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
-
 
 def parse_model_params(parser):
     parser.add_argument(
@@ -103,6 +107,7 @@ def process_arguments(args):
     process relative to both demo and cifar evaluation
     """
 
+    
     if args.framework_backbone == "pytorch":
 
         # backbone arguments :

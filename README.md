@@ -19,7 +19,7 @@ This repository contains the code to perform online Few shot with a webcam on fp
     - run demo with onnx and video (note that onnx should be downloaded and correspond to the specified resolution)
         python main.py --framework_backbone onnx --camera-specification catvsdog.mp4 --no-display --save-video --use-saved-sample --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
     - run demo with opencv output and pytorch on cpu (note that the weight be downloaded and correspond to the specified model)
-        python main.py --framework_backbone pytorch --device-pytorch cpu --backbone_type cifar_small --path-pytorch-weight --path-pytorch-weight weight/cifartiny1.pt --resolution-input 64
+        python main.py --framework-backbone pytorch --device-pytorch cpu --backbone_type cifar_small --path-pytorch-weight weight/cifartiny1.pt --resolution-input 32
     - run demo with tensil for 300 frames(path of driver is hardcoded)
         python main.py --framework_backbone tensil --camera-specification catvsdog.mp4 --no-display --save-video --use-saved-sample --max_number_of_frame 300 --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
     - run evaluation with onnx 
@@ -62,9 +62,10 @@ in order to setup a video
 ## task-related
 ### inference on cifar-test specifics
     dataset parameters: 
-    --dataset-path : path of the data
+    -- dataset-path : path of the data
     -- batch-size (default 1) : batch size for evaluation (only supported with pytorch model)
-    -- num-classes-dataset(default 10): number of class in the dataset
+    -- num-classes (default 10): number of class to take into acount
+    -- sample_per_class (default 1000) : number of sample to take into acount
     
     model parameters : 
     --nways (default 5) : number of few-shot ways
@@ -84,3 +85,4 @@ in order to setup a video
 
 # notes
     - do not put / before path if using relative path
+    - should be at least enough elements to form queries + n_shots

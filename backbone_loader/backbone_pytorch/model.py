@@ -15,18 +15,25 @@ MODEL_LOC={
     "efficientnet_b0":"pytorch/vision:v0.10.0",
     "nvidia_efficientnet_b0":"NVIDIA/DeepLearningExamples:torchhub",
     "nvidia_gpunet":"NVIDIA/DeepLearningExamples:torchhub"}
+#github model may require specific version of package (torch for exemple) to work
+#<repo_owner/repo_name[:ref]> with an optional ref (a tag or a branch).
 
-
-#for pytorch vision, supported for v>=0.13
-MODEL_WEIGHT={
-    "mobilenet_v2_imagenet":"MobileNet_V2_Weights.IMAGENET1K_V2",
-    "mobilenet_v3_small_imagenet":"MobileNet_V3_Small_Weights.IMAGENET1K_V1",
-    "mobilenet_v3_large_imagenet":"MobileNet_V3_Large_Weights.IMAGENET1K_V2",
-    "mnasnet0_5_imagenet":"MNASNet0_5_Weights.IMAGENET1K_V1",
-    "mnasnet0_75_imagenet":"MNASNet0_75_Weights.IMAGENET1K_V1",
-    "mnasnet1_0_imagenet":"MNASNet1_0_Weights.IMAGENET1K_V1"
+MODEL_SPECS={
+    "pretrained":{
+        "pretrained":True
+    },
+    "random-init":{
+        "pretrained":False
+    },
+    # weight not implemented. To implement : make sure torchvision installed version is compatible, 
+    # and add MODEL_LOC with compatible version (should be pytorch/vision:v0.13.0)
+    "mobilenet_v2_imagenet":{"weights":"MobileNet_V2_Weights.IMAGENET1K_V2"},
+    "mobilenet_v3_small_imagenet":{"weights":"MobileNet_V3_Small_Weights.IMAGENET1K_V1"},
+    "mobilenet_v3_large_imagenet":{"weights":"MobileNet_V3_Large_Weights.IMAGENET1K_V2"},
+    "mnasnet0_5_imagenet":{"weights":"MNASNet0_5_Weights.IMAGENET1K_V1"},
+    "mnasnet0_75_imagenet":{"weights":"MNASNet0_75_Weights.IMAGENET1K_V1"},
+    "mnasnet1_0_imagenet":{"weights":"MNASNet1_0_Weights.IMAGENET1K_V1"}
 }
-
 
 EASY_SPECS={
     "easy-resnet12-small-cifar":{
@@ -84,39 +91,36 @@ def load_model_weights(
     print("Model loaded!")
 
 
-def load_model_pytorch_hub(model_name,weights,device="cpu"):
+def load_model_pytorch_hub(model_name,model_spec_name,device="cpu"):
     """
 
         load a model. currently only pytorch-hub keyword supported : pretrained and weights
-
-        weights(str) : if "pretrained"/"random-init", used pretrained=True/pretrained=False, 
-                    else if "weight", weights="weights when calling pytorch model
-
+        model_spec_name : should be a key of MODEL_SPECS
     """
-
-    if weights=="pretrained":
-        model=torch.hub.load(MODEL_LOC[model_name],model_name,pretrained=True)
-    elif weights=="random-init":
-        model=torch.hub.load(MODEL_LOC[model_name],model_name,pretrained=False)
-    else:
-        weights=MODEL_WEIGHT[f"{model_name}_{weights}"]
-        model=torch.hub.load(MODEL_LOC[model_name],model_name,weights=weights)
+    assert model_spec_name in MODEL_SPECS.keys(), "model spec not hardcoded"
+    
+    model_kwargs=MODEL_SPECS[model_spec_name]
+    model=torch.hub.load(MODEL_LOC[model_name],model_name,**model_kwargs)
     model.to(device)
 
 
     return model
 
-
-
-
-def get_model(model_name,weight,device="cpu"):
+def get_model(model_name,model_spec,device="cpu"):
+    """
+    get a model from pytorch-hub or from custom arch, using hardcoded specifications
+    model_name : name of the model. Should either be "easy-resnet12-"+(small-cifar/cifar/tiny-cifar) or a key of MODEL_LOC
+    model_spec : either path to weight for easy-resnet12 or key of MODEL_SPECS for pytorch hub
+    """
     
     if model_name.find("easy-resnet12")>=0:#if str contains the model
 
         model = ResNet12(**EASY_SPECS[model_name]).to(device)
-        load_model_weights(model, weight, device=device)
+        load_model_weights(model, model_spec, device=device)
     elif model_name in MODEL_LOC.keys():
-        return load_model_pytorch_hub(model_name,weight,device=device)
+        print("model is found in pytorch-hub model specifications")
+        model= load_model_pytorch_hub(model_name,model_spec,device=device)
     else:
         raise NotImplementedError(f"model {model_name} is not implemented")
+    model.eval()
     return model

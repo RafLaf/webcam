@@ -1,8 +1,15 @@
 """
 exemple : 
-python few_shot_evaluation.py --framework_backbone onnx --path-onnx weight/resnet12_32_32_64.onnx --dataset-path data/cifar-10-batches-py/test_batch
-python few_shot_evaluation.py --framework_backbone pytorch --backbone_type easy-resnet12-small-cifar  --dataset-path data/cifar-10-batches-py/test_batch
+python few_shot_evaluation.py --framework_backbone onnx --path-onnx weight/resnet12_32_32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch
+python few_shot_evaluation.py --framework_backbone onnx --path-onnx onnx/easy-resnet12-small-cifar/32x32/easy-resnet12-small-cifar-32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch 
 
+tiny :
+python few_shot_evaluation.py --framework_backbone onnx --path-onnx onnx/easy-resnet12-tiny-cifar/32x32/easy-resnet12-tiny-cifar-32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch 
+
+with reduce time : 
+python few_shot_evaluation.py --framework_backbone onnx --path-onnx onnx/easy-resnet12-small-cifar/32x32/easy-resnet12-small-cifar-32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch  --num-classes 5 --sample-per-class 100
+
+python few_shot_evaluation.py --framework_backbone pytorch --backbone-type easy-resnet12-small-cifar --path-pytorch-weight weight/smallcifar1.pt1 --dataset-path data/cifar-10-batches-py/test_batch --batch-size=4 --device-pytorch cuda:0
 
 """
 import time
@@ -21,37 +28,52 @@ from few_shot_model.few_shot_model import FewShotModel
 # @profile#comment/uncoment and flag -m memory_profiler after python
 
 def evaluate_model(backbone,kwargs):
-    data = get_dataset_numpy(kwargs.dataset_path)
-    num_classes, num_exemples, _, _, _ = np.shape(data)
+
+
+    assert kwargs.sample_per_class%kwargs.batch_size==0
+
+
+    data = get_dataset_numpy(kwargs.dataset_path)#
+    
+    num_classes_data, num_exemples_data, h, w, c = np.shape(data)
+    
+    #check compatibility of arguments
+    assert num_classes_data>=kwargs.num_classes
+    assert num_exemples_data>=kwargs.sample_per_class
+    
+    #subset of the data if needed
+    data=data[0:kwargs.num_classes,0:kwargs.sample_per_class,:,:,:]
+    
+
     # normalization
     data = (data / 255 - np.array([0.485, 0.456, 0.406], dtype=data.dtype)) / np.array(
         [0.229, 0.224, 0.225], dtype=data.dtype
     )
     seconds = time.time()
-
+    
     features = get_features_numpy(backbone, data, kwargs.batch_size)
-    dt = time.time() - seconds
+    dt_inference = time.time() - seconds
 
-    mean_speed = dt / (num_classes * num_exemples)
+    total_samples=kwargs.num_classes*kwargs.sample_per_class
+    mean_speed = dt_inference / total_samples
 
-    sample_per_class = features.shape[1]
-    nshots = kwargs.n_shots
-    num_classes = kwargs.num_classes_dataset
+    
+    
     # sample_per_class=600
     classe, index = define_runs(
         kwargs.n_runs,
         kwargs.n_ways,
-        nshots,
+        kwargs.n_shots,
         kwargs.n_queries,
-        num_classes,
-        [sample_per_class] * num_classes,
+        kwargs.num_classes,
+        [kwargs.sample_per_class] * kwargs.num_classes,
     )
     # cifar10 : 122mb
     # runs : 84kb
 
-    index_shots, index_queries = index[:, :, :nshots], index[:, :, nshots:]
+    index_shots, index_queries = index[:, :, :kwargs.n_shots], index[:, :, kwargs.n_shots:]
     extracted_shots = features[
-        np.stack([classe] * nshots, axis=-1), index_shots
+        np.stack([classe] * kwargs.n_shots, axis=-1), index_shots
     ]  # compute features corresponding to each experiment
     extracted_queries = features[
         np.stack([classe] * kwargs.n_queries, axis=-1), index_queries
@@ -85,6 +107,8 @@ def launch_evaluation(kwargs):
         - dataset_path
         - num_classes_dataset
         - batch_size
+        - num_classes
+        - sample_per_class
         - n_shots
         - n_ways
         - n_queries
