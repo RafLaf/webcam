@@ -77,32 +77,28 @@ import sys
 sys.path.append('/home/xilinx')
 
 # Needed to run inference on TCU
-import time
-import numpy as np
-import pynq
-from pynq import Overlay
-from tcu_pynq.driver import Driver
-from tcu_pynq.architecture import pynqz1
 
-overlay = Overlay('/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit')
 
 
 # In[19]:
 
 
-btns = BoutonsManager(overlay.btns_gpio)
+
 
 
 # In[20]:
 
+if __name__=="__main__":
+    import time
+    import numpy as np
+    import pynq
+    from pynq import Overlay
+    from tcu_pynq.driver import Driver
+    from tcu_pynq.architecture import pynqz1
 
-while True :
-    time.sleep(1)
-    print(btns.change_state())
-
-
-# In[ ]:
-
-
-
+    overlay = Overlay('/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit')
+    btns = BoutonsManager(overlay.btns_gpio)
+    while True :
+        time.sleep(1)
+        print(btns.change_state())
 

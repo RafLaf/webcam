@@ -191,22 +191,14 @@ if args.framework_backbone == "pytorch":
 
 elif args.framework_backbone=="tensil_model":
     #backbone arguments :
-    import Overlay
+    from pynq import Overlay
     args.overlay = Overlay(args.path_bit)
     args.backbone_specs={
         "type":args.framework_backbone,
         "overlay":args.overlay,
+        "path_bit": args.path_bit,
         "path_tmodel":args.path_tmodel
     }
-elif args.framework_backbone=="onnx":
-    args.backbone_specs={
-        "type":args.framework_backbone,
-        "path_onnx":args.path_onnx
-    }
-
-
-
-if args.framework_backbone=="pynk":
     print("adding path to local variable")
     sys.path.append("/home/xilinx")
     sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")
@@ -218,14 +210,13 @@ if args.framework_backbone=="pynk":
     sys.path.append("/usr/lib/python3/dist-packages")
     sys.path.append("/usr/local/share/pynq-venv/lib/python3.8/site-packages")
     sys.path.append("/usr/lib/python3.8/dist-packages")
-    # backbone arguments :
-    args.backbone_specs = {
-        "type": args.framework_backbone,
-        "path_bit": args.path_bit,
-        "path_tmodel": args.path_tmodel,
+
+
+elif args.framework_backbone=="onnx":
+    args.backbone_specs={
+        "type":args.framework_backbone,
+        "path_onnx":args.path_onnx
     }
-elif args.framework_backbone == "onnx":
-    args.backbone_specs = {"type": args.framework_backbone, "path_onnx": args.path_onnx}
 
 
 # classifier arguments
@@ -233,5 +224,4 @@ args.classifier_specs = {"model_name": args.classifier_type}
 
 if args.classifier_type == "knn":
     args.classifier_specs["kwargs"] = {"number_neighboors": args.number_neiboors}
-
 
