@@ -81,6 +81,7 @@ def launch_demo():
     # data holding variables
     possible_input = [str(i) for i in range(177, 185)]
     possible_input_2 = ["1","2","3","4"]
+
     class_num = len(possible_input)
     current_data = DataFewShot(class_num)
 
@@ -94,6 +95,7 @@ def launch_demo():
     clock = 0
     clock_main = 0
     number_frame_init = 5
+
 
     # CV2 related constant
 
@@ -111,6 +113,7 @@ def launch_demo():
         mode = VideoMode(1920, 1080, 24)
         hdmi_out.configure(mode)
         hdmi_out.start()
+
     if args.button_keyboard == "button":
         from Input_Output.BoutonsManager import BoutonsManager
 
@@ -142,11 +145,16 @@ def launch_demo():
         if args.button_keyboard == "keyboard":
             key = cv_interface.get_key()
             key = chr(key)  # key convertion to char
+
             
         elif args.button_keyboard == "button":
             print("test_key_passage_avant")
             key = btn_manager.change_state()
             print("test_key_passage")
+
+        elif args.button_keyboard == "button":
+            key = btn_manager.change_state()
+
         else:
             print("L'argument button_keyboard n'est pas valide")
 
@@ -165,17 +173,22 @@ def launch_demo():
                         backbone, cv_interface, current_data, path_sample
                     )
                     key = "i"  # simulate press of the key for inference
+
                     print(key)
+
+
 
             cv_interface.put_text("Initialization")
 
         # if shot acquisition : stop inference and add image
         # once the key is pressed, the 10 following frames will be saved as snapshot
         # only the first one will be saved for display
+
         print("clock_main = ",clock_main, " nm frame init = ", number_frame_init, " do_reset= ", do_reset)
         print("key in possible input : ", (key in possible_input_2))
         if (
             (key in possible_input or doing_registration or key in possible_input_2)
+
             and clock_main > number_frame_init
             and not do_reset
         ):
@@ -183,6 +196,7 @@ def launch_demo():
             
             
             
+
 
             if key in possible_input or key in possible_input_2:
                 print("la key est bien dans les possibles inputs")
@@ -198,6 +212,7 @@ def launch_demo():
             print("la valeur de key avant le test des possibles inputs vaut : ", key )
 
             if ((key in possible_input) or (key in  possible_input_2)):
+
                 # if this is the first frame (ie there was an user input)
                 cv_interface.add_snapshot(classe)
 
@@ -272,6 +287,7 @@ def launch_demo():
         # outputs
         print("no display", args.no_display)
         if not (args.no_display):
+
             
             print("test")
             if (args.hdmi_display):

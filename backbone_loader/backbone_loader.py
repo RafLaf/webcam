@@ -19,7 +19,7 @@ def get_model(model_specs):
             takes a batch 
     """
     
-    if model_specs["type"]=="pytorch_batch":
+    if model_specs["type"]=="pytorch":
         from backbone_loader.backbone_loader_pytorch import TorchBatchModelWrapper
 
         device=model_specs["device"]

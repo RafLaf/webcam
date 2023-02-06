@@ -35,8 +35,8 @@ def define_runs(n_runs,n_ways, n_shots, n_queries, num_classes, elements_per_cla
     
     """ 
     rng = np.random.default_rng()
-    run_classes = np.zeros((n_runs,n_ways),dtype=np.int64)#torch.LongTensor(n_runs, n_ways).to(args.device)
-    run_indices = np.zeros((n_runs,n_ways,n_shots+n_queries),dtype=np.int64)#torch.LongTensor(n_runs, n_ways, n_shots + n_queries).to(args.device)
+    run_classes = np.zeros((n_runs,n_ways),dtype=np.int64)
+    run_indices = np.zeros((n_runs,n_ways,n_shots+n_queries),dtype=np.int64)
     for i in range(n_runs):
         run_classes[i] = rng.permutation(num_classes)[:n_ways]#torch.randperm(num_classes)[:n_ways]
         for j in range(n_ways):
