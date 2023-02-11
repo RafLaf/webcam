@@ -22,7 +22,7 @@ MODEL_SPECS={
     "pretrained":{
         "pretrained":True
     },
-    "random-init":{
+    "random_init":{
         "pretrained":False
     },
     # weight not implemented. To implement : make sure torchvision installed version is compatible, 
@@ -36,17 +36,17 @@ MODEL_SPECS={
 }
 
 EASY_SPECS={
-    "easy-resnet12-small-cifar":{
+    "easy_resnet12_small_cifar":{
         "feature_maps":45, 
         "num_classes":64, 
 
     },
-    "easy-resnet12-cifar":{
+    "easy_resnet12_cifar":{
         "feature_maps":64, 
         "num_classes":64, 
 
     },
-    "easy-resnet12-tiny-cifar":{
+    "easy_resnet12_tiny_cifar":{
         "feature_maps":32, 
         "num_classes":64, 
 
@@ -94,7 +94,7 @@ def load_model_weights(
 def load_model_pytorch_hub(model_name,model_spec_name,device="cpu"):
     """
 
-        load a model. currently only pytorch-hub keyword supported : pretrained and weights
+        load a model. currently only pytorch_hub keyword supported : pretrained and weights
         model_spec_name : should be a key of MODEL_SPECS
     """
     assert model_spec_name in MODEL_SPECS.keys(), "model spec not hardcoded"
@@ -108,17 +108,17 @@ def load_model_pytorch_hub(model_name,model_spec_name,device="cpu"):
 
 def get_model(model_name,model_spec,device="cpu"):
     """
-    get a model from pytorch-hub or from custom arch, using hardcoded specifications
-    model_name : name of the model. Should either be "easy-resnet12-"+(small-cifar/cifar/tiny-cifar) or a key of MODEL_LOC
-    model_spec : either path to weight for easy-resnet12 or key of MODEL_SPECS for pytorch hub
+    get a model from pytorch_hub or from custom arch, using hardcoded specifications
+    model_name : name of the model. Should either be "easy_resnet12_"+(small_cifar/cifar/tiny_cifar) or a key of MODEL_LOC
+    model_spec : either path to weight for easy_resnet12 or key of MODEL_SPECS for pytorch hub
     """
     
-    if model_name.find("easy-resnet12")>=0:#if str contains the model
+    if model_name.find("easy_resnet12")>=0:#if str contains the model
 
         model = ResNet12(**EASY_SPECS[model_name]).to(device)
         load_model_weights(model, model_spec, device=device)
     elif model_name in MODEL_LOC.keys():
-        print("model is found in pytorch-hub model specifications")
+        print("model is found in pytorch_hub model specifications")
         model= load_model_pytorch_hub(model_name,model_spec,device=device)
     else:
         raise NotImplementedError(f"model {model_name} is not implemented")
