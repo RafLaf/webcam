@@ -1,5 +1,5 @@
 
-from backbone_loader.backbone.resnet12 import ResNet12
+from backbone_loader.backbone_pytorch.resnet12 import ResNet12
 
 from backbone_loader.backbone_loader import load_model_weights
 import torch 
