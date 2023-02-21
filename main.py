@@ -17,7 +17,7 @@ import time
 
 # import cProfile
 
-from graphical_manipulation.graphical_interface import OpencvInterface
+from input_output.graphical_interface import OpencvInterface
 from few_shot_model.few_shot_model import FewShotModel
 from backbone_loader.backbone_loader import get_model
 from few_shot_model.data_few_shot import DataFewShot
@@ -115,7 +115,7 @@ def launch_demo():
         hdmi_out.start()
 
     if args.button_keyboard == "button":
-        from Input_Output.BoutonsManager import BoutonsManager
+        from input_output.BoutonsManager import BoutonsManager
 
         btn_manager = BoutonsManager(args.overlay.btns_gpio)
     if args.save_video:
