@@ -2,37 +2,24 @@
 """
 script will load models, generate torchinfos and onnx (simplified version) for each resolution
 
-python model_to_onnx.py --input-resolution 32 64 128  --model-type "easy_resnet12_tiny_cifar" --model-specification "weight/tinycifar1.pt1" --weight-description "weight from easy repo (tinycifar1.pt1)" 
-python model_to_onnx.py --input-resolution 32 64 128 164 --model-type "easy_resnet12_small_cifar" --model-specification "weight/smallcifar1.pt1" --weight-description "weight from easy repo (smallcifar1.pt1)" 
-python model_to_onnx.py --input-resolution 32 64 128 164 --model-type "easy_resnet12_cifar" --model-specification "weight/cifar1.pt1" --weight-description "weight from easy repo (cifar1.pt1)" 
-
-python model_to_onnx.py --input-resolution 32 64 128 200 256 --model-type "mobilenet_v2" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
-python model_to_onnx.py --input-resolution  32 64 128 256 --model-type "mnasnet0_5" --model-specification "random_init" --weight-description "weight random"  --from-hub
-python model_to_onnx.py --input-resolution 32 64 128 256 --model-type "nvidia_efficientnet_b0" --model-specification "random_init" --weight-description "weight random"  --from-hub
-python model_to_onnx.py --input-resolution 32 64 128 256 --model-type "shufflenet_v2_x0_5" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
-python model_to_onnx.py --input-resolution 32 64 128 256 --model-type "squeezenet1_1" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
-python model_to_onnx.py --input-resolution 32 64 128 256 --model-type "nvidia_gpunet" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_tiny_cifar" --model-specification "weight/tinycifar1.pt1" --weight-description "weight from easy repo (tinycifar1.pt1)" 
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_small_cifar" --model-specification "weight/smallcifar1.pt1" --weight-description "weight from easy repo (smallcifar1.pt1)" 
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_cifar" --model-specification "weight/cifar1.pt1" --weight-description "weight from easy repo (cifar1.pt1)" 
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "mobilenet_v2" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "mnasnet0_5" --model-specification "random_init" --weight-description "weight random"  --from-hub
 
 
-available models:
-
-    *mobilenet_v2
-    mobilenet_v3_small
-    mobilenet_v3_large
-    *mnasnet0_5
-    mnasnet0_75 (pretrained weight not available)
-    mnasnet1_0
-    *squeezenet1_1
-    shufflenet_v2_x0_5
-    shufflenet_v2_x1_0
-    nvidia_efficientnet_b0
-    *nvidia_gpunet (verification takes a long time)
+not implemented in the 
+python model_to_onnx.py --input-resolution 32 64 128  --model-type "nvidia_efficientnet_b0" --model-specification "random_init" --weight-description "weight random"  --from-hub
+python model_to_onnx.py --input-resolution 32 64 128  --model-type "shufflenet_v2_x0_5" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
+python model_to_onnx.py --input-resolution 32 64 128  --model-type "squeezenet1_1" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
+python model_to_onnx.py --input-resolution 32 64 128  --model-type "inception_v3" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
+python model_to_onnx.py --input-resolution 32 64 128  --model-type "googlenet" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
+python model_to_onnx.py --input-resolution 32 64  --model-type "densenet121" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
+python model_to_onnx.py --input-resolution 32 64 128  --model-type "nvidia_gpunet" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
 
 dependency :
 torchvision (because using model.py)
-onnx : require opset 1.5.0 
-if legacy-install-failure :
-https://www.pythonpool.com/error-legacy-install-failure/
 """
 
 import argparse
@@ -46,6 +33,7 @@ import torch
 import time
 import numpy as np
 from tqdm import tqdm
+import warnings
 
 from backbone_loader.backbone_pytorch.model import get_model
 from backbone_loader.backbone_loader_pytorch import TorchBatchModelWrapper
@@ -67,7 +55,7 @@ def save_weight_description(path_description,model_specification, weight_desc):
     else:
         print("description already present, no modification will be done")
 
-def replace_reduce_mean(onnx_model):
+def replace_reduce_mean(onnx_model,batch_size=1):
     """
     Replace all reduce_mean operation with GlobalAveragePool if they act on the last dimentions of the tensor
     do not change the name of this operation
@@ -76,15 +64,23 @@ def replace_reduce_mean(onnx_model):
         ints: -2 /2
         ints: -1 /3
         type: INTS
-    """
-    for node in onnx_model.graph.node:
-    
-        if node.name.find("ReduceMean")>=0:
 
+    Possible amelioration : 
+        - use more onnx helper
+        - infer batch_size
+        - identification of cases where we can replace
+    """
+    if onnx_model.ir_version!=5:
+        warnings.warn("conversion of onnx was tested with ir_version 5, may not work with another one")
+    for pos,node in enumerate(onnx_model.graph.node):
+        if node.name.find("ReduceMean")>=0:
+            print("attributes of node :")
+            print(node.attribute)
 
             #check if node operate on the last op
             do_replace_mean=False
             number_attribute=len(node.attribute)
+            index_keep_dims=-1
             for i in range(number_attribute):
                 attribute=node.attribute[i]
             
@@ -92,17 +88,34 @@ def replace_reduce_mean(onnx_model):
                     x,y=attribute.ints
                     if (x==2 and y==3) or (x==3 and y==2):
                         do_replace_mean=True
-
                     if (x==-2 and y==-1) or (x==-1 and y==-2):
                         do_replace_mean=True
+                if attribute.name=="keepdims":
+                    index_keep_dims=i
 
             #replace the node if needed
             if do_replace_mean:
                 print("Replacing ReduceMean operation with GlobalAveragePool")
-                
+                if index_keep_dims>=0:
+                    
+                    if node.attribute[index_keep_dims].i==0:
+                        print("adding one reshape layer ")
+                        reshape_data=onnx.helper.make_tensor(name="Reshape_dim",data_type=onnx.TensorProto.INT64,dims=[2],vals=np.array([batch_size,-1]).astype(np.int64).tobytes(),raw=True)   
+                        onnx_model.graph.initializer.append(reshape_data)
+                        old_name=node.output.pop()
+                        node.output.append("reshape_input")
+                        new_node=onnx.helper.make_node(op_type="Reshape",inputs=["reshape_input","Reshape_dim"],outputs=[old_name])
+                        onnx_model.graph.node.insert(pos+1,new_node)
+                else:
+                    print("keep dim was not found")
+                    assert False
                 for i in range(number_attribute):
                     node.attribute.pop()
+                
                 node.op_type="GlobalAveragePool"
+                node.name="GlobalAveragePool"+node.name[len("ReduceMean"):]# ReduceMean_32 -> GlobalAveragePool_32
+            else:
+                print("cant replace ReduceMean (do not recognize that the dimention are last)")
     return onnx_model
 
 
@@ -165,7 +178,7 @@ def model_to_onnx(args):
     # for each input, create the corresponding file
     
     for input_resolution in input_resolution:
-       
+        print("exporting res : ",input_resolution)
         resolution_folder = parent_path / f"{input_resolution}x{input_resolution}"
         resolution_folder.mkdir(parents=False,exist_ok=True)
         
@@ -196,10 +209,11 @@ def model_to_onnx(args):
         onnx_model = onnx.load(path_model)
         onnx_model=replace_reduce_mean(onnx_model)
         # convert model
-        #model_simp, check = simplify(onnx_model)
-        #assert check, "Simplified ONNX model could not be validated"
+        model_simp, check = simplify(onnx_model)
+        print("model was simplified")
+        assert check, "Simplified ONNX model could not be validated"
         #path_model_simp=resolution_folder/ f"simp-{model_name}-{input_resolution}_{input_resolution}.onnx"#if one wants to test difference
-        onnx.save(onnx_model,path_model)
+        onnx.save(model_simp,path_model)
     
 if __name__ == "__main__":
     

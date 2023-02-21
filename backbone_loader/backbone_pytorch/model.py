@@ -9,6 +9,9 @@ MODEL_LOC={
     "mnasnet0_5":"pytorch/vision:v0.10.0",
     "mnasnet0_75":"pytorch/vision:v0.10.0",
     "mnasnet1_0":"pytorch/vision:v0.10.0",
+    "inception_v3":"pytorch/vision:v0.10.0",
+    "googlenet":"pytorch/vision:v0.10.0",
+    "densenet121":"pytorch/vision:v0.10.0",
     "squeezenet1_1":"pytorch/vision:v0.10.0",
     "shufflenet_v2_x0_5":"pytorch/vision:v0.10.0",
     "shufflenet_v2_x1_0":"pytorch/vision:v0.10.0",
@@ -76,8 +79,7 @@ def load_model_weights(
             if verbose:
                 print(f"loading weight name : {k}", flush=True)
 
-            # bn : keep precision (low cost associated)
-            # does this work for the fpga ?
+            
             if "bn" in k:
                 new_dict[k] = weight.to(torch.float16)
             else:
