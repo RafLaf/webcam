@@ -1,10 +1,15 @@
 
 """
 script will load models, generate torchinfos and onnx (simplified version) for each resolution
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_tiny" --save-name "resnet12-tiny-mini1" --model-specification "weight/tinymini1.pt1" --weight-description "weight from easy repo (tinymini1.pt1), trained on miniimagenet" 
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_small" --save-name "resnet12-small-mini1" --model-specification "weight/smallmini1.pt1" --weight-description "weight from easy repo (smallmini1.pt1), trained on miniimagenet" 
 
-python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_tiny_cifar" --model-specification "weight/tinycifar1.pt1" --weight-description "weight from easy repo (tinycifar1.pt1)" 
-python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_small_cifar" --model-specification "weight/smallcifar1.pt1" --weight-description "weight from easy repo (smallcifar1.pt1)" 
-python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_cifar" --model-specification "weight/cifar1.pt1" --weight-description "weight from easy repo (cifar1.pt1)" 
+
+
+
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_tiny" --model-specification "weight/tinycifar1.pt1" --weight-description "weight from easy repo (tinycifar1.pt1)" 
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_small" --model-specification "weight/smallcifar1.pt1" --weight-description "weight from easy repo (smallcifar1.pt1)" 
+python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12" --model-specification "weight/cifar1.pt1" --weight-description "weight from easy repo (cifar1.pt1)" 
 python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "mobilenet_v2" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
 python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "mnasnet0_5" --model-specification "random_init" --weight-description "weight random"  --from-hub
 
@@ -58,7 +63,7 @@ def save_weight_description(path_description,model_specification, weight_desc):
 def replace_reduce_mean(onnx_model,batch_size=1):
     """
     Replace all reduce_mean operation with GlobalAveragePool if they act on the last dimentions of the tensor
-    do not change the name of this operation
+    do not change the name of this operation.
     Suppose that attribute has the following element : 
         name: "axes"
         ints: -2 /2
@@ -68,7 +73,7 @@ def replace_reduce_mean(onnx_model,batch_size=1):
     Possible amelioration : 
         - use more onnx helper
         - infer batch_size
-        - identification of cases where we can replace
+        - fix case where will cause another reshape to be added
     """
     if onnx_model.ir_version!=5:
         warnings.warn("conversion of onnx was tested with ir_version 5, may not work with another one")
@@ -158,22 +163,25 @@ def model_to_onnx(args):
     dummy_input=torch.randn(1, 3, min_res,min_res, device="cpu")
     _=model(dummy_input)
 
-    for i_res,res in tqdm(enumerate(possible_res),total=len(possible_res)):
-        print("res : ",res)
-        dummy_input=torch.randn(1, 3, res,res, device="cpu") 
+
+    if args.check_perf:
+
+        for i_res,res in tqdm(enumerate(possible_res),total=len(possible_res)):
+            print("res : ",res)
+            dummy_input=torch.randn(1, 3, res,res, device="cpu") 
+            
+            for i in range(number_eval):
+                t=time.time()
+                _=model(dummy_input)
+                time_execution[i_res,i]=time.time()-t
         
-        for i in range(number_eval):
-            t=time.time()
-            _=model(dummy_input)
-            time_execution[i_res,i]=time.time()-t
+        
+        np.savez(info_path/f"exec_time_{model_name}.npy",possible_res=possible_res,time_execution=time_execution)
+        
     
-    
-    np.savez(info_path/f"exec_time_{model_name}.npy",possible_res=possible_res,time_execution=time_execution)
-    
-    
-    print("possible resolutions : ",possible_res)
-    print("mean execution time : ",np.mean(time_execution,axis=-1))
-    print("mean fps : ",1/np.mean(time_execution,axis=-1))
+        print("possible resolutions : ",possible_res)
+        print("mean execution time : ",np.mean(time_execution,axis=-1))
+        print("mean fps : ",1/np.mean(time_execution,axis=-1))
     
     # for each input, create the corresponding file
     
@@ -195,13 +203,13 @@ def model_to_onnx(args):
         dummy_input = torch.randn(1, 3, input_resolution,input_resolution, device="cpu") 
 
         
-        with open(resolution_folder/ f"{model_name}_torchinfo.txt","w",encoding="utf-8") as file:
+        with open(resolution_folder/ f"{model_name}_{input_resolution}x{input_resolution}_torchinfo.txt","w",encoding="utf-8") as file:
             to_write= str(ans)
             file.write(to_write)
 
         # generate onnx
-        path_model=resolution_folder/ f"{model_name}_{input_resolution}_{input_resolution}.onnx"
-        path_model_simp=resolution_folder/ f"simp_{model_name}_{input_resolution}_{input_resolution}.onnx"
+        path_model=resolution_folder/ f"{args.save_name}_{input_resolution}x{input_resolution}"#f"{model_name}_{weight_name}_{input_resolution}_{input_resolution}.onnx"
+        #path_model_simp=resolution_folder/ f"simp_{model_name}_{input_resolution}_{input_resolution}.onnx"
         torch.onnx.export(model, dummy_input, path_model, verbose=False, opset_version=10, output_names=[args.output_names])
         
         #load onnx
@@ -226,7 +234,8 @@ if __name__ == "__main__":
     parser.add_argument("--model-specification", type=str, required=True, help="additional specs for model. 1. easy_resnet, path to weight 2. one of hardcoded kwargs in model.py")
     parser.add_argument("--weight-description", required=True, help="Description of the weight file")
     parser.add_argument("--output-names",default="Output", help="Name of the output layer")
-    
+    parser.add_argument("--check-perf",action='store_true', help="if specified, will perform inference evaluations")
+    parser.add_argument("--save-name",required=True, help="Name of the save model")
     #parser.add_argument("--perform-evaluation",action='store_true', help="if specified, will perform inference")
     # Parse the command line arguments
     args = parser.parse_args()

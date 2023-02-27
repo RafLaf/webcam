@@ -39,17 +39,17 @@ MODEL_SPECS={
 }
 
 EASY_SPECS={
-    "easy_resnet12_small_cifar":{
+    "easy_resnet12_small":{
         "feature_maps":45, 
         "num_classes":64, 
 
     },
-    "easy_resnet12_cifar":{
+    "easy_resnet12":{
         "feature_maps":64, 
         "num_classes":64, 
 
     },
-    "easy_resnet12_tiny_cifar":{
+    "easy_resnet12_tiny":{
         "feature_maps":32, 
         "num_classes":64, 
 
