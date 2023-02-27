@@ -208,7 +208,7 @@ def model_to_onnx(args):
             file.write(to_write)
 
         # generate onnx
-        path_model=resolution_folder/ f"{args.save_name}_{input_resolution}x{input_resolution}"#f"{model_name}_{weight_name}_{input_resolution}_{input_resolution}.onnx"
+        path_model=resolution_folder/ f"{args.save_name}_{input_resolution}x{input_resolution}.onnx"#f"{model_name}_{weight_name}_{input_resolution}_{input_resolution}.onnx"
         #path_model_simp=resolution_folder/ f"simp_{model_name}_{input_resolution}_{input_resolution}.onnx"
         torch.onnx.export(model, dummy_input, path_model, verbose=False, opset_version=10, output_names=[args.output_names])
         
