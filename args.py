@@ -65,6 +65,11 @@ def parse_backbone_params(parser):
         type=str,
     )
     parser.add_argument(
+        "--path_tarch",
+        default="/home/xilinx/jupyter_notebooks/l20leche/resnet12_32_32_small_onnx_pynqz1.tarch",
+        type=str
+    )
+    parser.add_argument(
         "--path_tmodel",
         default="/home/xilinx/resnet12_32_32_small_onnx_pynqz1.tmodel",
         type=str,
@@ -196,6 +201,7 @@ elif args.framework_backbone=="tensil_model":
     args.backbone_specs={
         "type":args.framework_backbone,
         "overlay":args.overlay,
+        "tmodel":args.path_tmodel,
         "path_bit": args.path_bit,
         "path_tmodel":args.path_tmodel
     }
