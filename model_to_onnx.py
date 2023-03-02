@@ -1,8 +1,8 @@
 
 """
 script will load models, generate torchinfos and onnx (simplified version) for each resolution
-python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_tiny" --save-name "resnet12-tiny-mini1" --model-specification "weight/tinymini1.pt1" --weight-description "weight from easy repo (tinymini1.pt1), trained on miniimagenet" 
-python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_small" --save-name "resnet12-small-mini1" --model-specification "weight/smallmini1.pt1" --weight-description "weight from easy repo (smallmini1.pt1), trained on miniimagenet" 
+python model_to_onnx.py --input-resolution 32  --model-type "easy_resnet12_tiny" --save-name "resnet12-tiny-mini1" --model-specification "weight/tinymini1.pt1" --weight-description "weight from easy repo (tinymini1.pt1), trained on miniimagenet" 
+python model_to_onnx.py --input-resolution 32  --model-type "easy_resnet12_small" --save-name "resnet12-small-mini1" --model-specification "weight/smallmini1.pt1" --weight-description "weight from easy repo (smallmini1.pt1), trained on miniimagenet" 
 
 
 
@@ -60,7 +60,7 @@ def save_weight_description(path_description,model_specification, weight_desc):
     else:
         print("description already present, no modification will be done")
 
-def replace_reduce_mean(onnx_model,batch_size=1):
+def replace_reduce_mean(onnx_model,):
     """
     Replace all reduce_mean operation with GlobalAveragePool if they act on the last dimentions of the tensor
     do not change the name of this operation.
@@ -72,55 +72,91 @@ def replace_reduce_mean(onnx_model,batch_size=1):
 
     Possible amelioration : 
         - use more onnx helper
-        - infer batch_size
-        - fix case where will cause another reshape to be added
+        - fix case where will cause another reshape to be 
+        - fix the case where the feature size is not the same as the last one in the reduce mean
     """
+
     if onnx_model.ir_version!=5:
         warnings.warn("conversion of onnx was tested with ir_version 5, may not work with another one")
+    if len(onnx_model.graph.output)!=1:
+        raise ValueError("only one output is supported")
+
+    # find the batch size and output size
+    output=onnx_model.graph.output[0]
+    print(output.type)
+    shape_output=output.type.tensor_type.shape.dim
+
+    if len(shape_output)!=2:
+        raise ValueError("only support output of shape (batch_size, output_size)")
+
+    batch_size,num_feature_output=shape_output[0].dim_value,shape_output[1].dim_value
+    print(batch_size)   
+
     for pos,node in enumerate(onnx_model.graph.node):
-        if node.name.find("ReduceMean")>=0:
-            print("attributes of node :")
-            print(node.attribute)
+        if node.name.find("ReduceMean")<0:
+            continue
+        
+        print("attributes of node :")
+        print(node.attribute)
 
-            #check if node operate on the last op
-            do_replace_mean=False
-            number_attribute=len(node.attribute)
-            index_keep_dims=-1
-            for i in range(number_attribute):
-                attribute=node.attribute[i]
-            
-                if attribute.name=="axes":
-                    x,y=attribute.ints
-                    if (x==2 and y==3) or (x==3 and y==2):
-                        do_replace_mean=True
-                    if (x==-2 and y==-1) or (x==-1 and y==-2):
-                        do_replace_mean=True
-                if attribute.name=="keepdims":
-                    index_keep_dims=i
+        #check if node operate on the last op
+        do_replace_mean=False
+        number_attribute=len(node.attribute)
+        index_keep_dims=-1
+        for i in range(number_attribute):
+            attribute=node.attribute[i]
+        
+            if attribute.name=="axes":
+                x,y=attribute.ints
+                if (x==2 and y==3) or (x==3 and y==2):
+                    do_replace_mean=True
+                if (x==-2 and y==-1) or (x==-1 and y==-2):
+                    do_replace_mean=True
+            if attribute.name=="keepdims":
+                index_keep_dims=i
 
-            #replace the node if needed
-            if do_replace_mean:
-                print("Replacing ReduceMean operation with GlobalAveragePool")
-                if index_keep_dims>=0:
-                    
-                    if node.attribute[index_keep_dims].i==0:
-                        print("adding one reshape layer ")
-                        reshape_data=onnx.helper.make_tensor(name="Reshape_dim",data_type=onnx.TensorProto.INT64,dims=[2],vals=np.array([batch_size,-1]).astype(np.int64).tobytes(),raw=True)   
-                        onnx_model.graph.initializer.append(reshape_data)
-                        old_name=node.output.pop()
-                        node.output.append("reshape_input")
-                        new_node=onnx.helper.make_node(op_type="Reshape",inputs=["reshape_input","Reshape_dim"],outputs=[old_name])
-                        onnx_model.graph.node.insert(pos+1,new_node)
-                else:
-                    print("keep dim was not found")
-                    assert False
-                for i in range(number_attribute):
-                    node.attribute.pop()
+        #replace the node if needed
+        if do_replace_mean:
+            print("Replacing ReduceMean operation with GlobalAveragePool")
+            if index_keep_dims>=0:
                 
-                node.op_type="GlobalAveragePool"
-                node.name="GlobalAveragePool"+node.name[len("ReduceMean"):]# ReduceMean_32 -> GlobalAveragePool_32
+                if node.attribute[index_keep_dims].i==0:
+
+                    print("adding one reshape layer ")
+                    old_output_name=node.output.pop()
+
+                   
+
+                    
+
+                    #reshape dimentions
+                    reshape_data=onnx.helper.make_tensor(name="Reshape_dim",data_type=onnx.TensorProto.INT64,dims=[2],vals=np.array([batch_size,num_feature_output]).astype(np.int64).tobytes(),raw=True)   
+                    onnx_model.graph.initializer.append(reshape_data)
+
+                    type_output=onnx.helper.make_tensor_type_proto(
+                        onnx.TensorProto.FLOAT,
+                        shape= [batch_size,num_feature_output]
+                    )
+
+                    #print(type_output)
+
+                    #new output layer
+                    new_output_name="reshape_output"#onnx.helper.make_tensor_value_info("reshape_input", type_output)
+
+                    node.output.append(new_output_name)
+                    new_node=onnx.helper.make_node(op_type="Reshape",name=f"custom_resahpe_{pos}", inputs=[new_output_name,"Reshape_dim"],outputs=[old_output_name])
+                    
+                    onnx_model.graph.node.insert(pos+1,new_node)
             else:
-                print("cant replace ReduceMean (do not recognize that the dimention are last)")
+                print("keep dim was not found")
+                assert False
+            for i in range(number_attribute):
+                node.attribute.pop()
+            
+            node.op_type="GlobalAveragePool"
+            node.name="GlobalAveragePool"+node.name[len("ReduceMean"):]# ReduceMean_32 -> GlobalAveragePool_32
+        else:
+            print("cant replace ReduceMean (do not recognize that the dimention are last)")
     return onnx_model
 
 
