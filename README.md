@@ -3,6 +3,22 @@
 This repository contains the code to perform online Few shot with a webcam on fpga.
 
 
+## clone drivers from tensil :
+If you don't mind having the entire tensil repository clone, you can just use the following command :
+    
+    git submodule update --remote
+
+
+If you only want the driver, use the following commands (in few_shot_demo directory):
+(not sure this cd + git read_tree + cd is required)
+
+git config core.sparseCheckout true
+echo drivers/tcu_pynq/ >> .git/modules/backbone_loader/tensil/info/sparse-checkout
+cd backbone_loader/tensil 
+git read-tree -mu HEAD 
+cd ../..
+git submodule update --force --checkout sub
+
 ## demo : 
 
     Press 0 1 or 2 to associate current camera feed to a shot.

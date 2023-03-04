@@ -73,7 +73,7 @@ class BoutonsManager:
 # In[18]:
 
 
-import sys
+import sys#TODO : à supprimer
 sys.path.append('/home/xilinx')
 
 # Needed to run inference on TCU
