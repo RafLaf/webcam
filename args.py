@@ -12,110 +12,139 @@ import sys
 
 def parse_evaluation_args(parser):
 
+    eval_group = parser.add_argument_group(
+        "evaluation", description="evaluation specific arguments"
+    )
     # dataset features
-    parser.add_argument(
+    eval_group.add_argument(
         "--dataset-path", type=str, default="data/", help="dataset path"
     )
-    parser.add_argument("--batch-size", type=int, default=1, help="batch size")
-    parser.add_argument(
+    eval_group.add_argument("--batch-size", type=int, default=1, help="batch size")
+    eval_group.add_argument(
         "--num-classes", type=int, default=10, help="number of class in dataset"
     )
 
-    
-
-    parser.add_argument(
-        "--sample-per-class", type=int, default=1000, help=" number of sample to take into acount"
-    )  
+    eval_group.add_argument(
+        "--sample-per-class",
+        type=int,
+        default=1000,
+        help=" number of sample to take into acount",
+    )
 
     ### few-shot parameters
-    parser.add_argument("--n-ways", type=int, default=5, help="number of few-shot ways")
-    parser.add_argument(
+    eval_group.add_argument(
+        "--n-ways", type=int, default=5, help="number of few-shot ways"
+    )
+    eval_group.add_argument(
         "--n-shots",
         type=int,
         default=5,
         help="how many shots per few-shot run, can be int or list of ints. In case of episodic training, use first item of list as number of shots.",
     )
-    parser.add_argument(
+    eval_group.add_argument(
         "--n-runs", type=int, default=1000, help="number of few-shot runs"
     )
-    parser.add_argument(
+    eval_group.add_argument(
         "--n-queries", type=int, default=15, help="number of few-shot queries"
     )
-    parser.add_argument("--batch-size-fs", type=int, default=20)
+    eval_group.add_argument("--batch-size-fs", type=int, default=20)
     # to be incorporate (to evaluation and demonstration):
     # parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
 
+
 def parse_model_params(parser):
-    parser.add_argument(
-        "--framework_backbone",
-        type=str,
-        default="tensil_model",
-        help="wich module should we use",
+
+    model_args = parser.add_argument_group(
+        "model", description="model specific arguments"
     )
+    # classification head
+    model_args.add_argument("--resolution-input", default=32)
+    model_args.add_argument("--classifier_type", default="ncm", type=str)
+    model_args.add_argument("--number_neiboors", default=5, type=int)
 
     # usefull only for pytorch
 
-    parser.add_argument(
+    framework_submodules = parser.add_subparsers(
+        help="option relative to framwork, including how the backbone is loaded",
+        dest="framework_backbone",
+    )
+
+    pytorch_parser = framework_submodules.add_parser(
+        "pytorch", help="pytorch specific arguments"
+    )
+
+    pytorch_parser.add_argument(
         "--device-pytorch",
         type=str,
         default="cuda:0",
         help="for pytorch only. Device on wich the backbone will be run",
     )
 
-    parser.add_argument("--backbone-type", default="easy-resnet12-cifar", help="model to load")
+    pytorch_parser.add_argument("--path-pytorch-weight", default=None, type=str)
+    pytorch_parser.add_argument(
+        "--backbone-type",
+        default="easy_resnet12",
+        help="model to load. available for easy : easy_resnet12/easy_resnet12_tiny/easy_resnet12_small",
+    )
 
     # only usefull for the pynk
-    parser.add_argument(
+    pynq_parser = framework_submodules.add_parser(
+        "tensil", help="pynq specific arguments"
+    )
+
+    pynq_parser.add_argument(
         "--path_bit",
         default="/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit",
         type=str,
     )
-    parser.add_argument(
+    pynq_parser.add_argument(
         "--path_tarch",
         default="/home/xilinx/jupyter_notebooks/l20leche/resnet12_32_32_small_onnx_pynqz1.tarch",
-        type=str
+        type=str,
     )
-    parser.add_argument(
+    pynq_parser.add_argument(
         "--path_tmodel",
         default="/home/xilinx/resnet12_32_32_small_onnx_pynqz1.tmodel",
         type=str,
     )
 
     # only usefull for onnx
-    parser.add_argument(
+    onnx_parser = framework_submodules.add_parser(
+        "onnx", help="onnx specific arguments"
+    )
+
+    onnx_parser.add_argument(
         "--path-onnx", default="weight/resnet12_32_32_64.onnx", type=str
     )
     # only usefull for pytorch
-    parser.add_argument(
-        "--path-pytorch-weight", default=None, type=str
-    )
-
-    # classification head
-    parser.add_argument("--classifier_type", default="ncm", type=str)
-    parser.add_argument("--number_neiboors", default=5, type=int)
+    onnx_parser.add_argument("--path-pytorch-weight", default=None, type=str)
 
 
 def parse_args_demonstration(parser):
-    parser.add_argument("--camera-specification", type=str, default="0")
-    parser.add_argument("--no-display", action="store_true")
-    parser.add_argument("--save-video", action="store_true")
-    parser.add_argument("--hdmi-display",action="store_true")
-    parser.add_argument("--video-format", type=str, default="DIVX")
-    parser.add_argument("--max_number_of_frame", type=int)
-    parser.add_argument("--use-saved-sample", action="store_true")
-    parser.add_argument("--path_shots_video", type=str, default="data/catvsdog")
-    parser.add_argument("--verbose", action="store_true")
-    parser.add_argument("--button-keyboard", default="keyboard")
+    demonstration_arguments = parser.add_argument_group(
+        "input / output", description="input output specific arguments"
+    )
+    demonstration_arguments.add_argument(
+        "--camera-specification", type=str, default="0"
+    )
+    demonstration_arguments.add_argument("--no-display", action="store_true")
+    demonstration_arguments.add_argument("--save-video", action="store_true")
+    demonstration_arguments.add_argument("--hdmi-display", action="store_true")
+    demonstration_arguments.add_argument("--video-format", type=str, default="DIVX")
+    demonstration_arguments.add_argument("--max_number_of_frame", type=int)
+    demonstration_arguments.add_argument("--use-saved-sample", action="store_true")
+    demonstration_arguments.add_argument(
+        "--path_shots_video", type=str, default="data/catvsdog"
+    )
+    demonstration_arguments.add_argument("--verbose", action="store_true")
+    demonstration_arguments.add_argument("--button-keyboard", default="keyboard")
 
-
-    
 
 def process_arguments(args):
     """
     process relative to both demo and cifar evaluation
     """
 
-    
     if args.framework_backbone == "pytorch":
 
         # backbone arguments :
@@ -125,63 +154,64 @@ def process_arguments(args):
             "model_name": args.backbone_type,
         }
 
-        #weights hardcoded for convinience
+        # weights hardcoded path convinience
 
         if args.path_pytorch_weight is None:
-            
-            if args.backbone_type == "easy-resnet12-small-cifar":
+            print("no weight provided, using hardcoded path")
+
+            if args.backbone_type == "easy_resnet12_small":
                 args.backbone_specs["weight"] = "weight/smallcifar1.pt1"
-            elif args.backbone_type == "easy-resnet12-cifar":
+            elif args.backbone_type == "easy_resnet12":
                 args.backbone_specs["weight"] = "weight/cifar1.pt1"
-            elif args.backbone_type == "easy-resnet12-tiny-cifar":
+            elif args.backbone_type == "easy-resnet12-tiny":
                 args.backbone_specs["weight"] = "weight/tinycifar1.pt1"
             else:
                 raise UserWarning(
                     f"weights for {args.backbone_type} is not hardcoded, provide the path yourself or check name validity"
                 )
         else:
-            args.backbone_specs["weight"]=args.path_pytorch_weight
+            args.backbone_specs["weight"] = args.path_pytorch_weight
         print(args.backbone_specs)
 
+    elif args.framework_backbone == "tensil":
+        # backbone arguments :
+        from pynq import Overlay
 
-elif args.framework_backbone=="tensil_model":
-    #backbone arguments :
-    from pynq import Overlay
-    args.overlay = Overlay(args.path_bit)
-    args.backbone_specs={
-        "type":args.framework_backbone,
-        "overlay":args.overlay,
-        "tmodel":args.path_tmodel,
-        "path_bit": args.path_bit,
-        "path_tmodel":args.path_tmodel
-    }
-
-    #TODO : delete unused path
-    print("adding path to local variable")
-    sys.path.append("/home/xilinx")
-    sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")
-    sys.path.append("/usr/local/lib/python3.8/dist-packages")
-    sys.path.append("/root/.ipython")
-    sys.path.append(
-        "/usr/local/share/pynq-venv/lib/python3.8/site-packages/IPython/extensions"
-    )
-    sys.path.append("/usr/lib/python3/dist-packages")
-    sys.path.append("/usr/local/share/pynq-venv/lib/python3.8/site-packages")
-    sys.path.append("/usr/lib/python3.8/dist-packages")
-
-
-    elif args.framework_backbone=="onnx":
-        args.backbone_specs={
-            "type":args.framework_backbone,
-            "path_onnx":args.path_onnx
+        args.overlay = Overlay(args.path_bit)
+        args.backbone_specs = {
+            "type": args.framework_backbone,
+            "overlay": args.overlay,
+            "tmodel": args.path_tmodel,
+            "path_bit": args.path_bit,
+            "path_tmodel": args.path_tmodel,
         }
 
+        # TODO : delete unused path
+        print("adding path to local variable")
+        sys.path.append("/home/xilinx")
+        sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")
+        sys.path.append("/usr/local/lib/python3.8/dist-packages")
+        sys.path.append("/root/.ipython")
+        sys.path.append(
+            "/usr/local/share/pynq-venv/lib/python3.8/site-packages/IPython/extensions"
+        )
+        sys.path.append("/usr/lib/python3/dist-packages")
+        sys.path.append("/usr/local/share/pynq-venv/lib/python3.8/site-packages")
+        sys.path.append("/usr/lib/python3.8/dist-packages")
+
+    elif args.framework_backbone == "onnx":
+        args.backbone_specs = {
+            "type": args.framework_backbone,
+            "path_onnx": args.path_onnx,
+        }
 
         # classifier arguments
         args.classifier_specs = {"model_name": args.classifier_type}
 
         if args.classifier_type == "knn":
-            args.classifier_specs["kwargs"] = {"number_neighboors": args.number_neiboors}
+            args.classifier_specs["kwargs"] = {
+                "number_neighboors": args.number_neiboors
+            }
 
 
 def process_args_evaluation(args):
@@ -214,8 +244,9 @@ def process_args_demo(args):
     ### process remaining arguments
 
     # resolution
-    if len(args.resolution_input) == 1:
-
+    if type(args.resolution_input) is int:
+        args.resolution_input = (args.resolution_input, args.resolution_input)
+    elif len(args.resolution_input) == 1:
         res_x = args.resolution_input[0]
         args.resolution_input = (res_x, res_x)
     args.resolution_input = tuple(args.resolution_input)
