@@ -18,6 +18,7 @@ import time
 # import cProfile
 
 from input_output.graphical_interface import OpencvInterface
+from input_output.graphical_interface import OpencvInterface
 from few_shot_model.few_shot_model import FewShotModel
 from backbone_loader.backbone_loader import get_model
 from few_shot_model.data_few_shot import DataFewShot
@@ -75,14 +76,21 @@ def launch_demo(args):
     """
     initialize the variable and launch the demo
     """
+
+    # INITIALIZATION
+    # --------------------------------------
     backbone = get_model(args.backbone_specs)
     few_shot_model = FewShotModel(args.classifier_specs)
 
     # data holding variables
     possible_input = [str(i) for i in range(177, 185)]
+    possible_input_2 = ["1","2","3","4"]
+
     class_num = len(possible_input)
     current_data = DataFewShot(class_num)
+    
 
+    
     # program related constant
     do_inference = False
     doing_registration = False
@@ -92,9 +100,12 @@ def launch_demo(args):
     # time related variables
     clock = 0
     clock_main = 0
-    number_frame_init = 20
+    number_frame_init = 5
+
 
     # CV2 related constant
+
+    
     if not (args.camera_specification is None):
         cap = cv2.VideoCapture(args.camera_specification)
 
@@ -102,8 +113,15 @@ def launch_demo(args):
 
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
 
+    if (args.hdmi_display):
+        from pynq.lib.video import VideoMode
+        hdmi_out = args.overlay.video.hdmi_out
+        mode = VideoMode(1920, 1080, 24)
+        hdmi_out.configure(mode)
+        hdmi_out.start()
+
     if args.button_keyboard == "button":
-        from input_output.bouton_manager import BoutonsManager
+        from input_output.BoutonsManager import BoutonsManager
 
         btn_manager = BoutonsManager(args.overlay.btns_gpio)
     if args.save_video:
@@ -111,6 +129,10 @@ def launch_demo(args):
         out = cv2.VideoWriter("output.avi", fourcc, 30.0, RES_OUTPUT)
 
     number_image = 1
+
+    # MAIN LOOP
+    # --------------------------------------
+    
 
     while True:
         new_frame_time = time.time()
@@ -133,8 +155,16 @@ def launch_demo(args):
         if args.button_keyboard == "keyboard":
             key = cv_interface.get_key()
             key = chr(key)  # key convertion to char
+
+            
+        elif args.button_keyboard == "button":
+            print("test_key_passage_avant")
+            key = btn_manager.change_state()
+            print("test_key_passage")
+
         elif args.button_keyboard == "button":
             key = btn_manager.change_state()
+
         else:
             print("L'argument button_keyboard n'est pas valide")
 
@@ -154,25 +184,42 @@ def launch_demo(args):
                     )
                     key = "i"  # simulate press of the key for inference
 
+                    print(key)
+
+
+
             cv_interface.put_text("Initialization")
 
         # if shot acquisition : stop inference and add image
         # once the key is pressed, the 10 following frames will be saved as snapshot
         # only the first one will be saved for display
+
+        print("clock_main = ",clock_main, " nm frame init = ", number_frame_init, " do_reset= ", do_reset)
+        print("key in possible input : ", (key in possible_input_2))
         if (
-            (key in possible_input or doing_registration)
+            (key in possible_input or doing_registration or key in possible_input_2)
+
             and clock_main > number_frame_init
             and not do_reset
         ):
             do_inference = False
+            
 
-            if key in possible_input:
-                classe = possible_input.index(key)
+            if key in possible_input or key in possible_input_2:
+                print("la key est bien dans les possibles inputs")
+                if key in possible_input :
+                    classe = possible_input.index(key)
+                else :
+                    classe = possible_input_2.index(key)
                 last_detected = clock_main * 1  # time.time()
+                
 
             frame = cv_interface.get_copy_captured_image(args.resolution_input)
+            
+            print("la valeur de key avant le test des possibles inputs vaut : ", key )
 
-            if key in possible_input:
+            if ((key in possible_input) or (key in  possible_input_2)):
+
                 # if this is the first frame (ie there was an user input)
                 cv_interface.add_snapshot(classe)
 
@@ -191,6 +238,7 @@ def launch_demo(args):
 
         # perform inference
         if do_inference and clock_main > number_frame_init and not do_reset:
+            print("inference is running")
             frame = cv_interface.get_copy_captured_image(args.resolution_input)
             frame = preprocess(frame)
             features = backbone(frame)
@@ -224,10 +272,13 @@ def launch_demo(args):
             do_reset = True
 
         # inference action
+        print("Valeur de key = ", key, " Valeur de current data.isrecorded = ", current_data.is_data_recorded())
+        
+        # Dans la ligne suivante, il faudra enlever le not, je l'ai ajouté pour faire l'inférence
         if key == "i" and current_data.is_data_recorded():
             print("Begining Inference")
             do_inference = True
-            probabilities = None
+            probabilities = None 
 
         # quit action
         if key == "q" or (
@@ -235,19 +286,34 @@ def launch_demo(args):
             and number_image > args.max_number_of_frame
         ):
             # stop simulation if max number of frame is attained
+            print("stoping simu")
             break
 
         clock_main += 1
 
         # outputs
-
+        print("no display", args.no_display)
         if not (args.no_display):
-            cv_interface.show()
 
+            
+            print("test")
+            if (args.hdmi_display):
+                frame = hdmi_out.newframe()
+                print(frame.shape)
+                frame2 = cv_interface.frame
+                frame[0:720,0:720,:]=frame2[0:720,0:720,:]
+                print("gfggg ",frame.shape)
+                
+                hdmi_out.writeframe(frame)
+            else:
+                cv_interface.show()
+
+        
         if args.save_video:
             frame_to_save = cv_interface.frame
             out.write(frame_to_save)
 
+    # close all
     cv_interface.close()
     if args.save_video:
         out.release()

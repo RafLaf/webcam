@@ -31,5 +31,8 @@ class backbone_onnx_wrapper:
             {"input.1": img.astype(np.float32)},
 
         )
-        
+
+        if len(outputs)>1:
+            print("warning : more than one output")
+            return outputs[1]#return only the feature part (second part of the tuple output)
         return outputs[0]

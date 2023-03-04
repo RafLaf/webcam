@@ -23,7 +23,9 @@ This repository contains the code to perform online Few shot with a webcam on fp
     - run demo with tensil for 300 frames(path of driver is hardcoded)
         python main.py --framework_backbone tensil --camera-specification catvsdog.mp4 --no-display --save-video --use-saved-sample --max_number_of_frame 300 --resolution-input 32 --path-onnx weight/resnet12_32_32_64.onnx
     - run evaluation with onnx 
-        python few_shot_evaluation.py --framework_backbone onnx --path-onnx weight/resnet12_32_32_64.onnx --dataset-path data/cifar-10-batches-py/test_batch
+        python few_shot_evaluation.py --framework_backbone onnx --path-onnx weight/resnet12_32_32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch
+
+        python few_shot_evaluation.py --framework_backbone onnx --path-onnx onnx/32x32/resnet12-tiny-mini1_32x32.onnx --dataset-path data/cifar-10-batches-py/test_batch
 
 ![plot](./static/demo_webcam.png)
 

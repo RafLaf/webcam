@@ -94,6 +94,7 @@ def parse_args_demonstration(parser):
     parser.add_argument("--camera-specification", type=str, default="0")
     parser.add_argument("--no-display", action="store_true")
     parser.add_argument("--save-video", action="store_true")
+    parser.add_argument("--hdmi-display",action="store_true")
     parser.add_argument("--video-format", type=str, default="DIVX")
     parser.add_argument("--max_number_of_frame", type=int)
     parser.add_argument("--use-saved-sample", action="store_true")
@@ -101,6 +102,8 @@ def parse_args_demonstration(parser):
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--button-keyboard", default="keyboard")
 
+
+    
 
 def process_arguments(args):
     """
@@ -135,23 +138,17 @@ def process_arguments(args):
             args.backbone_specs["weight"]=args.path_pytorch_weight
         print(args.backbone_specs)
 
-    elif args.framework_backbone == "tensil_model":
-        # backbone arguments :
-        import Overlay
 
+    elif args.framework_backbone=="tensil_model":
+        #backbone arguments :
+        from pynq import Overlay
         args.overlay = Overlay(args.path_bit)
-        args.backbone_specs = {
-            "type": args.framework_backbone,
-            "overlay": args.overlay,
-            "path_tmodel": args.path_tmodel,
+        args.backbone_specs={
+            "type":args.framework_backbone,
+            "overlay":args.overlay,
+            "path_bit": args.path_bit,
+            "path_tmodel":args.path_tmodel
         }
-    elif args.framework_backbone == "onnx":
-        args.backbone_specs = {
-            "type": args.framework_backbone,
-            "path_onnx": args.path_onnx,
-        }
-
-    if args.framework_backbone == "pynk":
         print("adding path to local variable")
         sys.path.append("/home/xilinx")
         sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")
@@ -163,23 +160,20 @@ def process_arguments(args):
         sys.path.append("/usr/lib/python3/dist-packages")
         sys.path.append("/usr/local/share/pynq-venv/lib/python3.8/site-packages")
         sys.path.append("/usr/lib/python3.8/dist-packages")
-        # backbone arguments :
-        args.backbone_specs = {
-            "type": args.framework_backbone,
-            "path_bit": args.path_bit,
-            "path_tmodel": args.path_tmodel,
-        }
-    elif args.framework_backbone == "onnx":
-        args.backbone_specs = {
-            "type": args.framework_backbone,
-            "path_onnx": args.path_onnx,
+
+
+    elif args.framework_backbone=="onnx":
+        args.backbone_specs={
+            "type":args.framework_backbone,
+            "path_onnx":args.path_onnx
         }
 
-    # classifier arguments
-    args.classifier_specs = {"model_name": args.classifier_type}
 
-    if args.classifier_type == "knn":
-        args.classifier_specs["kwargs"] = {"number_neighboors": args.number_neiboors}
+        # classifier arguments
+        args.classifier_specs = {"model_name": args.classifier_type}
+
+        if args.classifier_type == "knn":
+            args.classifier_specs["kwargs"] = {"number_neighboors": args.number_neiboors}
 
 
 def process_args_evaluation(args):
