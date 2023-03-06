@@ -9,18 +9,9 @@ file_dir = os.path.dirname(__file__)
 print(file_dir)
 
 sys.path.append(file_dir+"/tensil/drivers/")
-from tensil.tcu_pynq.driver import Driver
+from tensil.drivers.tcu_pynq.driver import Driver
 from tensil.drivers.tcu_pynq.architecture import Architecture
 from tensil.drivers.tcu_pynq.data_type import DataType
-
-
-with open(
-    "test.tarch") as f:
-
-    js=json.load(f)
-    js["data_type"]=DataType[js["data_type"]]
-    ac=Architecture(**js)
-    print(ac)
 
 class backbone_tensil_wrapper:
 
