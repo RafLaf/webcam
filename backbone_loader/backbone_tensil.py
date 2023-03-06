@@ -9,9 +9,9 @@ file_dir = os.path.dirname(__file__)
 print(file_dir)
 
 sys.path.append(file_dir+"/tensil/drivers/")
-from tensil.drivers.tcu_pynq.driver import Driver
-from tensil.drivers.tcu_pynq.architecture import Architecture
-from tensil.drivers.tcu_pynq.data_type import DataType
+from driver.driver import Driver
+from driver.architecture import Architecture
+from driver.data_type import DataType
 
 class backbone_tensil_wrapper:
 

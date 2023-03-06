@@ -5,8 +5,7 @@ weight/
 *.avi
 test.py
 *.yml
-*/__pycache__/
-few_shot_model/__pycache__/*
+*__pycache__
 *.pyc
 onnx/
 test.*
