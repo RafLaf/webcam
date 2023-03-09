@@ -188,13 +188,13 @@ def process_arguments(args):
             "path_onnx": args.path_onnx,
         }
 
-        # classifier arguments
-        args.classifier_specs = {"model_name": args.classifier_type}
+    # classifier arguments
+    args.classifier_specs = {"model_name": args.classifier_type}
 
-        if args.classifier_type == "knn":
-            args.classifier_specs["kwargs"] = {
-                "number_neighboors": args.number_neiboors
-            }
+    if args.classifier_type == "knn":
+        args.classifier_specs["kwargs"] = {
+            "number_neighboors": args.number_neiboors
+        }
 
 
 def process_args_evaluation(args):
