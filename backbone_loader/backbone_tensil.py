@@ -19,11 +19,10 @@ from tcu_pynq.data_type import DataType
 
 class backbone_tensil_wrapper:
 
-    def __init__(self,overlay,path_tarch,path_tmodel,debug=False):
+    def __init__(self,overlay,path_tmodel,debug=False):
         """
         Args :
             - path_bit : path qui mêne au bitstream, e.g : home/xilinx/bitstream.bit
-            - path_tarch : path qui mène au tarch, e.g : home/xilinx/model.tarch
             - path_tmodel : path qui mène aui tmodel, e.g : home/xilinx/model.tmodel
         """
         print(f"dma 0 : {overlay.axi_dma_0}")
