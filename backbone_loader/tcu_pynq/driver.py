@@ -206,6 +206,8 @@ class Driver:
             self.model = model_from_json(f.read())
         # check that model arch matches driver arch
         if not (self.model.arch == self.arch):
+
+            print(self)
             raise Exception(
                 "model requires architecture {} but current architecture is {}".format(
                     self.model.arch, self.arch

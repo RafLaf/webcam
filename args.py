@@ -184,20 +184,21 @@ def process_arguments(args):
             "tmodel": args.path_tmodel,
             "path_bit": args.path_bit,
             "path_tmodel": args.path_tmodel,
+
         }
 
-        # TODO : delete unused path
-        print("adding path to local variable")
-        sys.path.append("/home/xilinx")
-        sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")
-        sys.path.append("/usr/local/lib/python3.8/dist-packages")
-        sys.path.append("/root/.ipython")
-        sys.path.append(
-            "/usr/local/share/pynq-venv/lib/python3.8/site-packages/IPython/extensions"
-        )
-        sys.path.append("/usr/lib/python3/dist-packages")
-        sys.path.append("/usr/local/share/pynq-venv/lib/python3.8/site-packages")
-        sys.path.append("/usr/lib/python3.8/dist-packages")
+        # # TODO : delete unused path
+        # print("adding path to local variable")
+        # sys.path.append("/home/xilinx")
+        # sys.path.append("/home/xilinx/jupyter_notebooks/l20leche")
+        # sys.path.append("/usr/local/lib/python3.8/dist-packages")
+        # sys.path.append("/root/.ipython")
+        # sys.path.append(
+        #     "/usr/local/share/pynq-venv/lib/python3.8/site-packages/IPython/extensions"
+        # )
+        # sys.path.append("/usr/lib/python3/dist-packages")
+        # sys.path.append("/usr/local/share/pynq-venv/lib/python3.8/site-packages")
+        # sys.path.append("/usr/lib/python3.8/dist-packages")
 
     elif args.framework_backbone == "onnx":
         args.backbone_specs = {

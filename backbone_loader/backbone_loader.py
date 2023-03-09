@@ -25,7 +25,7 @@ def get_model(model_specs):
         model_name=model_specs["model_name"]
         weight=model_specs["weight"]
         return TorchBatchModelWrapper(model_name,weight,device=device)
-    elif model_specs["type"]=="tensil_model":
+    elif model_specs["type"]=="tensil":
         from backbone_loader.backbone_tensil import backbone_tensil_wrapper
         return backbone_tensil_wrapper(model_specs["overlay"],model_specs["path_tarch"],model_specs["path_tmodel"])
     elif model_specs["type"]=="onnx":

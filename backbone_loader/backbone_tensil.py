@@ -5,13 +5,17 @@ import os
 import json
 import numpy as np
 
+
 file_dir = os.path.dirname(__file__)
 print(file_dir)
+sys.path.append(file_dir)#add current path to python path because import of tcu_pynq is relative
 
-sys.path.append(file_dir+"/tensil/drivers/")
-from driver.driver import Driver
-from driver.architecture import Architecture
-from driver.data_type import DataType
+#import using the same syntax as in the driver in order to avoid mixing repo if sevral folders are present
+from tcu_pynq.driver import Driver
+from tcu_pynq.architecture import Architecture
+from tcu_pynq.data_type import DataType
+
+
 
 class backbone_tensil_wrapper:
 
@@ -26,10 +30,11 @@ class backbone_tensil_wrapper:
 
         if not hasattr(overlay, 'axi_dma_0'):
             raise RuntimeError("DMA was not found in overlay")
-        with open(path_tarch) as f:
+        with open(path_tmodel) as f:
             js=json.load(f)
-            js["data_type"]=DataType[js["data_type"]]
-            self.tarch=Architecture(**js)
+            arch=js["arch"]
+            arch["data_type"]=DataType[arch["data_type"]]
+            self.tarch=Architecture(**arch)
             
         self.tcu = Driver(self.tarch, overlay.axi_dma_0,debug=debug)
         print("tcu succefullt loaded")
