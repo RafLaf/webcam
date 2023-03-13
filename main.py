@@ -104,9 +104,9 @@ def launch_demo():
         cap = cv2.VideoCapture(args.camera_specification)
 
     # cv_interface manage graphical manipulation
-
+    #TODO : add input/output to serparate class and use with statement
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
-
+    
     if (args.hdmi_display):
         from pynq.lib.video import VideoMode
         hdmi_out = args.overlay.video.hdmi_out
@@ -116,199 +116,195 @@ def launch_demo():
 
     if args.button_keyboard == "button":
         from input_output.BoutonsManager import BoutonsManager
-
         btn_manager = BoutonsManager(args.overlay.btns_gpio)
     if args.save_video:
         fourcc = cv2.VideoWriter_fourcc(*"XVID")
         out = cv2.VideoWriter("output.avi", fourcc, 30.0, RES_OUTPUT)
 
     number_image = 1
+    try : 
+        while True:
+            new_frame_time = time.time()
+            fps = int(1 / (new_frame_time - prev_frame_time))
 
-    while True:
-        new_frame_time = time.time()
-        fps = int(1 / (new_frame_time - prev_frame_time))
+            # get inputs
+            # video input
+            try:
+                cv_interface.read_frame()
+                print(f"reading image n°{number_image}")
+                print(f"fps : {fps}")
+                number_image = number_image + 1
+            except:
+                print("failed to get next image")
+                break
 
-        # get inputs
-        # video input
-        try:
-            cv_interface.read_frame()
-            print(f"reading image n°{number_image}")
-            print(f"fps : {fps}")
-            number_image = number_image + 1
-        except:
-            print("failed to get next image")
-            break
+            prev_frame_time = new_frame_time
 
-        prev_frame_time = new_frame_time
+            # keyboard/button input
+            if args.button_keyboard == "keyboard":
+                key = cv_interface.get_key()
+                key = chr(key)  # key convertion to char
 
-        # keyboard/button input
-        if args.button_keyboard == "keyboard":
-            key = cv_interface.get_key()
-            key = chr(key)  # key convertion to char
-
-            
-        elif args.button_keyboard == "button":
-            print("test_key_passage_avant")
-            key = btn_manager.change_state()
-            print("test_key_passage")
-
-        elif args.button_keyboard == "button":
-            key = btn_manager.change_state()
-
-        else:
-            print("L'argument button_keyboard n'est pas valide")
-
-        # initialisation
-        if clock_main <= number_frame_init:
-            frame = cv_interface.get_copy_captured_image(args.resolution_input)
-            frame = preprocess(frame)
-            features = backbone(frame)
-
-            current_data.add_mean_repr(features)
-            if clock_main == number_frame_init:
-                current_data.aggregate_mean_rep()
-                if args.use_saved_sample:
-                    path_sample = args.path_shots_video
-                    compute_and_add_feature_saved_image(
-                        backbone, cv_interface, current_data, path_sample
-                    )
-                    key = "i"  # simulate press of the key for inference
-
-                    print(key)
-
-
-
-            cv_interface.put_text("Initialization")
-
-        # if shot acquisition : stop inference and add image
-        # once the key is pressed, the 10 following frames will be saved as snapshot
-        # only the first one will be saved for display
-
-        print("clock_main = ",clock_main, " nm frame init = ", number_frame_init, " do_reset= ", do_reset)
-        print("key in possible input : ", (key in possible_input_2))
-        if (
-            (key in possible_input or doing_registration or key in possible_input_2)
-
-            and clock_main > number_frame_init
-            and not do_reset
-        ):
-            do_inference = False
-            
-            
-            
-
-
-            if key in possible_input or key in possible_input_2:
-                print("la key est bien dans les possibles inputs")
-                if key in possible_input :
-                    classe = possible_input.index(key)
-                else :
-                    classe = possible_input_2.index(key)
-                last_detected = clock_main * 1  # time.time()
                 
+            elif args.button_keyboard == "button":
+                print("test_key_passage_avant")
+                key = btn_manager.change_state()
+                print("test_key_passage")
 
-            frame = cv_interface.get_copy_captured_image(args.resolution_input)
-            
-            print("la valeur de key avant le test des possibles inputs vaut : ", key )
+            elif args.button_keyboard == "button":
+                key = btn_manager.change_state()
 
-            if ((key in possible_input) or (key in  possible_input_2)):
-
-                # if this is the first frame (ie there was an user input)
-                cv_interface.add_snapshot(classe)
-
-            # add the representation to the class
-            frame = preprocess(frame)
-            features = backbone(frame)
-            current_data.add_repr(classe, features)
-
-            if abs(clock_main - last_detected) < 10:
-                doing_registration = True
-                text = f"Class :{classe} registered. \
-                Number of shots: {cv_interface.get_number_snapshot(classe)}"
-                cv_interface.put_text(text)
             else:
-                doing_registration = False
+                print("L'argument button_keyboard n'est pas valide")
 
-        # perform inference
-        if do_inference and clock_main > number_frame_init and not do_reset:
-            print("inference is running")
-            frame = cv_interface.get_copy_captured_image(args.resolution_input)
-            frame = preprocess(frame)
-            features = backbone(frame)
-            classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
-                features,
-                probabilities,
-                current_data.get_shot_list(),
-                current_data.get_mean_features(),
+            # initialisation
+            if clock_main <= number_frame_init:
+                frame = cv_interface.get_copy_captured_image(args.resolution_input)
+                frame = preprocess(frame)
+                features = backbone(frame)
+
+                current_data.add_mean_repr(features)
+                if clock_main == number_frame_init:
+                    current_data.aggregate_mean_rep()
+                    if args.use_saved_sample:
+                        path_sample = args.path_shots_video
+                        compute_and_add_feature_saved_image(
+                            backbone, cv_interface, current_data, path_sample
+                        )
+                        key = "i"  # simulate press of the key for inference
+
+                        print(key)
+
+
+
+                cv_interface.put_text("Initialization")
+
+            # if shot acquisition : stop inference and add image
+            # once the key is pressed, the 10 following frames will be saved as snapshot
+            # only the first one will be saved for display
+
+            print("clock_main = ",clock_main, " nm frame init = ", number_frame_init, " do_reset= ", do_reset)
+            print("key in possible input : ", (key in possible_input_2))
+            if (
+                (key in possible_input or doing_registration or key in possible_input_2)
+
+                and clock_main > number_frame_init
+                and not do_reset
+            ):
+                do_inference = False
+
+
+                if key in possible_input or key in possible_input_2:
+                    print("la key est bien dans les possibles inputs")
+                    if key in possible_input :
+                        classe = possible_input.index(key)
+                    else :
+                        classe = possible_input_2.index(key)
+                    last_detected = clock_main * 1  # time.time()
+                    
+
+                frame = cv_interface.get_copy_captured_image(args.resolution_input)
+                
+                print("la valeur de key avant le test des possibles inputs vaut : ", key )
+
+                if ((key in possible_input) or (key in  possible_input_2)):
+
+                    # if this is the first frame (ie there was an user input)
+                    cv_interface.add_snapshot(classe)
+
+                # add the representation to the class
+                frame = preprocess(frame)
+                features = backbone(frame)
+                current_data.add_repr(classe, features)
+
+                if abs(clock_main - last_detected) < 10:
+                    doing_registration = True
+                    text = f"Class :{classe} registered. \
+                    Number of shots: {cv_interface.get_number_snapshot(classe)}"
+                    cv_interface.put_text(text)
+                else:
+                    doing_registration = False
+
+            # perform inference
+            if do_inference and clock_main > number_frame_init and not do_reset:
+                print("inference is running")
+                frame = cv_interface.get_copy_captured_image(args.resolution_input)
+                frame = preprocess(frame)
+                features = backbone(frame)
+                classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
+                    features,
+                    probabilities,
+                    current_data.get_shot_list(),
+                    current_data.get_mean_features(),
+                )
+
+                cv_interface.put_text(f"Object is from class :", classe_prediction)
+                cv_interface.draw_indicator(probabilities)
+
+                if args.no_display and not (args.save_video):
+
+                    print("probabilities :", probabilities)
+
+            # add info on frame
+            cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
+            cv_interface.put_text(
+                f"frame number:{clock_main}", bottom_pos_x=0.8, bottom_pos_y=0.1
             )
 
-            cv_interface.put_text(f"Object is from class :", classe_prediction)
-            cv_interface.draw_indicator(probabilities)
+            # update current state
+            # reset action
+            if key == "r":
+                doing_registration = False
+                do_inference = False
+                current_data.reset()
+                cv_interface.reset_snapshot()
+                do_reset = True
 
-            if args.no_display and not (args.save_video):
+            # inference action
+            print("Valeur de key = ", key, " Valeur de current data.isrecorded = ", current_data.is_data_recorded())
+            
+            # Dans la ligne suivante, il faudra enlever le not, je l'ai ajouté pour faire l'inférence
+            if key == "i" and current_data.is_data_recorded():
+                print("Begining Inference")
+                do_inference = True
+                probabilities = None 
 
-                print("probabilities :", probabilities)
+            # quit action
+            if key == "q" or (
+                not (args.max_number_of_frame is None)
+                and number_image > args.max_number_of_frame
+            ):
+                # stop simulation if max number of frame is attained
+                print("stoping simu")
+                break
 
-        # add info on frame
-        cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
-        cv_interface.put_text(
-            f"frame number:{clock_main}", bottom_pos_x=0.8, bottom_pos_y=0.1
-        )
+            clock_main += 1
 
-        # update current state
-        # reset action
-        if key == "r":
-            doing_registration = False
-            do_inference = False
-            current_data.reset()
-            cv_interface.reset_snapshot()
-            do_reset = True
+            # outputs
+            print("no display", args.no_display)
+            if not (args.no_display):
 
-        # inference action
-        print("Valeur de key = ", key, " Valeur de current data.isrecorded = ", current_data.is_data_recorded())
-        
-        # Dans la ligne suivante, il faudra enlever le not, je l'ai ajouté pour faire l'inférence
-        if key == "i" and current_data.is_data_recorded():
-            print("Begining Inference")
-            do_inference = True
-            probabilities = None 
-
-        # quit action
-        if key == "q" or (
-            not (args.max_number_of_frame is None)
-            and number_image > args.max_number_of_frame
-        ):
-            # stop simulation if max number of frame is attained
-            print("stoping simu")
-            break
-
-        clock_main += 1
-
-        # outputs
-        print("no display", args.no_display)
-        if not (args.no_display):
+                
+                print("test")
+                if (args.hdmi_display):
+                    frame = hdmi_out.newframe()
+                    print(frame.shape)
+                    frame2 = cv_interface.frame
+                    frame[0:720,0:720,:]=frame2[0:720,0:720,:]#TODO : put 720 in args
+                    print("gfggg ",frame.shape)
+                    
+                    hdmi_out.writeframe(frame)
+                else:
+                    cv_interface.show()
 
             
-            print("test")
-            if (args.hdmi_display):
-                frame = hdmi_out.newframe()
-                print(frame.shape)
-                frame2 = cv_interface.frame
-                frame[0:720,0:720,:]=frame2[0:720,0:720,:]
-                print("gfggg ",frame.shape)
-                
-                hdmi_out.writeframe(frame)
-            else:
-                cv_interface.show()
-
-        
+            if args.save_video:
+                frame_to_save = cv_interface.frame
+                out.write(frame_to_save)
+    finally:
+        cv_interface.close()
         if args.save_video:
-            frame_to_save = cv_interface.frame
-            out.write(frame_to_save)
-
-    cv_interface.close()
-    if args.save_video:
-        out.release()
+            out.release()
 
 
 launch_demo()
