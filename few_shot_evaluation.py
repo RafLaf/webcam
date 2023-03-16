@@ -1,16 +1,4 @@
 """
-exemple : 
-python few_shot_evaluation.py --framework_backbone onnx --path-onnx weight/resnet12_32_32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch
-python few_shot_evaluation.py --framework_backbone onnx --path-onnx onnx/easy-resnet12-small-cifar/32x32/easy-resnet12-small-cifar-32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch 
-
-tiny :
-python few_shot_evaluation.py --framework_backbone onnx --path-onnx onnx/easy-resnet12-tiny-cifar/32x32/easy-resnet12-tiny-cifar-32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch 
-
-with reduce time : 
-python few_shot_evaluation.py --framework_backbone onnx --path-onnx onnx/easy-resnet12-small-cifar/32x32/easy-resnet12-small-cifar-32_32.onnx --dataset-path data/cifar-10-batches-py/test_batch  --num-classes 5 --sample-per-class 100
-
-python few_shot_evaluation.py --framework_backbone pytorch --backbone-type easy-resnet12-small-cifar --path-pytorch-weight weight/smallcifar1.pt1 --dataset-path data/cifar-10-batches-py/test_batch --batch-size=4 --device-pytorch cuda:0
-
 """
 import time
 import numpy as np

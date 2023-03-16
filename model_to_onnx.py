@@ -1,20 +1,19 @@
 
 """
 script will load models, generate torchinfos and onnx (simplified version) for each resolution
-python model_to_onnx.py --input-resolution 32  --model-type "easy_resnet12_tiny" --save-name "resnet12-tiny-mini1" --model-specification "weight/tinymini1.pt1" --weight-description "weight from easy repo (tinymini1.pt1), trained on miniimagenet" 
-python model_to_onnx.py --input-resolution 32  --model-type "easy_resnet12_small" --save-name "resnet12-small-mini1" --model-specification "weight/smallmini1.pt1" --weight-description "weight from easy repo (smallmini1.pt1), trained on miniimagenet" 
+
+python model_to_onnx.py --input-resolution 32 64 84 --save-name "tiny_miniimagenet" --model-type "easy_resnet12_tiny" --model-specification "weights/tinymini1.pt1" --weight-description "weight from easy repo"
+python model_to_onnx.py --input-resolution 32 64 84 --save-name "small_miniimagenet" --model-type "easy_resnet12_small" --model-specification "weights/smallmini1.pt1" --weight-description "weight from easy repo"
+python model_to_onnx.py --input-resolution 32 --save-name "small_cifar" --model-type "easy_resnet12_small" --model-specification "weights/smallcifar1.pt1" --weight-description "weight from easy repo"
+python model_to_onnx.py --input-resolution 32 --save-name "tiny_cifar" --model-type "easy_resnet12_tiny" --model-specification "weights/tinycifar1.pt1" --weight-description "weight from easy repo"
 
 
 
-
-python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_tiny" --model-specification "weight/tinycifar1.pt1" --weight-description "weight from easy repo (tinycifar1.pt1)" 
-python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12_small" --model-specification "weight/smallcifar1.pt1" --weight-description "weight from easy repo (smallcifar1.pt1)" 
-python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "easy_resnet12" --model-specification "weight/cifar1.pt1" --weight-description "weight from easy repo (cifar1.pt1)" 
+# exemple of command line loading network from pytorch hub (also convert the classification head, you should adapt the script to delete thoses nodes)
 python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "mobilenet_v2" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
 python model_to_onnx.py --input-resolution 32 64 84 128  --model-type "mnasnet0_5" --model-specification "random_init" --weight-description "weight random"  --from-hub
 
-
-not implemented in the 
+not implemented in Tensil
 python model_to_onnx.py --input-resolution 32 64 128  --model-type "nvidia_efficientnet_b0" --model-specification "random_init" --weight-description "weight random"  --from-hub
 python model_to_onnx.py --input-resolution 32 64 128  --model-type "shufflenet_v2_x0_5" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
 python model_to_onnx.py --input-resolution 32 64 128  --model-type "squeezenet1_1" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
@@ -23,8 +22,7 @@ python model_to_onnx.py --input-resolution 32 64 128  --model-type "googlenet" -
 python model_to_onnx.py --input-resolution 32 64  --model-type "densenet121" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
 python model_to_onnx.py --input-resolution 32 64 128  --model-type "nvidia_gpunet" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
 
-dependency :
-torchvision (because using model.py)
+
 """
 
 import argparse
@@ -124,10 +122,6 @@ def replace_reduce_mean(onnx_model,):
 
                     print("adding one reshape layer ")
                     old_output_name=node.output.pop()
-
-                   
-
-                    
 
                     #reshape dimentions
                     reshape_data=onnx.helper.make_tensor(name="Reshape_dim",data_type=onnx.TensorProto.INT64,dims=[2],vals=np.array([batch_size,num_feature_output]).astype(np.int64).tobytes(),raw=True)   
@@ -239,7 +233,7 @@ def model_to_onnx(args):
         dummy_input = torch.randn(1, 3, input_resolution,input_resolution, device="cpu") 
 
         
-        with open(resolution_folder/ f"{model_name}_{input_resolution}x{input_resolution}_torchinfo.txt","w",encoding="utf-8") as file:
+        with open(info_path/ f"{args.save_name}_{input_resolution}x{input_resolution}_torchinfo.txt","w",encoding="utf-8") as file:
             to_write= str(ans)
             file.write(to_write)
 

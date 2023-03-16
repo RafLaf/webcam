@@ -8,6 +8,7 @@ EASY - Ensemble Augmented-Shot Y-shaped Learning: State-Of-The-Art Few-Shot Clas
 import argparse
 import os
 import sys
+from typing import Literal
 
 
 def parse_evaluation_args(parser):
@@ -17,9 +18,9 @@ def parse_evaluation_args(parser):
     )
     # dataset features
     eval_group.add_argument(
-        "--dataset-path", type=str, default="data/", help="dataset path"
+        "--dataset-path", type=str, default="data/", help="path of the dataset. Should be a binary file. Check dataset_numpy.py for more information"
     )
-    eval_group.add_argument("--batch-size", type=int, default=1, help="batch size")
+    eval_group.add_argument("--batch-size", type=int, default=1, help="batch size for the backbone (keep 1 on the pynq)")
     eval_group.add_argument(
         "--num-classes", type=int, default=10, help="number of class in dataset"
     )
@@ -28,7 +29,7 @@ def parse_evaluation_args(parser):
         "--sample-per-class",
         type=int,
         default=1000,
-        help=" number of sample to take into acount",
+        help="number of sample to take into acount per class",
     )
 
     ### few-shot parameters
@@ -39,7 +40,7 @@ def parse_evaluation_args(parser):
         "--n-shots",
         type=int,
         default=5,
-        help="how many shots per few-shot run, can be int or list of ints. In case of episodic training, use first item of list as number of shots.",
+        help="how many shots per few-shot run",
     )
     eval_group.add_argument(
         "--n-runs", type=int, default=1000, help="number of few-shot runs"
@@ -47,7 +48,7 @@ def parse_evaluation_args(parser):
     eval_group.add_argument(
         "--n-queries", type=int, default=15, help="number of few-shot queries"
     )
-    eval_group.add_argument("--batch-size-fs", type=int, default=20)
+    eval_group.add_argument("--batch-size-fs", type=int, default=20, help="batch size for the classifier (take batch of feature instead of batch of image), and can be greater than 1 on pynq)")
     # to be incorporate (to evaluation and demonstration):
     # parser.add_argument("--sample-aug", type=int, default=1, help="number of versions of support/query samples (using random crop) 1 means no augmentation")
 
@@ -58,9 +59,9 @@ def parse_model_params(parser):
         "model", description="model specific arguments"
     )
     # classification head
-    model_args.add_argument("--resolution-input", default=32)
-    model_args.add_argument("--classifier_type", default="ncm", type=str)
-    model_args.add_argument("--number_neiboors", default=5, type=int)
+    model_args.add_argument("--resolution-input", default=32, help= "resolution of the input image")
+    model_args.add_argument("--classifier_type", default="ncm", type=str, help="type of classifier, ncm or knn")
+    model_args.add_argument("--number_neiboors", default=5, type=int, help="number of neiboors for knn classifier")
 
     # usefull only for pytorch
 
@@ -80,11 +81,11 @@ def parse_model_params(parser):
         help="for pytorch only. Device on wich the backbone will be run",
     )
 
-    pytorch_parser.add_argument("--path-pytorch-weight", default=None, type=str)
+    pytorch_parser.add_argument("--path-pytorch-weight", default=None, type=str, help="path of the pytorch weight")
     pytorch_parser.add_argument(
         "--backbone-type",
         default="easy_resnet12",
-        help="model to load. available for easy : easy_resnet12/easy_resnet12_tiny/easy_resnet12_small",
+        help=" specify the model used (wich pytorch description should be used)",
     )
 
     # only usefull for the pynk
@@ -96,12 +97,14 @@ def parse_model_params(parser):
         "--path_bit",
         default="/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit",
         type=str,
+        help = "path of the bistream. To see how to generate it, look at the tensil documentation"
     )
     
     pynq_parser.add_argument(
         "--path_tmodel",
         default="/home/xilinx/resnet12_32_32_small_onnx_pynqz1.tmodel",
         type=str,
+        help = "path of the tmodel. The tprog and tdata should be in the same folder"
     )
 
     # only usefull for onnx
@@ -110,30 +113,28 @@ def parse_model_params(parser):
     )
 
     onnx_parser.add_argument(
-        "--path-onnx", default="weight/resnet12_32_32_64.onnx", type=str
+        "--path-onnx", default="weight/resnet12_32_32_64.onnx", type=str,help="path of the .onnx file. Input image resolution should match the resolution of the model"
     )
-    # only usefull for pytorch
-    onnx_parser.add_argument("--path-pytorch-weight", default=None, type=str)
-
+    
 
 def parse_args_demonstration(parser):
     demonstration_arguments = parser.add_argument_group(
         "input / output", description="input output specific arguments"
     )
     demonstration_arguments.add_argument(
-        "--camera-specification", type=str, default="0"
+        "--camera-specification", type=str, default="0",help="specification of the camera. 0 for the first camera, 1 for the second, etc. If you want to use a video file, specify the path of the video file instead."
     )
-    demonstration_arguments.add_argument("--no-display", action="store_true")
-    demonstration_arguments.add_argument("--save-video", action="store_true")
+    demonstration_arguments.add_argument("--no-display", action="store_true",help="if you don't want to display the image on the screen")
+    demonstration_arguments.add_argument("--save-video", action="store_true",help="if you want to save the video, specify the path of the video file instead.")
     demonstration_arguments.add_argument("--hdmi-display", action="store_true")
-    demonstration_arguments.add_argument("--video-format", type=str, default="DIVX")
+    demonstration_arguments.add_argument("--video-format", type=str, default="DIVX",help="see ttps://docs.opencv.org/3.4/dd/d43/tutorial_py_video_display.html for possible option")
     demonstration_arguments.add_argument("--max_number_of_frame", type=int)
-    demonstration_arguments.add_argument("--use-saved-sample", action="store_true")
+    demonstration_arguments.add_argument("--use-saved-sample", action="store_true",help= "if true, will add samples from a directory once the inference is done (you should also provide the directory with path_shots_video)")
     demonstration_arguments.add_argument(
-        "--path_shots_video", type=str, default="data/catvsdog"
+        "--path_shots_video", type=str, default="data/catvsdog",help="path of the directory containing the saved samples (will do nothing if you do not specify --use-saved-sample)"
     )
-    demonstration_arguments.add_argument("--verbose", action="store_true")
-    demonstration_arguments.add_argument("--button-keyboard", default="keyboard")
+    demonstration_arguments.add_argument("--verbose", action="store_true",help="if you want to see many print")
+    demonstration_arguments.add_argument("--button-keyboard", default="keyboard", type = Literal["button","keyboard"],help="Input device for the button. Can be keyboard (only on computer) or button (only on pynq)")
 
 
 def process_arguments(args):
