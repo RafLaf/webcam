@@ -1,7 +1,8 @@
 import torch
 from backbone_loader.backbone_pytorch.resnet12 import ResNet12
+from backbone_loader.backbone_pytorch.resnet12_brain import ResNet12Brain,ResNet9
 
-
+# models from pytorch hub
 MODEL_LOC={
     "mobilenet_v2":"pytorch/vision:v0.10.0",
     "mobilenet_v3_small":"pytorch/vision:v0.10.0",
@@ -55,6 +56,61 @@ EASY_SPECS={
 
     }
 }
+
+
+BRAIN_RESNET12_SPECS={
+    "brain_resnet12_small":{
+        "feature_maps":45, 
+
+    },
+    "brain_resnet12":{
+        "feature_maps":64, 
+    },
+    "brain_resnet12_tiny":{
+        "feature_maps":32, 
+    },
+    "brain_resnet12_small_strided":{
+        "feature_maps":45, 
+        "use_strides" : True
+
+    },
+    "brain_resnet12_strided":{
+        "feature_maps":64, 
+        "use_strides": True,
+    },
+    "brain_resnet12_tiny_strided":{
+        "feature_maps":32, 
+        "use_strides" : True,
+    }
+}
+
+BRAIN_RESNET9_SPECS={
+    "brain_resnet9_small":{
+        "feature_maps":45, 
+
+    },
+    "brain_resnet9":{
+        "feature_maps":64, 
+    },
+    "brain_resnet9_tiny":{
+        "feature_maps":32, 
+    },
+    "brain_resnet9_small_strided":{
+        "feature_maps":45, 
+        "use_strides" : True
+
+    },
+    "brain_resnet9_strided":{
+        "feature_maps":64, 
+        "use_strides": True,
+    },
+    "brain_resnet9_tiny_strided":{
+        "feature_maps":32, 
+        "use_strides" : True,
+    }
+}
+
+
 
 
 
@@ -118,6 +174,12 @@ def get_model(model_name,model_spec,device="cpu"):
     if model_name.find("easy_resnet12")>=0:#if str contains the model
 
         model = ResNet12(**EASY_SPECS[model_name]).to(device)
+        load_model_weights(model, model_spec, device=device)
+    elif model_name.find("brain_resnet12")>=0:
+        model = ResNet12Brain(**BRAIN_RESNET12_SPECS[model_name]).to(device)
+        load_model_weights(model, model_spec, device=device)
+    elif model_name.find("brain_resnet9")>=0:
+        model = ResNet9(**BRAIN_RESNET9_SPECS[model_name]).to(device)
         load_model_weights(model, model_spec, device=device)
     elif model_name in MODEL_LOC.keys():
         print("model is found in pytorch_hub model specifications")

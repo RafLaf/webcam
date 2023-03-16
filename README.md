@@ -29,8 +29,7 @@ This repository contains the code to perform online Few shot with a webcam on fp
 # launch the demonstration on the pynq
 Once the bitstream and tensil output has been transfered to the pynq, it's time to launch the domonstration. This demo requires a python environement with numpy, opencv, and the pynq library installed. In order to have the 
 right to use the fpga, you need to authentify as root :
-"""
-bash
+```Bash
 
 sudo -i 
 cd home/xilinx/few_shot_evaluation.py
@@ -40,7 +39,7 @@ main.py onnx --help
 main.py pytorch --help
 main.py tensil --help
 
-"""
+```
 
 
 # other setup :

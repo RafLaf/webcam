@@ -85,7 +85,7 @@ def parse_model_params(parser):
     pytorch_parser.add_argument(
         "--backbone-type",
         default="easy_resnet12",
-        help=" specify the model used (wich pytorch description should be used)",
+        help=" specify the model used (wich pytorch description should be used, see backbone_loader/backbone_pytorch/model for a list)",
     )
 
     # only usefull for the pynk
