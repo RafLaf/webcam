@@ -68,7 +68,9 @@ def preprocess(img, dtype=np.float32):
 
 # constant of the program
 SCALE = 1
-RES_OUTPUT = (1280, 720) #weight / height (cv2 convention)
+#RES_OUTPUT = tuple(args.output_resolution) # weight / height (cv2 convention)
+RES_HDMI= (800, 600)
+#PADDING = tuple(args.padding)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 
@@ -79,6 +81,10 @@ def launch_demo(args):
 
     # INITIALIZATION
     # --------------------------------------
+
+    RES_OUTPUT= tuple(args.output_resolution)
+    PADDING = tuple(args.padding)
+
     backbone = get_model(args.backbone_specs)
     few_shot_model = FewShotModel(args.classifier_specs)
 
@@ -116,7 +122,7 @@ def launch_demo(args):
     if (args.hdmi_display):
         from pynq.lib.video import VideoMode
         hdmi_out = args.overlay.video.hdmi_out
-        h,w = RES_OUTPUT
+        h,w = RES_HDMI
         mode = VideoMode(w, h, 24) # 24 : pixel format
         hdmi_out.configure(mode)
         hdmi_out.start()
@@ -301,7 +307,9 @@ def launch_demo(args):
                     # Returns a frame of the appropriate size for the video mode (undefined value)
                     frame = hdmi_out.newframe() 
                     # get the frame from the cv interface (size is the same since they are specified by  ResOutput)
-                    frame =  cv_interface.frame
+                    
+                    w,h=RES_OUTPUT
+                    frame[:h,:w] =  cv_interface.frame
                     hdmi_out.writeframe(frame)
                 else:
                     cv_interface.show()
