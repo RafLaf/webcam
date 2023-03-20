@@ -5,19 +5,13 @@ This repository contains the code to perform online Few shot with a webcam on fp
 
 ## demo : 
 
-    Press 0 1 or 2 to associate current camera feed to a shot.
+    Press button 0 to take a shot with current class
+    Press button 1 to take a shot with next class
+    Press button 2 to begin inference
+    Press button 3 to reset
 
     You can add multiple shots by pressing the same class (0, 1 or 2...)
     Press 'i' to start infering.
-
-    To run the code :
-        python main.py + args
-
-    exemples :
-        evaluation of the performance in the pynq : 
-            - python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batches-py/test_batch tensil --path_tmodel /home/xilinx/jupyter_notebooks/l20leche/few-shot-demo/models/tiny_cifar_32x32_onnx_custom_perf.tmodel --path_bit /home/xilinx/jupyter_notebooks/l20leche/Test_Bitstream/1/test.bit
-        evaluation of the performance on the cpu :
-            - python few_shot_evaluation.py --dataset-path C:\Users\lavra\Documents\imt_atlantique_3A\ProCom\projet\few_shot_demo\data\cifar-10-batches-py\test_batch  onnx --path-onnx onnx/32x32/tiny_cifar_32x32.onnx
 
 ![plot](./static/demo_webcam.png)
 
@@ -41,6 +35,21 @@ main.py tensil --help
 
 ```
 
+exemples : 
+launch the demonstration on pynq :
+
+```
+bash
+python3 main.py --button-keyboard button --hdmi-display tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/jupyter_notebooks/l20leche/Test_Bitstream/1/test.bit
+```
+    
+launch cifar10 evaluation on pynq (only 32x32 networks) :
+```
+python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batches-py/test_batch  tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/jupyter_notebooks/l20leche/Test_Bitstream/1/test.bit
+```
+    
+
+
 
 # other setup :
 
@@ -53,9 +62,8 @@ corresponding to the  testing set
 
 ## test of the performance of the demonstration
 
-You may have problem setting up the hdmi output, and want to verify that the demonstration is running  well. 
-## video : 
-in order to setup a video
+You may have problem setting up the hdmi output, and want to verify that the demonstration is running well. In order to do that, setup a video simulation of the demo :
+
 1. download a video and put it in this repo. 
 2. put reference images inside a folder with the folowing structure :
     -folder
@@ -63,8 +71,16 @@ in order to setup a video
         -class2_name
 3. add the path as argument when you call the function
 
+## conversion of models to onnx : 
+
+basic setup fo onnx exportation is to export it using torch library, and delete all useless nodes with onnx-simplifier. We included a script model_to_onnx.py in order to convert all the pytorch networks implemented in this repo
+
+
 # args : 
     - for converting model to onnx, exemples are in the docstring of the folder model_to_onnx.py
-# be carful : 
+# Possible pitfall : 
+    - in the pynq, always launch the scripts while beeing authentify as root
+    - somethimes pynq need to be reset between utilisation in order to use the hdmi
+    - path for the pynq specific arguments are often absolute
     - do not put / before path if using relative path
-    - should be at least enough elements to form queries + n_shots
+    - should be at least enough elements to form queries + n_shots for the evaluation
