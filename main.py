@@ -69,7 +69,7 @@ def preprocess(img, dtype=np.float32):
 # constant of the program
 SCALE = 1
 #RES_OUTPUT = tuple(args.output_resolution) # weight / height (cv2 convention)
-RES_HDMI= (800, 600)
+RES_HDMI= (600, 800) # weight height
 #PADDING = tuple(args.padding)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -309,7 +309,8 @@ def launch_demo(args):
                     # get the frame from the cv interface (size is the same since they are specified by  ResOutput)
                     
                     w,h=RES_OUTPUT
-                    frame[:h,:w] =  cv_interface.frame
+                    pw,ph=PADDING
+                    frame[ph:ph+h,pw:pw+w,:] =  cv_interface.frame
                     hdmi_out.writeframe(frame)
                 else:
                     cv_interface.show()
@@ -321,7 +322,7 @@ def launch_demo(args):
     finally:
         # close all
         cv_interface.close()
-        hdmi_out.close()
+        #hdmi_out.close()
         if args.save_video:
             out.release()
     

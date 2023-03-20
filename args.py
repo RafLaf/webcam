@@ -123,8 +123,8 @@ def parse_args_demonstration(parser):
     demonstration_arguments.add_argument(
         "--camera-specification", type=str, default="0",help="specification of the camera. 0 for the first camera, 1 for the second, etc. If you want to use a video file, specify the path of the video file instead."
     )
-    demonstration_arguments.add_argument("--output-resolution",default=[600,500])
-    demonstration_arguments.add_argument("--padding",default=[0,0])
+    demonstration_arguments.add_argument("--output-resolution",default=[800,480],nargs="+",type=int,description="output resolution of the opencv frame (width height) (for the pynq)")
+    demonstration_arguments.add_argument("--padding",default=[0,0],nargs="+",type=int,description="padding for the output (for the pynq)")
 
 
 
