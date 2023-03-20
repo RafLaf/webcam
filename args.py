@@ -123,6 +123,11 @@ def parse_args_demonstration(parser):
     demonstration_arguments.add_argument(
         "--camera-specification", type=str, default="0",help="specification of the camera. 0 for the first camera, 1 for the second, etc. If you want to use a video file, specify the path of the video file instead."
     )
+    demonstration_arguments.add_argument("--output-resolution",default=[600,500])
+    demonstration_arguments.add_argument("--padding",default=[0,0])
+
+
+
     demonstration_arguments.add_argument("--no-display", action="store_true",help="if you don't want to display the image on the screen")
     demonstration_arguments.add_argument("--save-video", action="store_true",help="if you want to save the video, specify the path of the video file instead.")
     demonstration_arguments.add_argument("--hdmi-display", action="store_true")
