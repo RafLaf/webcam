@@ -116,9 +116,9 @@ def launch_demo(args):
         cap = cv2.VideoCapture(args.camera_specification)
 
     # cv_interface manage graphical manipulation
-
+    #TODO : add input/output to serparate class and use with statement
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
-
+    
     if (args.hdmi_display):
         from pynq.lib.video import VideoMode
         hdmi_out = args.overlay.video.hdmi_out
@@ -129,13 +129,35 @@ def launch_demo(args):
 
     if args.button_keyboard == "button":
         from input_output.BoutonsManager import BoutonsManager
-
         btn_manager = BoutonsManager(args.overlay.btns_gpio)
     if args.save_video:
         fourcc = cv2.VideoWriter_fourcc(*"XVID")
         out = cv2.VideoWriter("output.avi", fourcc, 30.0, RES_OUTPUT)
 
     number_image = 1
+    try : 
+        while True:
+            new_frame_time = time.time()
+            fps = int(1 / (new_frame_time - prev_frame_time))
+
+            # get inputs
+            # video input
+            try:
+                cv_interface.read_frame()
+                print(f"reading image n°{number_image}")
+                print(f"fps : {fps}")
+                number_image = number_image + 1
+            except:
+                print("failed to get next image")
+                break
+
+            prev_frame_time = new_frame_time
+
+            # keyboard/button input
+            if args.button_keyboard == "keyboard":
+                key = cv_interface.get_key()
+                key = chr(key)  # key convertion to char
+
 
     # MAIN LOOP
     # --------------------------------------
@@ -164,11 +186,13 @@ def launch_demo(args):
                 key = cv_interface.get_key()
                 key = chr(key)  # key convertion to char
 
+
                 
             elif args.button_keyboard == "button":
                 print("test_key_passage_avant")
                 key = btn_manager.change_state()
                 print("test_key_passage")
+
 
             elif args.button_keyboard == "button":
                 key = btn_manager.change_state()
@@ -193,6 +217,16 @@ def launch_demo(args):
                         key = "i"  # simulate press of the key for inference
 
                         print(key)
+
+
+                if key in possible_input or key in possible_input_2:
+                    print("la key est bien dans les possibles inputs")
+                    if key in possible_input :
+                        classe = possible_input.index(key)
+                    else :
+                        classe = possible_input_2.index(key)
+                    last_detected = clock_main * 1  # time.time()
+                    
 
 
 
@@ -221,7 +255,6 @@ def launch_demo(args):
                         classe = possible_input_2.index(key)
                     last_detected = clock_main * 1  # time.time()
                     
-
                 frame = cv_interface.get_copy_captured_image(args.resolution_input)
                 
                 print("la valeur de key avant le test des possibles inputs vaut : ", key )
@@ -311,6 +344,7 @@ def launch_demo(args):
                     w,h=RES_OUTPUT
                     pw,ph=PADDING
                     frame[ph:ph+h,pw:pw+w,:] =  cv_interface.frame
+
                     hdmi_out.writeframe(frame)
                 else:
                     cv_interface.show()
@@ -326,6 +360,7 @@ def launch_demo(args):
         if args.save_video:
             out.release()
     
+
 
 if __name__=="__main__":
     args=get_args_demo()
