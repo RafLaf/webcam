@@ -8,7 +8,6 @@ EASY - Ensemble Augmented-Shot Y-shaped Learning: State-Of-The-Art Few-Shot Clas
 import argparse
 import os
 import sys
-from typing import Literal
 
 
 def parse_evaluation_args(parser):
@@ -134,7 +133,7 @@ def parse_args_demonstration(parser):
         "--path_shots_video", type=str, default="data/catvsdog",help="path of the directory containing the saved samples (will do nothing if you do not specify --use-saved-sample)"
     )
     demonstration_arguments.add_argument("--verbose", action="store_true",help="if you want to see many print")
-    demonstration_arguments.add_argument("--button-keyboard", default="keyboard", type = Literal["button","keyboard"],help="Input device for the button. Can be keyboard (only on computer) or button (only on pynq)")
+    demonstration_arguments.add_argument("--button-keyboard", default="keyboard", help="Input device for the button. Can be keyboard (only on computer) or button (only on pynq)")
 
 
 def process_arguments(args):

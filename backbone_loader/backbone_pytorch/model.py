@@ -1,43 +1,15 @@
+"""
+Define all the models. 
+
+Keys of EASY_SPECS/BRAIN_RESNET12_SPECS/BRAIN_RESNET9_SPECS : name of the implemented model
+attrributes : keywords arguments passed to the corresponding model
+"""
+
 import torch
 from backbone_loader.backbone_pytorch.resnet12 import ResNet12
 from backbone_loader.backbone_pytorch.resnet12_brain import ResNet12Brain,ResNet9
 
-# models from pytorch hub
-MODEL_LOC={
-    "mobilenet_v2":"pytorch/vision:v0.10.0",
-    "mobilenet_v3_small":"pytorch/vision:v0.10.0",
-    "mobilenet_v3_large":"pytorch/vision:v0.10.0",
-    "mnasnet0_5":"pytorch/vision:v0.10.0",
-    "mnasnet0_75":"pytorch/vision:v0.10.0",
-    "mnasnet1_0":"pytorch/vision:v0.10.0",
-    "inception_v3":"pytorch/vision:v0.10.0",
-    "googlenet":"pytorch/vision:v0.10.0",
-    "densenet121":"pytorch/vision:v0.10.0",
-    "squeezenet1_1":"pytorch/vision:v0.10.0",
-    "shufflenet_v2_x0_5":"pytorch/vision:v0.10.0",
-    "shufflenet_v2_x1_0":"pytorch/vision:v0.10.0",
-    "efficientnet_b0":"pytorch/vision:v0.10.0",
-    "nvidia_efficientnet_b0":"NVIDIA/DeepLearningExamples:torchhub",
-    "nvidia_gpunet":"NVIDIA/DeepLearningExamples:torchhub"}
-#github model may require specific version of package (torch for exemple) to work
-#<repo_owner/repo_name[:ref]> with an optional ref (a tag or a branch).
 
-MODEL_SPECS={
-    "pretrained":{
-        "pretrained":True
-    },
-    "random_init":{
-        "pretrained":False
-    },
-    # weight not implemented. To implement : make sure torchvision installed version is compatible, 
-    # and add MODEL_LOC with compatible version (should be pytorch/vision:v0.13.0)
-    "mobilenet_v2_imagenet":{"weights":"MobileNet_V2_Weights.IMAGENET1K_V2"},
-    "mobilenet_v3_small_imagenet":{"weights":"MobileNet_V3_Small_Weights.IMAGENET1K_V1"},
-    "mobilenet_v3_large_imagenet":{"weights":"MobileNet_V3_Large_Weights.IMAGENET1K_V2"},
-    "mnasnet0_5_imagenet":{"weights":"MNASNet0_5_Weights.IMAGENET1K_V1"},
-    "mnasnet0_75_imagenet":{"weights":"MNASNet0_75_Weights.IMAGENET1K_V1"},
-    "mnasnet1_0_imagenet":{"weights":"MNASNet1_0_Weights.IMAGENET1K_V1"}
-}
 
 EASY_SPECS={
     "easy_resnet12_small":{
@@ -110,7 +82,42 @@ BRAIN_RESNET9_SPECS={
     }
 }
 
+# models from pytorch hub (not realy usefull since the classification layer is still presents)
+MODEL_LOC={
+    "mobilenet_v2":"pytorch/vision:v0.10.0",
+    "mobilenet_v3_small":"pytorch/vision:v0.10.0",
+    "mobilenet_v3_large":"pytorch/vision:v0.10.0",
+    "mnasnet0_5":"pytorch/vision:v0.10.0",
+    "mnasnet0_75":"pytorch/vision:v0.10.0",
+    "mnasnet1_0":"pytorch/vision:v0.10.0",
+    "inception_v3":"pytorch/vision:v0.10.0",
+    "googlenet":"pytorch/vision:v0.10.0",
+    "densenet121":"pytorch/vision:v0.10.0",
+    "squeezenet1_1":"pytorch/vision:v0.10.0",
+    "shufflenet_v2_x0_5":"pytorch/vision:v0.10.0",
+    "shufflenet_v2_x1_0":"pytorch/vision:v0.10.0",
+    "efficientnet_b0":"pytorch/vision:v0.10.0",
+    "nvidia_efficientnet_b0":"NVIDIA/DeepLearningExamples:torchhub",
+    "nvidia_gpunet":"NVIDIA/DeepLearningExamples:torchhub"}
+#github model may require specific version of package (torch for exemple) to work
+#<repo_owner/repo_name[:ref]> with an optional ref (a tag or a branch).
 
+MODEL_SPECS={
+    "pretrained":{
+        "pretrained":True
+    },
+    "random_init":{
+        "pretrained":False
+    },
+    # weight not implemented. To implement : make sure torchvision installed version is compatible, 
+    # and add MODEL_LOC with compatible version (should be pytorch/vision:v0.13.0)
+    "mobilenet_v2_imagenet":{"weights":"MobileNet_V2_Weights.IMAGENET1K_V2"},
+    "mobilenet_v3_small_imagenet":{"weights":"MobileNet_V3_Small_Weights.IMAGENET1K_V1"},
+    "mobilenet_v3_large_imagenet":{"weights":"MobileNet_V3_Large_Weights.IMAGENET1K_V2"},
+    "mnasnet0_5_imagenet":{"weights":"MNASNet0_5_Weights.IMAGENET1K_V1"},
+    "mnasnet0_75_imagenet":{"weights":"MNASNet0_75_Weights.IMAGENET1K_V1"},
+    "mnasnet1_0_imagenet":{"weights":"MNASNet1_0_Weights.IMAGENET1K_V1"}
+}
 
 
 
