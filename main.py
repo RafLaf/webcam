@@ -18,10 +18,11 @@ import time
 # import cProfile
 
 from input_output.graphical_interface import OpencvInterface
+from input_output.graphical_interface import OpencvInterface
 from few_shot_model.few_shot_model import FewShotModel
 from backbone_loader.backbone_loader import get_model
 from few_shot_model.data_few_shot import DataFewShot
-from args import args
+from args import get_args_demo
 
 print("import done")
 
@@ -67,14 +68,23 @@ def preprocess(img, dtype=np.float32):
 
 # constant of the program
 SCALE = 1
-RES_OUTPUT = (1280, 720)
+#RES_OUTPUT = tuple(args.output_resolution) # weight / height (cv2 convention)
+RES_HDMI= (600, 800) # weight height
+#PADDING = tuple(args.padding)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 
-def launch_demo():
+def launch_demo(args):
     """
     initialize the variable and launch the demo
     """
+
+    # INITIALIZATION
+    # --------------------------------------
+
+    RES_OUTPUT= tuple(args.output_resolution)
+    PADDING = tuple(args.padding)
+
     backbone = get_model(args.backbone_specs)
     few_shot_model = FewShotModel(args.classifier_specs)
 
@@ -84,7 +94,9 @@ def launch_demo():
 
     class_num = len(possible_input)
     current_data = DataFewShot(class_num)
+    
 
+    
     # program related constant
     do_inference = False
     doing_registration = False
@@ -110,7 +122,8 @@ def launch_demo():
     if (args.hdmi_display):
         from pynq.lib.video import VideoMode
         hdmi_out = args.overlay.video.hdmi_out
-        mode = VideoMode(1920, 1080, 24)
+        h,w = RES_HDMI
+        mode = VideoMode(w, h, 24) # 24 : pixel format
         hdmi_out.configure(mode)
         hdmi_out.start()
 
@@ -145,11 +158,41 @@ def launch_demo():
                 key = cv_interface.get_key()
                 key = chr(key)  # key convertion to char
 
+
+    # MAIN LOOP
+    # --------------------------------------
+    try:
+            
+
+        while True:
+            new_frame_time = time.time()
+            fps = int(1 / (new_frame_time - prev_frame_time))
+
+            # get inputs
+            # video input
+            try:
+                cv_interface.read_frame()
+                print(f"reading image n°{number_image}")
+                print(f"fps : {fps}")
+                number_image = number_image + 1
+            except:
+                print("failed to get next image")
+                break
+
+            prev_frame_time = new_frame_time
+
+            # keyboard/button input
+            if args.button_keyboard == "keyboard":
+                key = cv_interface.get_key()
+                key = chr(key)  # key convertion to char
+
+
                 
             elif args.button_keyboard == "button":
                 print("test_key_passage_avant")
                 key = btn_manager.change_state()
                 print("test_key_passage")
+
 
             elif args.button_keyboard == "button":
                 key = btn_manager.change_state()
@@ -176,6 +219,16 @@ def launch_demo():
                         print(key)
 
 
+                if key in possible_input or key in possible_input_2:
+                    print("la key est bien dans les possibles inputs")
+                    if key in possible_input :
+                        classe = possible_input.index(key)
+                    else :
+                        classe = possible_input_2.index(key)
+                    last_detected = clock_main * 1  # time.time()
+                    
+
+
 
                 cv_interface.put_text("Initialization")
 
@@ -192,7 +245,7 @@ def launch_demo():
                 and not do_reset
             ):
                 do_inference = False
-
+                
 
                 if key in possible_input or key in possible_input_2:
                     print("la key est bien dans les possibles inputs")
@@ -202,7 +255,6 @@ def launch_demo():
                         classe = possible_input_2.index(key)
                     last_detected = clock_main * 1  # time.time()
                     
-
                 frame = cv_interface.get_copy_captured_image(args.resolution_input)
                 
                 print("la valeur de key avant le test des possibles inputs vaut : ", key )
@@ -284,15 +336,15 @@ def launch_demo():
             print("no display", args.no_display)
             if not (args.no_display):
 
-                
-                print("test")
                 if (args.hdmi_display):
-                    frame = hdmi_out.newframe()
-                    print(frame.shape)
-                    frame2 = cv_interface.frame
-                    frame[0:720,0:720,:]=frame2[0:720,0:720,:]#TODO : put 720 in args
-                    print("gfggg ",frame.shape)
+                    # Returns a frame of the appropriate size for the video mode (undefined value)
+                    frame = hdmi_out.newframe() 
+                    # get the frame from the cv interface (size is the same since they are specified by  ResOutput)
                     
+                    w,h=RES_OUTPUT
+                    pw,ph=PADDING
+                    frame[ph:ph+h,pw:pw+w,:] =  cv_interface.frame
+
                     hdmi_out.writeframe(frame)
                 else:
                     cv_interface.show()
@@ -302,9 +354,14 @@ def launch_demo():
                 frame_to_save = cv_interface.frame
                 out.write(frame_to_save)
     finally:
+        # close all
         cv_interface.close()
+        #hdmi_out.close()
         if args.save_video:
             out.release()
+    
 
 
-launch_demo()
+if __name__=="__main__":
+    args=get_args_demo()
+    launch_demo(args)

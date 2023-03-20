@@ -1,13 +1,10 @@
-
-*/__pycache__/*
-*/*/__pycache__
-__pycache__/
 data/
 weight/
-onnx/
-test.ipynb
 *.mp4
 *.avi
 test.py
 *.yml
+*__pycache__
 *.pyc
+onnx/
+test.*

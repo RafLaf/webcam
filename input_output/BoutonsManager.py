@@ -73,8 +73,6 @@ class BoutonsManager:
 # In[18]:
 
 
-import sys
-sys.path.append('/home/xilinx')
 
 # Needed to run inference on TCU
 
@@ -95,6 +93,9 @@ if __name__=="__main__":
     from pynq import Overlay
     from tcu_pynq.driver import Driver
     from tcu_pynq.architecture import pynqz1
+    import sys#TODO : à supprimer
+    sys.path.append('/home/xilinx')
+
 
     overlay = Overlay('/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit')
     btns = BoutonsManager(overlay.btns_gpio)
