@@ -104,8 +104,10 @@ def launch_demo(args):
     prev_frame_time = time.time()
 
     # time related variables
+    # clock : number of frames since begining
+    # clock_main : clock that control state of the program
     clock = 0
-    clock_main = 0
+    clock_main = 0 
     number_frame_init = 5
 
 
@@ -273,12 +275,13 @@ def launch_demo(args):
             # add info on frame
             cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
             cv_interface.put_text(
-                f"frame number:{clock_main}", bottom_pos_x=0.8, bottom_pos_y=0.1
+                f"frame number:{clock}", bottom_pos_x=0.8, bottom_pos_y=0.1
             )
 
             # update current state
             # reset action
             if key == "r":
+                clock_main=0
                 doing_registration = False
                 do_inference = False
                 current_data.reset()
@@ -304,6 +307,7 @@ def launch_demo(args):
                 break
 
             clock_main += 1
+            clock+=1
 
             # outputs
             print("no display", args.no_display)
@@ -338,3 +342,4 @@ def launch_demo(args):
 if __name__=="__main__":
     args=get_args_demo()
     launch_demo(args)
+    
