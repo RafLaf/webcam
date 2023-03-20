@@ -135,28 +135,7 @@ def launch_demo(args):
         out = cv2.VideoWriter("output.avi", fourcc, 30.0, RES_OUTPUT)
 
     number_image = 1
-    try : 
-        while True:
-            new_frame_time = time.time()
-            fps = int(1 / (new_frame_time - prev_frame_time))
 
-            # get inputs
-            # video input
-            try:
-                cv_interface.read_frame()
-                print(f"reading image n°{number_image}")
-                print(f"fps : {fps}")
-                number_image = number_image + 1
-            except:
-                print("failed to get next image")
-                break
-
-            prev_frame_time = new_frame_time
-
-            # keyboard/button input
-            if args.button_keyboard == "keyboard":
-                key = cv_interface.get_key()
-                key = chr(key)  # key convertion to char
 
 
     # MAIN LOOP
@@ -185,18 +164,12 @@ def launch_demo(args):
             if args.button_keyboard == "keyboard":
                 key = cv_interface.get_key()
                 key = chr(key)  # key convertion to char
-
-
-                
             elif args.button_keyboard == "button":
                 print("test_key_passage_avant")
                 key = btn_manager.change_state()
                 print("test_key_passage")
-
-
             elif args.button_keyboard == "button":
                 key = btn_manager.change_state()
-
             else:
                 print("L'argument button_keyboard n'est pas valide")
 
