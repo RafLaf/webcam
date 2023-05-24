@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from args import args
 import random # for manifold mixup
 from functools import partial
 
@@ -61,7 +60,7 @@ class ResNet9(nn.Module):
         self.block1 = BasicBlockRN12(3, featureMaps,use_strides=use_strides)
         self.block2 = BasicBlockRN12(featureMaps, int(2.5 * featureMaps),use_strides=use_strides)
         self.block3 = BasicBlockRN12(int(2.5 * featureMaps), 5 * featureMaps,use_strides=use_strides)
-        self.mp =nn.Identity() if use_strides else nn.MaxPool2d(2) 
+        self.mp =nn.Identity() if use_strides else nn.MaxPool2d(2)
 
     def forward(self, x, mixup = None, lbda = None, perm = None):
         mixup_layer = -1
@@ -69,7 +68,7 @@ class ResNet9(nn.Module):
             mixup_layer = 0
         elif mixup == "manifold mixup":
             mixup_layer = random.randint(0, 4)
-        
+
         if mixup_layer == 0:
             x = lbda * x + (1 - lbda) * x[perm]
         if x.shape[1] == 1:
@@ -103,7 +102,7 @@ class ResNet12Brain(nn.Module):
         self.block2 = BasicBlockRN12(featureMaps, int(2.5 * featureMaps),use_strides=use_strides)
         self.block3 = BasicBlockRN12(int(2.5 * featureMaps), 5 * featureMaps,use_strides=use_strides)
         self.block4 = BasicBlockRN12(5 * featureMaps, 10 * featureMaps,use_strides=use_strides)
-        self.mp =nn.Identity() if use_strides else nn.MaxPool2d(2) 
+        self.mp =nn.Identity() if use_strides else nn.MaxPool2d(2)
 
     def forward(self, x, mixup = None, lbda = None, perm = None):
         mixup_layer = -1
@@ -111,7 +110,7 @@ class ResNet12Brain(nn.Module):
             mixup_layer = 0
         elif mixup == "manifold mixup":
             mixup_layer = random.randint(0, 4)
-        
+
         if mixup_layer == 0:
             x = lbda * x + (1 - lbda) * x[perm]
         if x.shape[1] == 1:
@@ -136,7 +135,7 @@ class ResNet12Brain(nn.Module):
             y = self.mp(self.block4(y, lbda, perm))
         else:
             y = self.mp(self.block4(y))
-        
+
         y = y.mean(dim = list(range(2, len(y.shape))))
         return y
 
