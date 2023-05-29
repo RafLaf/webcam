@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 import os
 import time
+from typing import Union
 
 # import cProfile
 
@@ -28,7 +29,10 @@ print("import done")
 
 
 def compute_and_add_feature_saved_image(
-    backbone, cv_interface, current_data, path_sample
+    backbone,
+    cv_interface: OpencvInterface,
+    current_data,
+    path_sample: Union[str, os.PathLike],
 ):
     classe_idx = 0
     for class_name in os.listdir(path_sample):
@@ -126,7 +130,7 @@ def launch_demo(args):
         hdmi_out.start()
 
     if args.button_keyboard == "button":
-        from input_output.BoutonsManager import BoutonsManager
+        from input_output.boutons_manager import BoutonsManager
 
         btn_manager = BoutonsManager(args.overlay.btns_gpio)
     if args.save_video:

@@ -16,7 +16,7 @@ from few_shot_model.few_shot_model import FewShotModel
 # @profile#comment/uncoment and flag -m memory_profiler after python
 
 
-def evaluate_model(backbone, kwargs):
+def evaluate_model(backbone, kwargs: dict):
     assert kwargs.sample_per_class % kwargs.batch_size == 0
 
     data = get_dataset_numpy(kwargs.dataset_path)  #
@@ -86,7 +86,7 @@ def evaluate_model(backbone, kwargs):
     return np.mean(perf), np.std(perf), mean_speed
 
 
-def launch_evaluation(kwargs):
+def launch_evaluation(kwargs: dict):
     """
     launch a evalution using feature a namespace kwargs, with attributes :
         - backbone_specs

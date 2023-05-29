@@ -1,5 +1,5 @@
 """
-author : ybendou
+author : adapted from ybendou in order to use numpy instead of pytorch
 function to evaluate a dataset in the few shot setting
 
 """
@@ -9,7 +9,14 @@ import tqdm
 from few_shot_model.numpy_utils import *
 
 
-def define_runs(n_runs, n_ways, n_shots, n_queries, num_classes, elements_per_class):
+def define_runs(
+    n_runs: int,
+    n_ways: int,
+    n_shots: int,
+    n_queries: int,
+    num_classes: int,
+    elements_per_class: int,
+):
     """
     Define a few shot run setting
 
@@ -43,57 +50,7 @@ def define_runs(n_runs, n_ways, n_shots, n_queries, num_classes, elements_per_cl
     return run_classes, run_indices
 
 
-def define_runs_from_list(
-    n_runs, n_ways, n_shots_list, n_queries, num_classes, elements_per_class
-):
-    """
-    return a list of tuple (dim 1 = classe, dim2= indices). Each indice of the tuple correspond to a different number of shots
-    (currently not used)
-    """
-
-    return list(
-        zip(
-            *[
-                define_runs(
-                    n_runs, n_ways, s, n_queries, num_classes, elements_per_class
-                )
-                for s in n_shots_list
-            ]
-        )
-    )
-
-
-def get_features_few_shot_ds_pytorch(model, loader, n_aug=1):
-    """
-    get the features given by a model
-    adapted from the Easy repo to work with numpy array
-    Be carful, the classes are supposed to be ordered.
-    - args :
-        - model(callable) : inference backbone that return  features
-        - loader : iterator yielding batch of image/target (proprocessed)
-    """
-
-    for augs in range(n_aug):
-        all_features, offset, max_offset = [], 1000000, 0
-        for batch_idx, (data, target) in tqdm.tqdm(enumerate(loader)):
-            features = model(data)
-            all_features.append(features)
-            offset = min(min(target), offset)
-            max_offset = max(max(target), max_offset)
-        num_classes = max_offset - offset + 1
-
-        if augs == 0:
-            features_total = np.concatenate(all_features, axis=0).reshape(
-                num_classes, -1, all_features[0].shape[1]
-            )
-        else:
-            features_total += np.concatenate(all_features, dim=0).reshape(
-                num_classes, -1, all_features[0].shape[1]
-            )
-    return features_total / n_aug
-
-
-def get_features_numpy(model, data, batch_size):
+def get_features_numpy(model, data: np.ndarray, batch_size: int):
     """
     get the features given by a model
     adapted from the Easy repo to work with numpy array

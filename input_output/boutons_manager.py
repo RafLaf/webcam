@@ -1,31 +1,20 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
-# La classe boutons renvoie grâce à la méthode change_state, la touche du clavier qui aurait
-# été tappée si au lieu des boutons nous avions utiliser un clavier.
-# Lorsque l'on appuie sur le bouton 1 pour capturer une image, change_state renvoie le numéro de
-# la classe à laquelle appartient l'image. Lorsqu'on appuie sur le bouton 2, il y a un changement
-# de classe et change_state renvoie toujours le numéro de la classe à laquelle appartient l'image.
-# Lorsqu'on appuie sur le bouton 3, change_state renvoie "i" pour indiquer qu'il faut passer à l'inférence
-# Lorsqu'on appuie sur le bouton 4, change_state renvoie "r" pour indiquer un reset
-# Si aucun pouton n'a été pressé, change_state renvoie "NO_KEY_PRESSED"
-
-
-# In[16]:
-
-
-import pynq
-from pynq import Overlay
-
-
-# In[17]:
-
-
 class BoutonsManager:
+    """
+    La classe boutons renvoie grâce à la méthode change_state, la touche du clavier qui aurait
+    été tappée si au lieu des boutons nous avions utiliser un clavier.
+    Lorsque l'on appuie sur le bouton 1 pour capturer une image, change_state renvoie le numéro de
+    la classe à laquelle appartient l'image. Lorsqu'on appuie sur le bouton 2, il y a un changement
+    de classe et change_state renvoie toujours le numéro de la classe à laquelle appartient l'image.
+    Lorsqu'on appuie sur le bouton 3, change_state renvoie "i" pour indiquer qu'il faut passer à l'inférence
+    Lorsqu'on appuie sur le bouton 4, change_state renvoie "r" pour indiquer un reset
+    Si aucun pouton n'a été pressé, change_state renvoie "NO_KEY_PRESSED"
+    """
+
     def __init__(self, boutons_gpio):
+        """
+        button gpio : btns_gpio attribute of the overlay
+        see : https://pynq.readthedocs.io/en/v2.0/pynq_libraries/axigpio.html
+        """
         self.boutons_gpio = boutons_gpio
         self.key_pressed = "1"
         self.last_state = 0
@@ -74,18 +63,8 @@ class BoutonsManager:
         return "NO_KEY_PRESSED"
 
 
-# In[18]:
-
-
-# Needed to run inference on TCU
-
-
-# In[19]:
-
-
-# In[20]:
-
 if __name__ == "__main__":
+    # test the bouton
     import time
     import numpy as np
     import pynq

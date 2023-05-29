@@ -4,12 +4,11 @@ Define all the models.
 Keys of EASY_SPECS/BRAIN_RESNET12_SPECS/BRAIN_RESNET9_SPECS : name of the implemented model
 attrributes : keywords arguments passed to the corresponding model
 """
-
 import torch
 from backbone_loader.backbone_pytorch.resnet12 import ResNet12
 from backbone_loader.backbone_pytorch.resnet12_brain import ResNet12Brain, ResNet9
 
-
+# ------------------ BUILT - IN CONFIGS -----------------------------
 EASY_SPECS = {
     "easy_resnet12_small": {
         "feature_maps": 45,
@@ -67,8 +66,12 @@ BRAIN_RESNET9_SPECS = {
         "use_strides": True,
     },
 }
+# ------------------ MODEL FROM PYTORCH HUB -----------------------------
+# NOTE :
+# we do not delete the last convolutional layer, wich correspond to classification, and can induce
+# less performance in few-shot / more consumtion.
 
-# models from pytorch hub (not realy usefull since the classification layer is still presents)
+
 MODEL_LOC = {
     "mobilenet_v2": "pytorch/vision:v0.10.0",
     "mobilenet_v3_small": "pytorch/vision:v0.10.0",
@@ -89,11 +92,10 @@ MODEL_LOC = {
 # github model may require specific version of package (torch for exemple) to work
 # <repo_owner/repo_name[:ref]> with an optional ref (a tag or a branch).
 
+# how to get the pretrained weight (pytorch hub only)
 MODEL_SPECS = {
     "pretrained": {"pretrained": True},
     "random_init": {"pretrained": False},
-    # weight not implemented. To implement : make sure torchvision installed version is compatible,
-    # and add MODEL_LOC with compatible version (should be pytorch/vision:v0.13.0)
     "mobilenet_v2_imagenet": {"weights": "MobileNet_V2_Weights.IMAGENET1K_V2"},
     "mobilenet_v3_small_imagenet": {
         "weights": "MobileNet_V3_Small_Weights.IMAGENET1K_V1"

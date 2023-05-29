@@ -7,7 +7,6 @@ EASY - Ensemble Augmented-Shot Y-shaped Learning: State-Of-The-Art Few-Shot Clas
 
 import argparse
 import os
-import sys
 
 
 def parse_evaluation_args(parser):

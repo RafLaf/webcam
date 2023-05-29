@@ -2,30 +2,27 @@
 neural network modules
 handle loading, inference and prediction
 """
-# on veut que le truc soit capable de gérer des trucs de la forme:
-
 import numpy as np
-
+from typing import Union, Sequence
 
 from few_shot_model.numpy_utils import softmax, one_hot, k_small
 
 
-def feature_preprocess(features, mean_base_features):
+def feature_preprocess(features: np.ndarray, mean_base_features: np.ndarray):
     """
-
     preprocess the feature (normalisation on the unit sphere) for classification
-        Args :
-            features(np.ndarray) : feature to be preprocessed
-            mean_base_features(np.ndarray) : expected mean of the tensor
-        returns:
-            features(np.ndarray) : normalized feature
+    Args :
+        features(np.ndarray) : feature to be preprocessed
+        mean_base_features(np.ndarray) : expected mean of the tensor
+    returns:
+        features(np.ndarray) : normalized feature
     """
     features = features - mean_base_features
     features = features / np.linalg.norm(features, axis=-1, keepdims=True)
     return features
 
 
-def ncm(shots_mean, features):
+def ncm(shots_mean: np.ndarray, features: np.ndarray):
     """
     compute the class attribution probas using the ncm classifier
     args :
@@ -38,7 +35,12 @@ def ncm(shots_mean, features):
     return probas
 
 
-def knn(shots_points, features, target, number_neighboors):
+def knn(
+    shots_points: np.ndarray,
+    features: np.ndarray,
+    target: np.ndarray,
+    number_neighboors: int,
+):
     """
     compute the class attribution probas using the ncm classifier
     args :
@@ -51,39 +53,40 @@ def knn(shots_points, features, target, number_neighboors):
 
     features = np.expand_dims(features, axis=-2)  # broadcastable along point axis
     distances = np.linalg.norm(shots_points - features, axis=-1, ord=2)
-    # distances=(shots - features)@(shots - features)
-    # #L2 because unit circle
-    # get the k nearest neighbors
 
-    indices = k_small(distances, number_neighboors, axis=-1)  # smalest along exemples
+    indices = k_small(distances, number_neighboors, axis=-1)
 
     probas = one_hot(target[indices], number_class)
-    probas = (
-        np.sum(probas, axis=-2) / number_neighboors
-    )  # sum along k neirest neighboors
+
+    # mean along neighboors
+    probas = np.sum(probas, axis=-2) / number_neighboors
 
     return probas
 
 
 class FewShotModel:
     """
-    class defining a few shot model
-        attributes :
-            - backbone : initialized with backbone_specs(dict):
-                specs defining the how to load the backbone
-            - classifier_specs :
-                parameters of the final classification model
-            - preprocess : how preprocess input image
-            - device : on wich device should the computation take place
+    class defining a few shot model (A model predicting the class from the feature using the references features)
+    attributes :
+        - backbone : initialized with backbone_specs(dict):
+            specs defining the how to load the backbone
+        - classifier_specs :
+            parameters of the final classification model
+        - preprocess : how preprocess input image
+        - device : on wich device should the computation take place
 
     2 possible types of prediction (batchified or not)
     """
 
-    def __init__(self, classifier_specs):
+    def __init__(self, classifier_specs: dict):
         self.classifier_specs = classifier_specs
 
     def predict_class_batch(
-        self, features, shot_array, mean_feature, preprocess_feature=True
+        self,
+        features: np.ndarray,
+        shot_array: np.ndarray,
+        mean_feature: np.ndarray,
+        preprocess_feature=True,
     ):
         """
         predict the class of a features
@@ -156,7 +159,11 @@ class FewShotModel:
         return classe_prediction, probas
 
     def predict_class_feature(
-        self, features, shots_list, mean_feature, preprocess_feature=True
+        self,
+        features: np.ndarray,
+        shots_list: Sequence[np.ndarray],
+        mean_feature: np.ndarray,
+        preprocess_feature=True,
     ):
         """
         predict the class of a features
@@ -198,10 +205,15 @@ class FewShotModel:
 
         elif model_name == "knn":
             number_neighboors = model_arguments["number_neighboors"]
-            # create target list of the shots
+            number_samples_class_1 = shots_list[0].shape[0]
+            for shot in shots_list:
+                assert (
+                    shot.shape[0] == number_samples_class_1
+                ), "knn requires an even number of samples per class"
 
-            shots = np.concatenate(shots_list, axis=0)  # sequence -> array
-            # shots : (n_exemples,nfeatures)
+            # sequence -> array
+            shots = np.concatenate(shots_list, axis=0)
+            # shots : (n_exemples, nfeatures)
 
             if preprocess_feature:
                 shots = feature_preprocess(shots, mean_feature)
@@ -225,7 +237,11 @@ class FewShotModel:
         return classe_prediction, probas
 
     def predict_class_moving_avg(
-        self, features, prev_probabilities, shots_list, mean_feature
+        self,
+        features: np.ndarray,
+        prev_probabilities: Union[None, np.ndarray],
+        shots_list: Sequence[np.ndarray],
+        mean_feature: np.ndarray,
     ):
         """
 

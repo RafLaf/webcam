@@ -1,5 +1,30 @@
 """
-script will load models, generate torchinfos and onnx (simplified version) for each resolution
+script will load models, save torchinfos and onnx (simplified version) for each resolution, 
+and replace ReduceMean with GlobalAveragePooling (since ReduceMean is not supported by tensil)
+
+If you only need a converted onnx model, this can actually be done using one line of code : 
+
+res_height = 32
+res_width = 32
+torch.onnx.export(
+            model,# your pytorch model
+            torch.randn(1, 3, res_height, res_width, device="cpu"), 
+            path_model, # path to save
+            verbose=False,
+            opset_version=10, # mandatory for tensil
+            output_names=["Output"], # another name will not work
+)
+
+You can check your model using netron. If you see that your model have Identity node, you need to use onnx-simplifier to simplify it.
+
+from onnxsim import simplify
+
+onnx_model = onnx.load(path_model)
+# convert model
+model_simp, check = simplify(onnx_model)
+onnx.save(model_simp, path_model)
+
+
 
 python model_to_onnx.py --input-resolution 32 64 84 --save-name "tiny_miniimagenet" --model-type "easy_resnet12_tiny" --model-specification "weights/tinymini1.pt1" --weight-description "weight from easy repo"
 python model_to_onnx.py --input-resolution 32 64 84 --save-name "small_miniimagenet" --model-type "easy_resnet12_small" --model-specification "weights/smallmini1.pt1" --weight-description "weight from easy repo"
@@ -21,7 +46,6 @@ python model_to_onnx.py --input-resolution 32 64 128  --model-type "googlenet" -
 python model_to_onnx.py --input-resolution 32 64  --model-type "densenet121" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
 python model_to_onnx.py --input-resolution 32 64 128  --model-type "nvidia_gpunet" --model-specification "pretrained" --weight-description "weight trained on imagenet"  --from-hub
 
-
 """
 
 import argparse
@@ -38,7 +62,6 @@ from tqdm import tqdm
 import warnings
 
 from backbone_loader.backbone_pytorch.model import get_model
-from backbone_loader.backbone_loader_pytorch import TorchBatchModelWrapper
 
 
 def save_weight_description(path_description, model_specification, weight_desc):
@@ -209,34 +232,12 @@ def model_to_onnx(args):
     number_eval = 100
     step_res = 10
     possible_res = [i for i in range(min_res, max_res, step_res)]
-    time_execution = np.zeros((len(possible_res), number_eval))
 
-    # first emtpy call (in one occasion, i've observed that it was slower)
+    # not sure it's needed, but it might be for uninitilized network
     dummy_input = torch.randn(1, 3, min_res, min_res, device="cpu")
     _ = model(dummy_input)
 
-    if args.check_perf:
-        for i_res, res in tqdm(enumerate(possible_res), total=len(possible_res)):
-            print("res : ", res)
-            dummy_input = torch.randn(1, 3, res, res, device="cpu")
-
-            for i in range(number_eval):
-                t = time.time()
-                _ = model(dummy_input)
-                time_execution[i_res, i] = time.time() - t
-
-        np.savez(
-            info_path / f"exec_time_{model_name}.npy",
-            possible_res=possible_res,
-            time_execution=time_execution,
-        )
-
-        print("possible resolutions : ", possible_res)
-        print("mean execution time : ", np.mean(time_execution, axis=-1))
-        print("mean fps : ", 1 / np.mean(time_execution, axis=-1))
-
     # for each input, create the corresponding file
-
     for input_resolution in input_resolution:
         print("exporting res : ", input_resolution)
         resolution_folder = parent_path / f"{input_resolution}x{input_resolution}"
@@ -322,16 +323,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--weight-description", required=True, help="Description of the weight file"
     )
-    parser.add_argument(
-        "--output-names", default="Output", help="Name of the output layer"
-    )
+    # parser.add_argument(
+    #     "--output-names", default="Output", help="Name of the output layer"
+    # )
     parser.add_argument(
         "--check-perf",
         action="store_true",
         help="if specified, will perform inference evaluations",
     )
     parser.add_argument("--save-name", required=True, help="Name of the save model")
-    # parser.add_argument("--perform-evaluation",action='store_true', help="if specified, will perform inference")
-    # Parse the command line arguments
     args = parser.parse_args()
+    args.output_names = (
+        "Output"  # hardcoded because also harcoded in backbone_tensil.py
+    )
     model_to_onnx(args)

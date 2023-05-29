@@ -6,7 +6,7 @@ get the backbone with the specified framework, using argument from
 """
 
 
-def get_model(model_specs):
+def get_model(model_specs: dict):
     """
     get the model specified in input
     args :
@@ -26,15 +26,17 @@ def get_model(model_specs):
         weight = model_specs["weight"]
         return TorchBatchModelWrapper(model_name, weight, device=device)
     elif model_specs["type"] == "tensil":
-        from backbone_loader.backbone_tensil import backbone_tensil_wrapper
+        from backbone_loader.backbone_tensil import BackboneTensilWrapper
 
-        return backbone_tensil_wrapper(
-            model_specs["overlay"], model_specs["path_tmodel"]
+        return BackboneTensilWrapper(
+            model_specs["overlay"],
+            model_specs["path_tmodel"],
+            onnx_output_name=model_specs.get("onnx_output_name", "Output"),
         )
     elif model_specs["type"] == "onnx":
-        from backbone_loader.backbone_onnx import backbone_onnx_wrapper
+        from backbone_loader.backbone_onnx import BackboneOnnxWrapper
 
-        return backbone_onnx_wrapper(model_specs["path_onnx"])
+        return BackboneOnnxWrapper(model_specs["path_onnx"])
 
     else:
         raise UserWarning("model type=" + model_specs["type"] + "is not defined")

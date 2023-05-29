@@ -1,10 +1,15 @@
 import itertools
 import numpy as np
 import pickle
+from typing import Union
+import os
 
 
 def get_dataset_numpy(
-    dataset_path, dtype=np.float32, number_sample_per_class=1000, dim_img=(3, 32, 32)
+    dataset_path: Union[str, os.PathLike],
+    dtype=np.float32,
+    number_sample_per_class=1000,
+    dim_img=(3, 32, 32),
 ):
     """
     load a few shot type dataset with pickle and return it
@@ -38,14 +43,11 @@ def get_dataset_numpy(
     numpy_data = np.zeros(
         (0, number_sample_per_class, dim_img[1], dim_img[2], dim_img[0]), dtype=dtype
     )
-    size = dim_img[0] * dim_img[1] * dim_img[2]
 
     for key, group in grouped:
         # key_and_group = {key : list(group)}
 
         transformed_group = map(lambda d: d[1], group)  # remove key
-        type_iter = np.dtype((np.float16, size))  # dim_img
-
         group_iterators = itertools.chain.from_iterable(transformed_group)
 
         numpy_data = np.concatenate(

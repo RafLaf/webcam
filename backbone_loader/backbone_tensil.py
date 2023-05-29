@@ -2,7 +2,8 @@ import sys
 import os
 import json
 import numpy as np
-
+from typing import Union
+from pynq import Overlay
 
 file_dir = os.path.dirname(__file__)
 print(file_dir)
@@ -16,8 +17,14 @@ from tcu_pynq.architecture import Architecture
 from tcu_pynq.data_type import DataType
 
 
-class backbone_tensil_wrapper:
-    def __init__(self, overlay, path_tmodel, debug=False):
+class BackboneTensilWrapper:
+    def __init__(
+        self,
+        overlay: Overlay,
+        path_tmodel: Union[str, os.PathLike],
+        onnx_output_name: str,
+        debug=False,
+    ):
         """
         Args :
             - path_bit : path qui mêne au bitstream, e.g : home/xilinx/bitstream.bit
@@ -36,19 +43,21 @@ class backbone_tensil_wrapper:
         self.tcu = Driver(self.tarch, overlay.axi_dma_0, debug=debug)
         print("tcu succefullt loaded")
         self.tcu.load_model(path_tmodel)
+        assert self.tcu.arch.array_size >= 3, "array size must be >=3"
+        self.onnx_output_name = onnx_output_name
 
-    def __call__(self, img):
-        assert img.shape[0] == 1
-        assert len(img.shape) == 4
-        assert img.shape[-1] == 3
+    def __call__(self, single_image_batch: np.ndarray):
+        assert len(single_image_batch.shape) == 4, "single image is not a batch"
+        assert (
+            single_image_batch.shape[0] == 1
+        ), "img is supposed to be a batch of size one"
+        assert single_image_batch.shape[-1] == 3, "last channel is not a rgb image"
 
-        img = img[0]
-        c, h, w = img.shape
+        img = single_image_batch[0]
 
-        # img=np.transpose(img.reshape((c, h, w)), axes=[1, 2, 0])
         img = np.pad(
             img,
-            [(0, 0), (0, 0), (0, self.tcu.arch.array_size - 3)],
+            [(0, 0), (0, 0), (0, self.tcu.arch.array_size - 3)],  # asuming rgb
             "constant",
             constant_values=0,
         )
@@ -57,4 +66,4 @@ class backbone_tensil_wrapper:
         inputs = {"input.1": img}
         outputs = self.tcu.run(inputs)
 
-        return outputs["Output"][None, :]
+        return outputs[self.onnx_output_name][None, :]
