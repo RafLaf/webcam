@@ -15,32 +15,34 @@ class DataFewShot:
         shot_list : list of the regitered data
     """
 
-    def __init__(self,num_class):
-        self.shot_list=[]
-        self.num_class=num_class
-        self.mean_features=[]
-        self.registered_classes=[]
-        self.is_recorded=False
+    def __init__(self, num_class):
+        self.shot_list = []
+        self.num_class = num_class
+        self.mean_features = []
+        self.registered_classes = []
+        self.is_recorded = False
 
-
-    def add_repr(self,classe,repr):
+    def add_repr(self, classe, repr):
         """
         add the given repr to the given classe
         """
-        self.is_recorded=True
+        self.is_recorded = True
         if classe not in self.registered_classes:
             self.registered_classes.append(classe)
             self.shot_list.append(repr)
-        
+
         else:
             self.shot_list[classe] = np.concatenate(
                 (self.shot_list[classe], repr), axis=0
             )
+
     def get_shot_list(self):
         """
         getter for shot_list
         """
-        return self.shot_list#[shot.detach().cpu().numpy() for shot in self.shot_list]
+        return (
+            self.shot_list
+        )  # [shot.detach().cpu().numpy() for shot in self.shot_list]
 
     def get_mean_features(self):
         """
@@ -60,10 +62,10 @@ class DataFewShot:
         can only be called once
 
         """
-        self.mean_features=np.concatenate(self.mean_features,axis=0)
-        self.mean_features=self.mean_features.mean(axis=0)
+        self.mean_features = np.concatenate(self.mean_features, axis=0)
+        self.mean_features = self.mean_features.mean(axis=0)
 
-    def add_mean_repr(self,features):
+    def add_mean_repr(self, features):
         """
         add a given featu to the mean repr of the datas
         """
@@ -73,7 +75,6 @@ class DataFewShot:
         """
         reset the saved image, but not the mean repr
         """
-        self.shot_list=[]
-        self.registered_classes=[]
-        self.is_recorded=False
-
+        self.shot_list = []
+        self.registered_classes = []
+        self.is_recorded = False

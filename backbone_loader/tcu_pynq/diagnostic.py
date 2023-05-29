@@ -102,7 +102,7 @@ class DiagnosticArchTiny(unittest.TestCase):
         np.testing.assert_array_equal(result, data)
 
     def test_matmul(self):
-        size = self.driver.arch.array_size ** 2
+        size = self.driver.arch.array_size**2
         data = np.arange(size, dtype=data_type_numpy(self.driver.arch.data_type))
         weights = np.identity(
             self.driver.arch.array_size,

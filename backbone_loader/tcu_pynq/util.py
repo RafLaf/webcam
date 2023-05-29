@@ -28,7 +28,7 @@ def div_ceil(num, den):
 
 def log2_ceil(x):
     i = 0
-    while 2 ** i < x:
+    while 2**i < x:
         i += 1
     return i
 

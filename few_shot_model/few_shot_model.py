@@ -2,7 +2,7 @@
 neural network modules
 handle loading, inference and prediction
 """
-#on veut que le truc soit capable de gérer des trucs de la forme: 
+# on veut que le truc soit capable de gérer des trucs de la forme:
 
 import numpy as np
 
@@ -25,42 +25,45 @@ def feature_preprocess(features, mean_base_features):
     return features
 
 
-def ncm(shots_mean,features):
+def ncm(shots_mean, features):
     """
     compute the class attribution probas using the ncm classifier
-    args : 
+    args :
         - shots_mean array(...,n_class,n_dim) : mean of the saved shots for each classe
         - features array(...,n_dim) : features to classify (leading dims same as previous array)
     """
-    features=np.expand_dims(features,axis=-2)#broadcastable along class axis
+    features = np.expand_dims(features, axis=-2)  # broadcastable along class axis
     distances = np.linalg.norm(shots_mean - features, axis=-1, ord=2)
     probas = softmax(-20 * distances, dim=-1)
     return probas
 
-def knn(shots_points,features,target,number_neighboors):
+
+def knn(shots_points, features, target, number_neighboors):
     """
     compute the class attribution probas using the ncm classifier
-    args : 
+    args :
         - shots_mean array(...,n_points,n_dim) : mean of the saved shots for each classe
         - features array(...,n_dim) : features to classify (leading dims same as previous array)
         - target : array(n_points) : represent feature assignement. Expected to have value in [0, ...,n_class-1]
         - number_neighboors (int) : number of neighboors to take
     """
-    number_class=np.max(target)+1
-    
-    features=np.expand_dims(features,axis=-2)#broadcastable along point axis
+    number_class = np.max(target) + 1
+
+    features = np.expand_dims(features, axis=-2)  # broadcastable along point axis
     distances = np.linalg.norm(shots_points - features, axis=-1, ord=2)
     # distances=(shots - features)@(shots - features)
     # #L2 because unit circle
     # get the k nearest neighbors
 
+    indices = k_small(distances, number_neighboors, axis=-1)  # smalest along exemples
 
-    indices = k_small(distances, number_neighboors,axis=-1)#smalest along exemples
-    
     probas = one_hot(target[indices], number_class)
-    probas = np.sum(probas, axis=-2) / number_neighboors #sum along k neirest neighboors
+    probas = (
+        np.sum(probas, axis=-2) / number_neighboors
+    )  # sum along k neirest neighboors
 
     return probas
+
 
 class FewShotModel:
     """
@@ -79,8 +82,9 @@ class FewShotModel:
     def __init__(self, classifier_specs):
         self.classifier_specs = classifier_specs
 
-
-    def predict_class_batch(self,features,shot_array,mean_feature,preprocess_feature=True):
+    def predict_class_batch(
+        self, features, shot_array, mean_feature, preprocess_feature=True
+    ):
         """
         predict the class of a features
         args:
@@ -98,54 +102,62 @@ class FewShotModel:
 
         """
         model_name = self.classifier_specs["model_name"]
-        model_arguments = self.classifier_specs.get("kwargs",{})
-        #shots_list = recorded_data.get_shot_list()
-       
+        model_arguments = self.classifier_specs.get("kwargs", {})
+        # shots_list = recorded_data.get_shot_list()
+
         if preprocess_feature:
-            #(n_batch,1,1,n_features)
-            features = feature_preprocess(features, np.expand_dims(mean_feature,axis=(1,2)))
+            # (n_batch,1,1,n_features)
+            features = feature_preprocess(
+                features, np.expand_dims(mean_feature, axis=(1, 2))
+            )
 
         # class asignement using the correspounding model
-        
+
         if model_name == "ncm":
-            shots = np.mean(shot_array,axis=2)#mean of the shots
+            shots = np.mean(shot_array, axis=2)  # mean of the shots
             # (n_batch,n_ways,n_features)
             # shots=shots.detach().cpu().numpy()
             if preprocess_feature:
-                #(n_batch,1,n_features)
-                shots = feature_preprocess(shots, np.expand_dims(mean_feature,axis=1))
-            shots=np.expand_dims(shots,axis=(1,2))
+                # (n_batch,1,n_features)
+                shots = feature_preprocess(shots, np.expand_dims(mean_feature, axis=1))
+            shots = np.expand_dims(shots, axis=(1, 2))
             # (_batch,1,1,n_ways,n_features)
-            probas=ncm(shots,features)
-            
+            probas = ncm(shots, features)
+
         elif model_name == "knn":
             number_neighboors = model_arguments["number_neighboors"]
             # create target list of the shots
-            n_ways=shot_array.shape[1]
-            n_shots=shot_array.shape[2]
-            shots = np.reshape(shot_array,axis=(shot_array.shape[0],n_ways*n_shots,shot_array.shape[3]))
-            #shots : (n_batch,n_exemples,nfeatures)
+            n_ways = shot_array.shape[1]
+            n_shots = shot_array.shape[2]
+            shots = np.reshape(
+                shot_array,
+                axis=(shot_array.shape[0], n_ways * n_shots, shot_array.shape[3]),
+            )
+            # shots : (n_batch,n_exemples,nfeatures)
             if preprocess_feature:
-                shots = feature_preprocess(shots, np.expand_dims(mean_feature,axis=1))
-            shots=np.expand_dims(shots,axis=(2,3))
+                shots = feature_preprocess(shots, np.expand_dims(mean_feature, axis=1))
+            shots = np.expand_dims(shots, axis=(2, 3))
             # (_batch,n_ways,1,n_features)
-            
+
             targets = np.concatenate(
                 [
-                    class_id * np.ones(n_shots, dtype=np.int64) for class_id in range(n_ways)
+                    class_id * np.ones(n_shots, dtype=np.int64)
+                    for class_id in range(n_ways)
                 ],
                 axis=0,
             )
-            
-            probas=knn(shots,features,targets,number_neighboors)
+
+            probas = knn(shots, features, targets, number_neighboors)
 
         else:
             raise NotImplementedError(f"classifier : {model_name} is not implemented")
-        
-        classe_prediction = np.argmax(probas,axis=-1)
+
+        classe_prediction = np.argmax(probas, axis=-1)
         return classe_prediction, probas
 
-    def predict_class_feature(self, features, shots_list,mean_feature, preprocess_feature=True):
+    def predict_class_feature(
+        self, features, shots_list, mean_feature, preprocess_feature=True
+    ):
         """
         predict the class of a features
 
@@ -163,39 +175,39 @@ class FewShotModel:
             probas (1,n_features) : probability of belonging to each class
         """
 
-        #mean_feature = np.mean(shots_list,axis=0) #recorded_data.get_mean_features()
-       
+        # mean_feature = np.mean(shots_list,axis=0) #recorded_data.get_mean_features()
+
         model_name = self.classifier_specs["model_name"]
-        model_arguments = self.classifier_specs.get("kwargs",{})
-        #shots_list = recorded_data.get_shot_list()
+        model_arguments = self.classifier_specs.get("kwargs", {})
+        # shots_list = recorded_data.get_shot_list()
 
         if preprocess_feature:
-
             features = feature_preprocess(features, mean_feature)
 
         # class asignement using the correspounding model
 
         if model_name == "ncm":
-
-            shots = np.stack([np.mean(shot, axis=0) for shot in shots_list], axis=0) #sequence -> array
-            #shots : (nclass,nfeatures)
+            shots = np.stack(
+                [np.mean(shot, axis=0) for shot in shots_list], axis=0
+            )  # sequence -> array
+            # shots : (nclass,nfeatures)
             # shots=shots.detach().cpu().numpy()
             if preprocess_feature:
                 shots = feature_preprocess(shots, mean_feature)
-            probas=ncm(shots,features)
-            
+            probas = ncm(shots, features)
+
         elif model_name == "knn":
             number_neighboors = model_arguments["number_neighboors"]
             # create target list of the shots
 
-            shots = np.concatenate(shots_list,axis=0)#sequence -> array
-            #shots : (n_exemples,nfeatures)
+            shots = np.concatenate(shots_list, axis=0)  # sequence -> array
+            # shots : (n_exemples,nfeatures)
 
             if preprocess_feature:
                 shots = feature_preprocess(shots, mean_feature)
-            
-            number_ways=len(shots_list)#ok for sequence and array
-           
+
+            number_ways = len(shots_list)  # ok for sequence and array
+
             targets = np.concatenate(
                 [
                     class_id * np.ones(shots_list[class_id].shape[0], dtype=np.int64)
@@ -203,17 +215,18 @@ class FewShotModel:
                 ],
                 axis=0,
             )
-            
-            probas=knn(shots,features,targets,number_neighboors)
-            
+
+            probas = knn(shots, features, targets, number_neighboors)
 
         else:
             raise NotImplementedError(f"classifier : {model_name} is not implemented")
-        
-        classe_prediction = np.argmax(probas,axis=-1)
+
+        classe_prediction = np.argmax(probas, axis=-1)
         return classe_prediction, probas
 
-    def predict_class_moving_avg(self, features, prev_probabilities, shots_list,mean_feature):
+    def predict_class_moving_avg(
+        self, features, prev_probabilities, shots_list, mean_feature
+    ):
         """
 
         update the probabily and attribution of having a class, using the current image
@@ -228,7 +241,9 @@ class FewShotModel:
         """
         model_name = self.classifier_specs["model_name"]
 
-        _, current_proba = self.predict_class_feature(features, shots_list,mean_feature)
+        _, current_proba = self.predict_class_feature(
+            features, shots_list, mean_feature
+        )
 
         print("probabilities:", current_proba)
 

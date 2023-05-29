@@ -36,7 +36,7 @@ class Driver:
         self,
         arch,
         axi_dma_instr,
-        axi_dma_sample = None,
+        axi_dma_sample=None,
         dma_buffer_size=1048576,
         debug=False,
     ):
@@ -58,7 +58,9 @@ class Driver:
         self.axi_dma_instr = axi_dma_instr
         self.arch = arch
         # TODO axi_dma_sample can have different width
-        self.axi_data_width = int(self.axi_dma_instr.description['parameters']['C_M_AXI_MM2S_DATA_WIDTH'])
+        self.axi_data_width = int(
+            self.axi_dma_instr.description["parameters"]["C_M_AXI_MM2S_DATA_WIDTH"]
+        )
         self.axi_data_type = axi_data_type(self.axi_data_width)
         # TODO enable sample based on sample block size parameter in arch and set axi_dma_sample
         self.axi_dma_sample = axi_dma_sample
@@ -192,10 +194,8 @@ class Driver:
     def run_load_consts(self, offset, size):
         program = [
             self.layout.data_move(
-                DataMoveFlag.dram1_to_memory,
-                offset,
-                offset,
-                size - 1)
+                DataMoveFlag.dram1_to_memory, offset, offset, size - 1
+            )
         ] + self.prepare_flush_probe()
         self.write_instructions(program)
         self.wait_for_flush()
@@ -206,7 +206,6 @@ class Driver:
             self.model = model_from_json(f.read())
         # check that model arch matches driver arch
         if not (self.model.arch == self.arch):
-
             print(self)
             raise Exception(
                 "model requires architecture {} but current architecture is {}".format(
@@ -231,7 +230,7 @@ class Driver:
     def scalar_address(self, vec_address):
         return vec_address * self.arch.array_size
 
-    def prepare_flush_probe(self): 
+    def prepare_flush_probe(self):
         # initialize flush probe
         self.probe_source_address = self.arch.dram0_depth - 1
         self.probe_target_address = self.arch.dram0_depth - 2
@@ -239,19 +238,19 @@ class Driver:
         self.probe_source = np.full(
             self.arch.array_size,
             np.iinfo(data_type_numpy(self.arch.data_type)).max,
-            dtype=data_type_numpy(self.arch.data_type))
+            dtype=data_type_numpy(self.arch.data_type),
+        )
         self.probe_target = np.full(
-            self.arch.array_size,
-            0,
-            dtype=data_type_numpy(self.arch.data_type))
-        
+            self.arch.array_size, 0, dtype=data_type_numpy(self.arch.data_type)
+        )
+
         # write flush probe
         self.dram0.write(
-            self.scalar_address(self.probe_source_address),
-            self.probe_source)
+            self.scalar_address(self.probe_source_address), self.probe_source
+        )
         self.dram0.write(
-            self.scalar_address(self.probe_target_address),
-            self.probe_target)
+            self.scalar_address(self.probe_target_address), self.probe_target
+        )
 
         # flush probe instructions
         return [
@@ -259,18 +258,20 @@ class Driver:
                 DataMoveFlag.dram0_to_memory,
                 self.local_address,
                 self.probe_source_address,
-                0),
+                0,
+            ),
             self.layout.data_move(
                 DataMoveFlag.memory_to_dram0,
                 self.local_address,
                 self.probe_target_address,
-                0)
+                0,
+            ),
         ]
 
     def wait_for_flush(self):
         while not self.dram0.compare(
-            self.scalar_address(self.probe_target_address),
-            self.probe_source):
+            self.scalar_address(self.probe_target_address), self.probe_source
+        ):
             pass
 
     def run(self, inputs):
@@ -310,18 +311,18 @@ class Driver:
             prog = prog + self.layout.to_bytes(i)
 
         # write program
-        self.instruction_stream.write(
-            prog, align=self.layout.instruction_size_bytes
-        )
+        self.instruction_stream.write(prog, align=self.layout.instruction_size_bytes)
 
         self.wait_for_flush()
         timestamp("wrote program")
-        
+
         # return outputs
         outputs = dict()
         for out in self.model.outputs:
             data = self.from_fixed(
-                self.dram0.read(self.scalar_address(out.base), self.scalar_address(out.size))
+                self.dram0.read(
+                    self.scalar_address(out.base), self.scalar_address(out.size)
+                )
             )
             if out.name in outputs:
                 outputs[out.name] = np.concatenate([outputs[out.name], data])

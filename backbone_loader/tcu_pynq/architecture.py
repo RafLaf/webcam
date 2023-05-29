@@ -16,8 +16,8 @@ Architecture = namedtuple(
         "simd_registers_depth",  # int
         "stride0_depth",  # int
         "stride1_depth",  # int
-        "number_of_threads", # int
-        "thread_queue_depth", # int
+        "number_of_threads",  # int
+        "thread_queue_depth",  # int
     ],
 )
 

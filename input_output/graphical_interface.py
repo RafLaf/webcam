@@ -10,7 +10,8 @@ def draw_indic(frame, percentages, shot_frames, font, scale):
     Args :
         percentages : (np.ndarray(1,n_features) ) : probability of belonging to each class
     """
-    percentages=percentages[0]#not clean, 
+    percentages = percentages[0]  # not clean,
+
     def percentage_to_color(p):
         return 0, 255 - (255 * p), 255 * p
 
@@ -55,9 +56,7 @@ def draw_indic(frame, percentages, shot_frames, font, scale):
                     + s[0]
                     + n_shot * (s[0] + 10),
                     x_start_img : x_start_img + s[1],
-                ] = images[
-                    n_shot
-                ]
+                ] = images[n_shot]
         img_level = int(percentages[k] * levels)
         cv2.putText(
             frame,
@@ -89,6 +88,7 @@ def draw_indic(frame, percentages, shot_frames, font, scale):
                 cv2.FILLED,
             )
 
+
 class OpencvInterface:
     """
     Class representing the opencv configuration
@@ -111,17 +111,18 @@ class OpencvInterface:
 
 
     """
-    def __init__(self, video_capture, scale, resolution, font,number_of_class):
+
+    def __init__(self, video_capture, scale, resolution, font, number_of_class):
         self.video_capture = video_capture
         self.scale = scale
         self.height = resolution[0]
         self.width = resolution[1]
         self.resolution = resolution
         self.font = font
-        self.frame=None
-        self.number_of_class=number_of_class
-        self.snapshot=[[] for i in range(number_of_class)]
-        self.is_present_original_frame=False
+        self.frame = None
+        self.number_of_class = number_of_class
+        self.snapshot = [[] for i in range(number_of_class)]
+        self.is_present_original_frame = False
 
     def read_frame(self):
         """
@@ -129,10 +130,9 @@ class OpencvInterface:
         """
         _, frame = self.video_capture.read()
         self.frame = cv2.resize(frame, self.resolution, interpolation=cv2.INTER_AREA)
-        self.is_present_original_frame=True
+        self.is_present_original_frame = True
 
-
-    def get_copy_captured_image(self,resolution):
+    def get_copy_captured_image(self, resolution):
         """
         return a resized copy of the captured image if it still present in the data
         """
@@ -143,7 +143,6 @@ class OpencvInterface:
             )  # linear is faster than cubic
         else:
             raise Exception("original frame is not available")
-            
 
     def put_text(self, text, bottom_pos_x=0.4, bottom_pos_y=0.1):
         """
@@ -153,7 +152,7 @@ class OpencvInterface:
                 bottom_pos_x(float) : x position of the bottom left pixel (% of the whole frame)
                 bottom_pos_y(float) : y position of the bottom left pixel (% of the whole frame)
         """
-        self.is_present_original_frame=False
+        self.is_present_original_frame = False
         cv2.putText(
             self.frame,
             text,
@@ -175,23 +174,23 @@ class OpencvInterface:
         """
         wrapper of draw_indic
         """
-        self.is_present_original_frame=False
+        self.is_present_original_frame = False
         draw_indic(self.frame, probabilities, self.snapshot, self.font, self.scale)
 
-    def add_snapshot(self, classe,frame_to_add=None):
+    def add_snapshot(self, classe, frame_to_add=None):
         """
         add a snapshot to memmory
         """
         if frame_to_add is None:
-            frame_to_add=self.frame
+            frame_to_add = self.frame
         image_label = cv2.resize(
             frame_to_add,
             (int(self.height // 10), int(self.width // 10)),
             interpolation=cv2.INTER_AREA,
         )
         self.snapshot[classe].append(image_label)
-    
-    def get_number_snapshot(self,classe):
+
+    def get_number_snapshot(self, classe):
         """
         get the number of snapshot of a given classe"""
         return len(self.snapshot[classe])
@@ -199,7 +198,7 @@ class OpencvInterface:
     def reset_snapshot(self):
         """
         reset the snapshot to initial value"""
-        self.snapshot=[[] for i in range(self.number_of_class)]
+        self.snapshot = [[] for i in range(self.number_of_class)]
 
     def close(self):
         """

@@ -61,13 +61,15 @@ class DoubleBufferedAdapter:
         self.copy = self.channel.copy
         self.free = self.channel.free
         self.axi_data_width = self.channel.axi_data_width
-        self.max_buffer_size = self.channel.max_buffer_size        
+        self.max_buffer_size = self.channel.max_buffer_size
 
         # state
         self.data = None  # data to read/write
         self.total_length = 0  # total number of transfers required
-        self.buffer_size = 0 # size of each buffer in the pair
-        self.remainder_buffer_size = 0 # size of first remainder buffer if total_length % buffer_size == 0
+        self.buffer_size = 0  # size of each buffer in the pair
+        self.remainder_buffer_size = (
+            0  # size of first remainder buffer if total_length % buffer_size == 0
+        )
         self.buffer = list()  # buffers to read and write
         self.current = 2  # index of current buffer
         self.alternate = 0  # index of alternate buffer
@@ -87,7 +89,9 @@ class DoubleBufferedAdapter:
         self.total_length = total_length
 
         align_with_axi = align // math.gcd(align, self.axi_data_width // 8)
-        self.buffer_size = self.max_buffer_size - (self.max_buffer_size % align_with_axi)
+        self.buffer_size = self.max_buffer_size - (
+            self.max_buffer_size % align_with_axi
+        )
 
         self.remainder_buffer_size = self.total_length % self.buffer_size
         self.buffer = [
@@ -138,7 +142,7 @@ class DoubleBufferedAdapter:
                         len(self.buffer[self.next]),
                     )
                     self.index += len(self.buffer[self.next])
-            else:                
+            else:
                 # only necessary if we've already done a transfer
                 if self.prev >= 0:
                     self.copy(
