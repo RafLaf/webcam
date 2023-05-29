@@ -7,6 +7,7 @@ EASY - Ensemble Augmented-Shot Y-shaped Learning: State-Of-The-Art Few-Shot Clas
 
 import argparse
 import os
+import sys
 
 
 def parse_evaluation_args(parser):
@@ -123,7 +124,13 @@ def parse_model_params(parser):
         "--path_bit",
         default="/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit",
         type=str,
-        help="path of the bistream. To see how to generate it, look at the tensil documentation",
+        help="The bitstream name or absolute path as a string. To see how to generate it, look at the tensil documentation",
+    )
+
+    pynq_parser.add_argument(
+        "--path_tcu",
+        default="/home/xilinx",
+        help="The path to the driver (added to the path)",
     )
 
     pynq_parser.add_argument(
@@ -210,6 +217,10 @@ def parse_args_demonstration(parser):
     )
 
 
+def convert_to_absolute(path):
+    return os.path.abspath(path)
+
+
 def process_arguments(args):
     """
     process relative to both demo and cifar evaluation
@@ -230,8 +241,6 @@ def process_arguments(args):
 
             if args.backbone_type == "easy_resnet12_small":
                 args.backbone_specs["weight"] = "weight/smallcifar1.pt1"
-            elif args.backbone_type == "easy_resnet12":
-                args.backbone_specs["weight"] = "weight/cifar1.pt1"
             elif args.backbone_type == "easy-resnet12-tiny":
                 args.backbone_specs["weight"] = "weight/tinycifar1.pt1"
             else:
@@ -244,14 +253,17 @@ def process_arguments(args):
 
     elif args.framework_backbone == "tensil":
         # backbone arguments :
+        args.path_bit = convert_to_absolute(args.path_bit)
+        args.path_tcu = convert_to_absolute(args.path_tcu)
+        print(args.path_bit)
         from pynq import Overlay
 
         args.overlay = Overlay(args.path_bit)
+
+        sys.path.append(args.path_tcu)
         args.backbone_specs = {
-            "type": args.framework_backbone,
+            "type": "args.framework_backbone",
             "overlay": args.overlay,
-            "tmodel": args.path_tmodel,
-            "path_bit": args.path_bit,
             "path_tmodel": args.path_tmodel,
         }
 
@@ -270,7 +282,6 @@ def process_arguments(args):
 
 def process_args_evaluation(args):
     process_arguments(args)
-    args.dataset_path = os.path.join(os.getcwd(), args.dataset_path)
     return args
 
 
@@ -296,7 +307,7 @@ def get_args_evaluation():
 def process_args_demo(args):
     process_arguments(args)
     ### process remaining arguments
-
+    print(args)
     # resolution
     if type(args.resolution_input) is int:
         args.resolution_input = (args.resolution_input, args.resolution_input)
@@ -333,6 +344,3 @@ def get_args_demo():
     print("input args : ", args)
     args = process_args_demo(args)
     return args
-
-
-# print(args.dataset_path)

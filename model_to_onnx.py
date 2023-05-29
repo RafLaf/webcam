@@ -12,7 +12,7 @@ torch.onnx.export(
             path_model, # path to save
             verbose=False,
             opset_version=10, # mandatory for tensil
-            output_names=["Output"], # another name will not work
+            output_names=["Output"],
 )
 
 You can check your model using netron. If you see that your model have Identity node, you need to use onnx-simplifier to simplify it.
@@ -323,9 +323,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--weight-description", required=True, help="Description of the weight file"
     )
-    # parser.add_argument(
-    #     "--output-names", default="Output", help="Name of the output layer"
-    # )
+    parser.add_argument(
+        "--output-names", default="Output", help="Name of the output layer"
+    )
     parser.add_argument(
         "--check-perf",
         action="store_true",
@@ -333,7 +333,5 @@ if __name__ == "__main__":
     )
     parser.add_argument("--save-name", required=True, help="Name of the save model")
     args = parser.parse_args()
-    args.output_names = (
-        "Output"  # hardcoded because also harcoded in backbone_tensil.py
-    )
+
     model_to_onnx(args)

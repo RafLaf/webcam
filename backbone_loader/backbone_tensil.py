@@ -5,13 +5,6 @@ import numpy as np
 from typing import Union
 from pynq import Overlay
 
-file_dir = os.path.dirname(__file__)
-print(file_dir)
-sys.path.append(
-    file_dir
-)  # add current path to python path because import of tcu_pynq is relative
-
-# import using the same syntax as in the driver in order to avoid mixing repo if sevral folders are present
 from tcu_pynq.driver import Driver
 from tcu_pynq.architecture import Architecture
 from tcu_pynq.data_type import DataType
@@ -42,9 +35,13 @@ class BackboneTensilWrapper:
 
         self.tcu = Driver(self.tarch, overlay.axi_dma_0, debug=debug)
         print("tcu succefullt loaded")
+
+        with open(path_tmodel, "r") as f:
+            outputs = json.loads(f.read())["outputs"]
+            self.output_names = [output["name"] for output in outputs]
+
         self.tcu.load_model(path_tmodel)
         assert self.tcu.arch.array_size >= 3, "array size must be >=3"
-        self.onnx_output_name = onnx_output_name
 
     def __call__(self, single_image_batch: np.ndarray):
         assert len(single_image_batch.shape) == 4, "single image is not a batch"
@@ -66,4 +63,4 @@ class BackboneTensilWrapper:
         inputs = {"input.1": img}
         outputs = self.tcu.run(inputs)
 
-        return outputs[self.onnx_output_name][None, :]
+        return outputs[self.output_name][None, :]
