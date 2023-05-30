@@ -112,6 +112,6 @@ Will be provided soon.
 # Possible pitfall :
     - Sometimes there is a bug with memory allocation. We are investigating it. For now if it happens, just reset the PYNQ.
     - In the PYNQ, always launch the scripts while beeing authentify as root
-    - Somethimes PYNQ need to be reset between executions of the program in order to use the hdmi
+    - Sometimes PYNQ need to be reset between executions of the program in order to use the hdmi
     - Path for the PYNQ specific arguments are often absolute
     - Should be at least enough elements to form queries + n_shots for the evaluation
