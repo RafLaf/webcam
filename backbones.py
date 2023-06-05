@@ -77,20 +77,7 @@ class Clip(nn.Module):
         self.backbone = clip.load(name, device=device)[0]
         self.return_tokens = return_tokens
     def forward(self, x, mixup = None, lbda = None, perm = None):
-        if self.return_tokens:
-            x = self.backbone.visual.conv1(x)  # shape = [*, width, grid, grid]
-            x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
-            x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
-            x = torch.cat([self.backbone.visual.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
-            x = x + self.backbone.visual.positional_embedding.to(x.dtype)
-            x = self.backbone.visual.ln_pre(x)
-            x = x.permute(1, 0, 2)  # NLD -> LND
-            x = self.backbone.visual.transformer(x)
-            x = x.permute(1, 0, 2)  # LND -> NLD
-            out = self.backbone.visual.ln_post(x)
-        else:
-            out = self.backbone.encode_image(x)
-        return out
+        return self.backbone.encode_image(x)
 
 def load_model_weights(model, path, device):
     pretrained_dict = torch.load(path, map_location=device)
