@@ -5,14 +5,24 @@ from torchvision import transforms, datasets
 from resnet12 import ResNet12
 import time
 import torch.nn.functional as F
+from backbones import get_model
 
-addr_cam = "rtsp://admin:brain2021@10.29.232.40"
-device = 'cuda:0'
 
+# parser
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--model', type=str, default='RN50', help='RN50, RN101, RN50x4, RN50x16')
+parser.add_argument('--model-path', type=str, default='/users/local/backbone/tieredlong1.pt1', help='path to model')
+parser.add_argument('--classifier', type=str, default='knn-5', help='classifier name')
+parser.add_argument('camera', type=str, default='0', help='camera number') # "rtsp://admin:brain2021@10.29.232.40"
+parser.add_argument('--device', type=str, default='cuda:0', help='cuda:0, cuda:1, ...')
+args = parser.parse_args()
 # 1, 2, 3... for every class we're adding
 # i for starting inference, it will be run every 1 second
 # q for exiting the program
-
+keys = {'inference':'i', 'exit':'q', 'reset':'r'}
+device = args.device
+classifier = args.classifier
 # Apply transformations
 def apply_transformations(img):
     img = transforms.ToTensor()(img)
@@ -26,36 +36,11 @@ def preprocess(features, mean_base_features=None):
     features = features / torch.norm(features, dim = 1, keepdim = True)
     return features
 
-# Get the model
-model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
-#model = ResNet12(64, [3, 84, 84], 64, True, False).to(device)
-
-def load_model_weights(model, path, device):
-    pretrained_dict = torch.load(path, map_location=device)
-    model_dict = model.state_dict()
-    #pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-    new_dict = {}
-    for k, v in pretrained_dict.items():
-        if k in model_dict:
-            if 'bn' in k:
-                new_dict[k] = v
-            else:
-                new_dict[k] = v.half()
-    model_dict.update(new_dict) 
-    model.load_state_dict(model_dict)
-    print('Model loaded!')
-
-#model.load_state_dict(torch.load('/home/r21lafar/Documents/dataset/mini1.pt1', map_location=device))
-#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/tieredlong1.pt1', map_location=device))
-#model.load_state_dict(torch.load('/hdd/data/backbones/easybackbones/mini1.pt1', map_location=device))
-load_model_weights(model, '/hdd/data/backbones/easybackbones/tieredlong1.pt1', device)
-
-#mean_base_features = torch.load('/ssd2/data/AugmentedSamples/features/miniImagenet/AS600Vincent/mean_base3.pt', map_location=device).unsqueeze(0)
+model = get_model(args.model, args.model_path, device)
+cap = cv2.VideoCapture(int(args.camera) if args.camera.isdigit() else args.camera)
 shots_list = []
 registered_classes = []
 shot_frames = []
-#cap = cv2.VideoCapture(addr_cam)
-cap = cv2.VideoCapture(0)
 scale = 1
 clock = 0
 inference = False
@@ -107,16 +92,15 @@ mean_features = []
 #resolution = (1280,720)
 resolution = (1920,1080)
 resetting = False
-K_nn = 5
-model_name = 'knn'
 
-def predict(shots_list, features, model_name):
-    if model_name == 'ncm':
+def predict(shots_list, features, classifier):
+    if 'ncm' in classifier:
         shots = torch.stack([s.mean(dim=0) for s in shots_list])
         distances = torch.norm(shots-features, dim = 1, p=2)
         classe_prediction = distances.argmin().item()
         probas = F.softmax(-20*distances, dim=0).detach().cpu()
-    elif model_name == 'knn':
+    elif 'knn' in classifier:
+        K_nn = int(classifier.split('-')[-1])
         shots = torch.cat(shots_list)
         #create target list of the shots
         targets = torch.cat([torch.Tensor([i]*shots_list[i].shape[0]) for i in range(len(shots_list))])
@@ -182,7 +166,7 @@ while(True):
         else:
             registration = False
 
-    if key == ord('r'):
+    if key == ord(keys['reset']):
         registration = False
         inference = False
         shots_list = []
@@ -197,7 +181,7 @@ while(True):
         if reset_clock > 20:
             resetting = False
 
-    if key == ord('i') and len(shots_list)>0:
+    if key == ord(keys['inference']) and len(shots_list)>0:
         inference = True
         probabilities = None
 
@@ -205,14 +189,14 @@ while(True):
         img = apply_transformations(frame).to(device)
         _, features = model(img.unsqueeze(0))
         features = preprocess(features, mean_base_features= mean_features)
-        probas, _ = predict(shots_list, features, model_name=model_name)
+        probas, _ = predict(shots_list, features, classifier=classifier)
         print('probabilities:', probas)
         if probabilities == None:
             probabilities = probas
         else:
-            if model_name == 'ncm':
+            if 'ncm' in classifier:
                 probabilities = probabilities*0.85 + probas*0.15
-            elif model_name == 'knn':
+            elif 'knn' in classifier:
                 probabilities = probabilities*0.95 + probas*0.05
         classe_prediction = probabilities.argmax().item()
         print('probabilities after exp moving average:', probabilities)
@@ -225,7 +209,7 @@ while(True):
     clock += 1
     # reset clock
     #if clock == 100: clock = 0
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord(keys['exit']):
         break
 cap.release()
 cv2.destroyAllWindows()
