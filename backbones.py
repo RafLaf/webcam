@@ -113,7 +113,7 @@ def get_model(model_name, model_path, device):
         model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
         load_model_weights(model, model_path, device)
     elif model_name == 'clip':
-        model, _ = Clip('ViT-B/32', device, return_tokens=False)
+        model = Clip('ViT-B/32', device, return_tokens=False)
     else:
         raise NotImplementedError
     return model
