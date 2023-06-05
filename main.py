@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--model', type=str, default='RN50', help='RN50, RN101, RN50x4, RN50x16')
 parser.add_argument('--model-path', type=str, default='/users/local/backbone/tieredlong1.pt1', help='path to model')
 parser.add_argument('--classifier', type=str, default='knn-5', help='classifier name')
-parser.add_argument('camera', type=str, default='0', help='camera number') # "rtsp://admin:brain2021@10.29.232.40"
+parser.add_argument('--camera', type=str, default='0', help='camera number') # "rtsp://admin:brain2021@10.29.232.40"
 parser.add_argument('--device', type=str, default='cuda:0', help='cuda:0, cuda:1, ...')
 args = parser.parse_args()
 # 1, 2, 3... for every class we're adding
