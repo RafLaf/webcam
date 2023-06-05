@@ -6,7 +6,7 @@ from resnet12 import ResNet12
 import time
 import torch.nn.functional as F
 from backbones import get_model
-
+from PIL import Image
 
 # parser
 import argparse
@@ -31,7 +31,7 @@ def preprocess(features, mean_base_features=None):
     features = features / torch.norm(features, dim = 1, keepdim = True)
     return features
 
-model, apply_transforms = get_model(args.model, args.model_path, args.image_size, device)
+model, apply_transformations = get_model(args.model, args.model_path, args.image_size, device)
 cap = cv2.VideoCapture(int(args.camera) if args.camera.isdigit() else args.camera)
 shots_list = []
 registered_classes = []
@@ -87,7 +87,7 @@ mean_features = []
 resolution = tuple(map(int, args.resolution.split('x')))
 resetting = False
 
-def predict(shots_list, features, classifier):
+def predict(shots_list, features, classifier, device):
     if 'ncm' in classifier:
         shots = torch.stack([s.mean(dim=0) for s in shots_list])
         distances = torch.norm(shots-features, dim = 1, p=2)
@@ -97,7 +97,7 @@ def predict(shots_list, features, classifier):
         K_nn = int(classifier.split('-')[-1])
         shots = torch.cat(shots_list)
         #create target list of the shots
-        targets = torch.cat([torch.Tensor([i]*shots_list[i].shape[0]) for i in range(len(shots_list))])
+        targets = torch.cat([torch.Tensor([i]*shots_list[i].shape[0]) for i in range(len(shots_list))]).to(device)
         distances = torch.norm(shots-features, dim = 1, p=2)
         #get the k nearest neighbors
 
@@ -114,9 +114,10 @@ while(True):
     #print('clock: ', clock)    
     fps = int(1/(new_frame_time-prev_frame_time))
     prev_frame_time = new_frame_time
+    pil_image = Image.fromarray(cv2.resize(frame, [args.image_size, args.image_size], interpolation = cv2.INTER_AREA))
     if clock_M <= clock_init:
-        img = apply_transformations(frame, args.image_size).to(device)
-        _, features = model(img.unsqueeze(0))
+        img = apply_transformations(pil_image).to(device)
+        features = model(img.unsqueeze(0))
         mean_features.append(features.detach().to(device))
         if clock_M == clock_init:
             mean_features = torch.cat(mean_features, dim = 0)
@@ -135,13 +136,13 @@ while(True):
         if key in range(48, 53):
             classe = key-48
             last_detected = clock*1 #time.time()
-        print('class :', classe)
+        # print('class :', classe)
         
-        img = apply_transformations(frame).to(device)
-        _, features = model(img.unsqueeze(0))
+        img = apply_transformations(pil_image).to(device)
+        features = model(img.unsqueeze(0))
         # preprocess features
         features = preprocess(features, mean_base_features= mean_features)
-        print('features:', features.shape)
+        # print('features:', features.shape)
         image_label = cv2.resize(frame, (int(frame.shape[1]//10),int(frame.shape[0]//10 )), interpolation = cv2.INTER_AREA)
         if classe not in registered_classes:
             registered_classes.append(classe)
@@ -150,7 +151,7 @@ while(True):
                 shot_frames.append([image_label])
         else:
             shots_list[classe] = torch.cat((shots_list[classe], features), dim = 0)
-            print('------------:', shots_list[classe].shape)
+            # print('------------:', shots_list[classe].shape)
             if key in range(48, 53):
                 shot_frames[classe].append(image_label)
 
@@ -180,11 +181,11 @@ while(True):
         probabilities = None
 
     if inference and clock_M>clock_init and not resetting:
-        img = apply_transformations(frame).to(device)
-        _, features = model(img.unsqueeze(0))
+        img = apply_transformations(pil_image).to(device)
+        features = model(img.unsqueeze(0))
         features = preprocess(features, mean_base_features= mean_features)
-        probas, _ = predict(shots_list, features, classifier=classifier)
-        print('probabilities:', probas)
+        probas, _ = predict(shots_list, features, classifier=classifier, device=device)
+        # print('probabilities:', probas)
         if probabilities == None:
             probabilities = probas
         else:
@@ -193,7 +194,7 @@ while(True):
             elif 'knn' in classifier:
                 probabilities = probabilities*0.95 + probas*0.05
         classe_prediction = probabilities.argmax().item()
-        print('probabilities after exp moving average:', probabilities)
+        # print('probabilities after exp moving average:', probabilities)
         cv2.putText(frame, f'Object is from class :{classe_prediction}', (int(width*0.4), int(height*0.1)), font, scale, (255, 0, 0), 3, cv2.LINE_AA)
         #cv2.putText(frame, f'Probabilities :{list(map(lambda x:np.round(x, 2), probabilities.tolist()))}', (7, 750), font, 3, (255, 0, 0), 3, cv2.LINE_AA)
         draw_indicator(frame,probabilities, shot_frames)

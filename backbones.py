@@ -65,17 +65,13 @@ class ResNet12(nn.Module):
             out = self.mp(F.leaky_relu(out, negative_slope = 0.1))
         out = F.avg_pool2d(out, out.shape[2])
         features = out.view(out.size(0), -1)
-        out = self.linear(features)
-        if self.rotations:
-            out_rot = self.linear_rot(features)
-            return (out, out_rot), features
-        return out, features
+        return features
 
 class Clip(nn.Module):
     def __init__(self, name, device, return_tokens = False):
         super(Clip, self).__init__()
-        self.backbone, self.process = clip.load(name, device=device)
-        self.return_tokens = return_tokens
+        self.backbone, self.process = clip.load(name, device='cpu')
+        self.backbone = self.backbone.to(device)
     def forward(self, x):
         return self.backbone.encode_image(x)
 def default_transformations(img, image_size):
@@ -105,8 +101,9 @@ def get_model(model_name, model_path, image_size, device):
         model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
         load_model_weights(model, model_path, device)
         transformations = partial(default_transformations, image_size=image_size)
-    elif model_name == 'clip':
-        model = Clip('ViT-B/32', device, return_tokens=False)
+    elif 'clip' in model_name.lower():
+        clip_name = {'clip_b32':'ViT-B/32', 'clip_b16':'ViT-B/16', 'clip_l14':'ViT-L/14', 'clip_l14_336px':'ViT-L/14@336px'}[model_name.lower()]
+        model = Clip(clip_name, device)
         transformations = model.process
     else:
         raise NotImplementedError
