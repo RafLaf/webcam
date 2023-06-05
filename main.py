@@ -26,19 +26,12 @@ keys = {'inference':'i', 'exit':'q', 'reset':'r'}
 device = args.device
 classifier = args.classifier
 # Apply transformations
-def apply_transformations(img, image_size):
-    img = transforms.ToTensor()(img)
-    norm = transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
-    all_transforms = torch.nn.Sequential(transforms.Resize(int(1.1*image_size)), transforms.CenterCrop(image_size), norm)
-    img = all_transforms(img)
-    return img
-
 def preprocess(features, mean_base_features=None):
     features = features - mean_base_features
     features = features / torch.norm(features, dim = 1, keepdim = True)
     return features
 
-model = get_model(args.model, args.model_path, device)
+model, apply_transforms = get_model(args.model, args.model_path, args.image_size, device)
 cap = cv2.VideoCapture(int(args.camera) if args.camera.isdigit() else args.camera)
 shots_list = []
 registered_classes = []

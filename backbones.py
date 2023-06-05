@@ -3,11 +3,11 @@ import torch.nn as nn
 import clip
 import torch.nn.functional as F
 import random
-
+from torchvision import transforms
+import numpy as np
+from functools import partial
 def linear(indim, outdim):
     return nn.Linear(indim, outdim)
-
-
 class BasicBlockRN12(nn.Module):
     def __init__(self, in_planes, planes):
         super(BasicBlockRN12, self).__init__()
@@ -74,11 +74,16 @@ class ResNet12(nn.Module):
 class Clip(nn.Module):
     def __init__(self, name, device, return_tokens = False):
         super(Clip, self).__init__()
-        self.backbone = clip.load(name, device=device)[0]
+        self.backbone, self.process = clip.load(name, device=device)
         self.return_tokens = return_tokens
     def forward(self, x):
         return self.backbone.encode_image(x)
-
+def default_transformations(img, image_size):
+    img = transforms.ToTensor()(img)
+    norm = transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
+    all_transforms = torch.nn.Sequential(transforms.Resize(int(1.1*image_size)), transforms.CenterCrop(image_size), norm)
+    img = all_transforms(img)
+    return img
 def load_model_weights(model, path, device):
     pretrained_dict = torch.load(path, map_location=device)
     model_dict = model.state_dict()
@@ -95,12 +100,14 @@ def load_model_weights(model, path, device):
     print('Model loaded!')
 
 # Get the model
-def get_model(model_name, model_path, device):
+def get_model(model_name, model_path, image_size, device):
     if model_name == 'resnet12':
         model = ResNet12(64, [3, 84, 84], 351, True, False).to(device)
         load_model_weights(model, model_path, device)
+        transformations = partial(default_transformations, image_size=image_size)
     elif model_name == 'clip':
         model = Clip('ViT-B/32', device, return_tokens=False)
+        transformations = model.process
     else:
         raise NotImplementedError
-    return model
+    return model, transformations
