@@ -76,7 +76,7 @@ class Clip(nn.Module):
         super(Clip, self).__init__()
         self.backbone = clip.load(name, device=device)[0]
         self.return_tokens = return_tokens
-    def forward(self, x, mixup = None, lbda = None, perm = None):
+    def forward(self, x):
         return self.backbone.encode_image(x)
 
 def load_model_weights(model, path, device):

@@ -16,6 +16,8 @@ parser.add_argument('--model-path', type=str, default='/users/local/backbone/tie
 parser.add_argument('--classifier', type=str, default='knn-5', help='classifier name')
 parser.add_argument('--camera', type=str, default='0', help='camera number') # "rtsp://admin:brain2021@10.29.232.40"
 parser.add_argument('--device', type=str, default='cuda:0', help='cuda:0, cuda:1, ...')
+parser.add_argument('--resolution', type=str, default='1920x1080', help='resolution of the image')
+parser.add_argument('--image-size', type=int, default=120, help='resolution of input image to the model')
 args = parser.parse_args()
 # 1, 2, 3... for every class we're adding
 # i for starting inference, it will be run every 1 second
@@ -24,10 +26,10 @@ keys = {'inference':'i', 'exit':'q', 'reset':'r'}
 device = args.device
 classifier = args.classifier
 # Apply transformations
-def apply_transformations(img):
+def apply_transformations(img, image_size):
     img = transforms.ToTensor()(img)
     norm = transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
-    all_transforms = torch.nn.Sequential(transforms.Resize(110), transforms.CenterCrop(100), norm)
+    all_transforms = torch.nn.Sequential(transforms.Resize(int(1.1*image_size)), transforms.CenterCrop(image_size), norm)
     img = all_transforms(img)
     return img
 
@@ -89,8 +91,7 @@ def draw_indicator(frame, percentages, shot_frames):
 clock_M = 0
 clock_init = 20
 mean_features = []
-#resolution = (1280,720)
-resolution = (1920,1080)
+resolution = tuple(map(int, args.resolution.split('x')))
 resetting = False
 
 def predict(shots_list, features, classifier):
@@ -121,7 +122,7 @@ while(True):
     fps = int(1/(new_frame_time-prev_frame_time))
     prev_frame_time = new_frame_time
     if clock_M <= clock_init:
-        img = apply_transformations(frame).to(device)
+        img = apply_transformations(frame, args.image_size).to(device)
         _, features = model(img.unsqueeze(0))
         mean_features.append(features.detach().to(device))
         if clock_M == clock_init:
