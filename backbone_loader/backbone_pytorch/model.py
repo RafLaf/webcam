@@ -1,5 +1,5 @@
 """
-Define all the models. 
+Define all the models.
 
 Keys of EASY_SPECS/BRAIN_RESNET12_SPECS/BRAIN_RESNET9_SPECS : name of the implemented model
 attrributes : keywords arguments passed to the corresponding model
