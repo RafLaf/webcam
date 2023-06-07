@@ -55,11 +55,11 @@ class BasicBlockRN12(nn.Module):
             return torch.relu(y)
 
 class ResNet9(nn.Module):
-    def __init__(self, featureMaps,use_strides=False):
+    def __init__(self, feature_maps,use_strides=False):
         super(ResNet9, self).__init__()
-        self.block1 = BasicBlockRN12(3, featureMaps,use_strides=use_strides)
-        self.block2 = BasicBlockRN12(featureMaps, int(2.5 * featureMaps),use_strides=use_strides)
-        self.block3 = BasicBlockRN12(int(2.5 * featureMaps), 5 * featureMaps,use_strides=use_strides)
+        self.block1 = BasicBlockRN12(3, feature_maps,use_strides=use_strides)
+        self.block2 = BasicBlockRN12(feature_maps, int(2.5 * feature_maps),use_strides=use_strides)
+        self.block3 = BasicBlockRN12(int(2.5 * feature_maps), 5 * feature_maps,use_strides=use_strides)
         self.mp =nn.Identity() if use_strides else nn.MaxPool2d(2)
 
     def forward(self, x, mixup = None, lbda = None, perm = None):
@@ -96,12 +96,12 @@ class ResNet9(nn.Module):
 
 
 class ResNet12Brain(nn.Module):
-    def __init__(self, featureMaps,use_strides=False):
+    def __init__(self, feature_maps,use_strides=False):
         super(ResNet12Brain, self).__init__()
-        self.block1 = BasicBlockRN12(3, featureMaps,use_strides=use_strides)
-        self.block2 = BasicBlockRN12(featureMaps, int(2.5 * featureMaps),use_strides=use_strides)
-        self.block3 = BasicBlockRN12(int(2.5 * featureMaps), 5 * featureMaps,use_strides=use_strides)
-        self.block4 = BasicBlockRN12(5 * featureMaps, 10 * featureMaps,use_strides=use_strides)
+        self.block1 = BasicBlockRN12(3, feature_maps,use_strides=use_strides)
+        self.block2 = BasicBlockRN12(feature_maps, int(2.5 * feature_maps),use_strides=use_strides)
+        self.block3 = BasicBlockRN12(int(2.5 * feature_maps), 5 * feature_maps,use_strides=use_strides)
+        self.block4 = BasicBlockRN12(5 * feature_maps, 10 * feature_maps,use_strides=use_strides)
         self.mp =nn.Identity() if use_strides else nn.MaxPool2d(2)
 
     def forward(self, x, mixup = None, lbda = None, perm = None):

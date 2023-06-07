@@ -1,4 +1,4 @@
-
+# TODO : Replace model-specification by feature maps, model name and stride - much more flexible
 """
 script will load models, generate torchinfos and onnx (simplified version) for each resolution
 
@@ -48,7 +48,7 @@ def save_weight_description(path_description,model_specification, weight_desc):
             data = json.load(f)
     except:
         data = {}
-    
+
     # Check if the weight path is already in the data
     if model_specification not in data:
         # Append the weight description to the data
@@ -62,15 +62,15 @@ def replace_reduce_mean(onnx_model,):
     """
     Replace all reduce_mean operation with GlobalAveragePool if they act on the last dimentions of the tensor
     do not change the name of this operation.
-    Suppose that attribute has the following element : 
+    Suppose that attribute has the following element :
         name: "axes"
         ints: -2 /2
         ints: -1 /3
         type: INTS
 
-    Possible amelioration : 
+    Possible amelioration :
         - use more onnx helper
-        - fix case where will cause another reshape to be 
+        - fix case where will cause another reshape to be
         - fix the case where the feature size is not the same as the last one in the reduce mean
     """
 
@@ -88,12 +88,12 @@ def replace_reduce_mean(onnx_model,):
         raise ValueError("only support output of shape (batch_size, output_size)")
 
     batch_size,num_feature_output=shape_output[0].dim_value,shape_output[1].dim_value
-    print(batch_size)   
+    print(batch_size)
 
     for pos,node in enumerate(onnx_model.graph.node):
         if node.name.find("ReduceMean")<0:
             continue
-        
+
         print("attributes of node :")
         print(node.attribute)
 
@@ -103,7 +103,7 @@ def replace_reduce_mean(onnx_model,):
         index_keep_dims=-1
         for i in range(number_attribute):
             attribute=node.attribute[i]
-        
+
             if attribute.name=="axes":
                 x,y=attribute.ints
                 if (x==2 and y==3) or (x==3 and y==2):
@@ -117,14 +117,14 @@ def replace_reduce_mean(onnx_model,):
         if do_replace_mean:
             print("Replacing ReduceMean operation with GlobalAveragePool")
             if index_keep_dims>=0:
-                
+
                 if node.attribute[index_keep_dims].i==0:
 
                     print("adding one reshape layer ")
                     old_output_name=node.output.pop()
 
                     #reshape dimentions
-                    reshape_data=onnx.helper.make_tensor(name="Reshape_dim",data_type=onnx.TensorProto.INT64,dims=[2],vals=np.array([batch_size,num_feature_output]).astype(np.int64).tobytes(),raw=True)   
+                    reshape_data=onnx.helper.make_tensor(name="Reshape_dim",data_type=onnx.TensorProto.INT64,dims=[2],vals=np.array([batch_size,num_feature_output]).astype(np.int64).tobytes(),raw=True)
                     onnx_model.graph.initializer.append(reshape_data)
 
                     type_output=onnx.helper.make_tensor_type_proto(
@@ -139,14 +139,14 @@ def replace_reduce_mean(onnx_model,):
 
                     node.output.append(new_output_name)
                     new_node=onnx.helper.make_node(op_type="Reshape",name=f"custom_resahpe_{pos}", inputs=[new_output_name,"Reshape_dim"],outputs=[old_output_name])
-                    
+
                     onnx_model.graph.node.insert(pos+1,new_node)
             else:
                 print("keep dim was not found")
                 assert False
             for i in range(number_attribute):
                 node.attribute.pop()
-            
+
             node.op_type="GlobalAveragePool"
             node.name="GlobalAveragePool"+node.name[len("ReduceMean"):]# ReduceMean_32 -> GlobalAveragePool_32
         else:
@@ -156,14 +156,14 @@ def replace_reduce_mean(onnx_model,):
 
 def model_to_onnx(args):
     # create model path
-    # one model = sevral possible resolutions 
-    # generate summary and save it 
+    # one model = sevral possible resolutions
+    # generate summary and save it
 
     # args arguments
     input_resolution=[int(i) for i in args.input_resolution]
-   
+
     if args.from_hub:
-        
+
         model_name=f"hub_{args.model_type}_{args.model_specification}"
     else:
         model_name=f"{args.model_type}"
@@ -178,12 +178,12 @@ def model_to_onnx(args):
     info_path.mkdir(parents=False,exist_ok=True)
     weight_desc_file = info_path / f"{model_name}_description.json"
 
-    #Saving 
+    #Saving
     save_weight_description(weight_desc_file,args.model_specification,args.weight_description)
-    
+
     min_res=32
     max_res=100#max(input_resolution)#TODO res is to be set in function of maximum identified resolution for fpga
-    
+
     number_eval=100
     step_res=10
     possible_res=[i for i in range(min_res,max_res,step_res)]
@@ -198,28 +198,28 @@ def model_to_onnx(args):
 
         for i_res,res in tqdm(enumerate(possible_res),total=len(possible_res)):
             print("res : ",res)
-            dummy_input=torch.randn(1, 3, res,res, device="cpu") 
-            
+            dummy_input=torch.randn(1, 3, res,res, device="cpu")
+
             for i in range(number_eval):
                 t=time.time()
                 _=model(dummy_input)
                 time_execution[i_res,i]=time.time()-t
-        
-        
+
+
         np.savez(info_path/f"exec_time_{model_name}.npy",possible_res=possible_res,time_execution=time_execution)
-        
-    
+
+
         print("possible resolutions : ",possible_res)
         print("mean execution time : ",np.mean(time_execution,axis=-1))
         print("mean fps : ",1/np.mean(time_execution,axis=-1))
-    
+
     # for each input, create the corresponding file
-    
+
     for input_resolution in input_resolution:
         print("exporting res : ",input_resolution)
         resolution_folder = parent_path / f"{input_resolution}x{input_resolution}"
         resolution_folder.mkdir(parents=False,exist_ok=True)
-        
+
         ans=torchinfo.summary(model,(3,input_resolution,input_resolution),batch_dim = 0,verbose=0,device="cpu",col_names=
             ["input_size",
             "output_size",
@@ -227,12 +227,12 @@ def model_to_onnx(args):
             "kernel_size",
             "mult_adds"])
 
-        
-        
-        
-        dummy_input = torch.randn(1, 3, input_resolution,input_resolution, device="cpu") 
 
-        
+
+
+        dummy_input = torch.randn(1, 3, input_resolution,input_resolution, device="cpu")
+
+
         with open(info_path/ f"{args.save_name}_{input_resolution}x{input_resolution}_torchinfo.txt","w",encoding="utf-8") as file:
             to_write= str(ans)
             file.write(to_write)
@@ -241,7 +241,7 @@ def model_to_onnx(args):
         path_model=resolution_folder/ f"{args.save_name}_{input_resolution}x{input_resolution}.onnx"#f"{model_name}_{weight_name}_{input_resolution}_{input_resolution}.onnx"
         #path_model_simp=resolution_folder/ f"simp_{model_name}_{input_resolution}_{input_resolution}.onnx"
         torch.onnx.export(model, dummy_input, path_model, verbose=False, opset_version=10, output_names=[args.output_names])
-        
+
         #load onnx
 
         onnx_model = onnx.load(path_model)
@@ -252,11 +252,11 @@ def model_to_onnx(args):
         assert check, "Simplified ONNX model could not be validated"
         #path_model_simp=resolution_folder/ f"simp-{model_name}-{input_resolution}_{input_resolution}.onnx"#if one wants to test difference
         onnx.save(model_simp,path_model)
-    
+
 if __name__ == "__main__":
-    
+
     # Define the command line arguments for the script
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-resolution", nargs='+', required=True, help="Input resolution(s) of the images (squared images), ex: 32 64")
     parser.add_argument("--from-hub",action='store_true',help="if true, add hub- to name")
@@ -272,4 +272,3 @@ if __name__ == "__main__":
     model_to_onnx(args)
 
 
-    

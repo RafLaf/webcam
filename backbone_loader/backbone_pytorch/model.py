@@ -1,5 +1,5 @@
 """
-Define all the models. 
+Define all the models.
 
 Keys of EASY_SPECS/BRAIN_RESNET12_SPECS/BRAIN_RESNET9_SPECS : name of the implemented model
 attrributes : keywords arguments passed to the corresponding model
@@ -13,18 +13,18 @@ from backbone_loader.backbone_pytorch.resnet12_brain import ResNet12Brain,ResNet
 
 EASY_SPECS={
     "easy_resnet12_small":{
-        "feature_maps":45, 
-        "num_classes":64, 
+        "feature_maps":45,
+        "num_classes":64,
 
     },
     "easy_resnet12":{
-        "feature_maps":64, 
-        "num_classes":64, 
+        "feature_maps":64,
+        "num_classes":64,
 
     },
     "easy_resnet12_tiny":{
-        "feature_maps":32, 
-        "num_classes":64, 
+        "feature_maps":32,
+        "num_classes":64,
 
     }
 }
@@ -32,52 +32,54 @@ EASY_SPECS={
 
 BRAIN_RESNET12_SPECS={
     "brain_resnet12_small":{
-        "feature_maps":45, 
+        "feature_maps":45,
 
     },
     "brain_resnet12":{
-        "feature_maps":64, 
+        "feature_maps":64,
     },
     "brain_resnet12_tiny":{
-        "feature_maps":32, 
+        "feature_maps":32,
     },
     "brain_resnet12_small_strided":{
-        "feature_maps":45, 
+        "feature_maps":45,
         "use_strides" : True
 
     },
     "brain_resnet12_strided":{
-        "feature_maps":64, 
+        "feature_maps":64,
         "use_strides": True,
     },
     "brain_resnet12_tiny_strided":{
-        "feature_maps":32, 
+        "feature_maps":32,
         "use_strides" : True,
     }
 }
 
 BRAIN_RESNET9_SPECS={
     "brain_resnet9_small":{
-        "feature_maps":45, 
-
+        "feature_maps":45,
     },
     "brain_resnet9":{
-        "feature_maps":64, 
+        "feature_maps":64,
     },
     "brain_resnet9_tiny":{
-        "feature_maps":32, 
+        "feature_maps":32,
     },
     "brain_resnet9_small_strided":{
-        "feature_maps":45, 
+        "feature_maps":45,
         "use_strides" : True
-
     },
     "brain_resnet9_strided":{
-        "feature_maps":64, 
+        "feature_maps":64,
         "use_strides": True,
     },
     "brain_resnet9_tiny_strided":{
-        "feature_maps":32, 
+        "feature_maps":32,
+        "use_strides" : True,
+    },
+    "brain_resnet9_fm16_strided":{
+        "feature_maps":16,
         "use_strides" : True,
     }
 }
@@ -109,7 +111,7 @@ MODEL_SPECS={
     "random_init":{
         "pretrained":False
     },
-    # weight not implemented. To implement : make sure torchvision installed version is compatible, 
+    # weight not implemented. To implement : make sure torchvision installed version is compatible,
     # and add MODEL_LOC with compatible version (should be pytorch/vision:v0.13.0)
     "mobilenet_v2_imagenet":{"weights":"MobileNet_V2_Weights.IMAGENET1K_V2"},
     "mobilenet_v3_small_imagenet":{"weights":"MobileNet_V3_Small_Weights.IMAGENET1K_V1"},
@@ -142,7 +144,7 @@ def load_model_weights(
             if verbose:
                 print(f"loading weight name : {k}", flush=True)
 
-            
+
             if "bn" in k:
                 new_dict[k] = weight.to(torch.float16)
             else:
@@ -163,7 +165,7 @@ def load_model_pytorch_hub(model_name,model_spec_name,device="cpu"):
         model_spec_name : should be a key of MODEL_SPECS
     """
     assert model_spec_name in MODEL_SPECS.keys(), "model spec not hardcoded"
-    
+
     model_kwargs=MODEL_SPECS[model_spec_name]
     model=torch.hub.load(MODEL_LOC[model_name],model_name,**model_kwargs)
     model.to(device)
@@ -177,9 +179,8 @@ def get_model(model_name,model_spec,device="cpu"):
     model_name : name of the model. Should either be "easy_resnet12_"+(small_cifar/cifar/tiny_cifar) or a key of MODEL_LOC
     model_spec : either path to weight for easy_resnet12 or key of MODEL_SPECS for pytorch hub
     """
-    
-    if model_name.find("easy_resnet12")>=0:#if str contains the model
 
+    if model_name.find("easy_resnet12")>=0:#if str contains the model
         model = ResNet12(**EASY_SPECS[model_name]).to(device)
         load_model_weights(model, model_spec, device=device)
     elif model_name.find("brain_resnet12")>=0:
