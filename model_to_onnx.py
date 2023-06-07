@@ -217,8 +217,6 @@ def model_to_onnx(args):
 
     for input_resolution in input_resolution:
         print("exporting res : ",input_resolution)
-        resolution_folder = parent_path / f"{input_resolution}x{input_resolution}"
-        resolution_folder.mkdir(parents=False,exist_ok=True)
 
         ans=torchinfo.summary(model,(3,input_resolution,input_resolution),batch_dim = 0,verbose=0,device="cpu",col_names=
             ["input_size",
@@ -238,8 +236,8 @@ def model_to_onnx(args):
             file.write(to_write)
 
         # generate onnx
-        path_model=resolution_folder/ f"{args.save_name}_{input_resolution}x{input_resolution}.onnx"#f"{model_name}_{weight_name}_{input_resolution}_{input_resolution}.onnx"
-        #path_model_simp=resolution_folder/ f"simp_{model_name}_{input_resolution}_{input_resolution}.onnx"
+        path_model=parent_path/ f"{args.save_name}_{input_resolution}x{input_resolution}.onnx"#f"{model_name}_{weight_name}_{input_resolution}_{input_resolution}.onnx"
+        #path_model_simp=parent_path/ f"simp_{model_name}_{input_resolution}_{input_resolution}.onnx"
         torch.onnx.export(model, dummy_input, path_model, verbose=False, opset_version=10, output_names=[args.output_names])
 
         #load onnx
@@ -250,7 +248,7 @@ def model_to_onnx(args):
         model_simp, check = simplify(onnx_model)
         print("model was simplified")
         assert check, "Simplified ONNX model could not be validated"
-        #path_model_simp=resolution_folder/ f"simp-{model_name}-{input_resolution}_{input_resolution}.onnx"#if one wants to test difference
+        #path_model_simp=parent_path/ f"simp-{model_name}-{input_resolution}_{input_resolution}.onnx"#if one wants to test difference
         onnx.save(model_simp,path_model)
 
 if __name__ == "__main__":
