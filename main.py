@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 import os
 import time
+from typing import Union
 
 # import cProfile
 
@@ -28,14 +29,16 @@ print("import done")
 
 
 def compute_and_add_feature_saved_image(
-    backbone, cv_interface, current_data, path_sample
+    backbone,
+    cv_interface: OpencvInterface,
+    current_data,
+    path_sample: Union[str, os.PathLike],
 ):
     classe_idx = 0
     for class_name in os.listdir(path_sample):
         path_class = os.path.join(path_sample, class_name)
 
         for name_image in os.listdir(path_class):
-
             path_image = os.path.join(path_class, name_image)
             image = cv2.imread(path_image)
             image = cv2.resize(
@@ -68,9 +71,9 @@ def preprocess(img, dtype=np.float32):
 
 # constant of the program
 SCALE = 1
-#RES_OUTPUT = tuple(args.output_resolution) # weight / height (cv2 convention)
-RES_HDMI= (600, 800) # weight height
-#PADDING = tuple(args.padding)
+# RES_OUTPUT = tuple(args.output_resolution) # weight / height (cv2 convention)
+RES_HDMI = (600, 800)  # weight height
+# PADDING = tuple(args.padding)
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 
 
@@ -82,7 +85,7 @@ def launch_demo(args):
     # INITIALIZATION
     # --------------------------------------
 
-    RES_OUTPUT= tuple(args.output_resolution)
+    RES_OUTPUT = tuple(args.output_resolution)
     PADDING = tuple(args.padding)
 
     backbone = get_model(args.backbone_specs)
@@ -90,13 +93,11 @@ def launch_demo(args):
 
     # data holding variables
     possible_input = [str(i) for i in range(177, 185)]
-    possible_input_2 = ["1","2","3","4"]
+    possible_input_2 = ["1", "2", "3", "4"]
 
     class_num = len(possible_input)
     current_data = DataFewShot(class_num)
-    
 
-    
     # program related constant
     do_inference = False
     doing_registration = False
@@ -107,30 +108,30 @@ def launch_demo(args):
     # clock : number of frames since begining
     # clock_main : clock that control state of the program
     clock = 0
-    clock_main = 0 
+    clock_main = 0
     number_frame_init = 5
-
 
     # CV2 related constant
 
-    
     if not (args.camera_specification is None):
         cap = cv2.VideoCapture(args.camera_specification)
 
     # cv_interface manage graphical manipulation
-    #TODO : add input/output to serparate class and use with statement
+    # TODO : add input/output to serparate class and use with statement
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
-    
-    if (args.hdmi_display):
+
+    if args.hdmi_display:
         from pynq.lib.video import VideoMode
+
         hdmi_out = args.overlay.video.hdmi_out
-        h,w = RES_HDMI
-        mode = VideoMode(w, h, 24) # 24 : pixel format
+        h, w = RES_HDMI
+        mode = VideoMode(w, h, 24)  # 24 : pixel format
         hdmi_out.configure(mode)
         hdmi_out.start()
 
     if args.button_keyboard == "button":
-        from input_output.BoutonsManager import BoutonsManager
+        from input_output.boutons_manager import BoutonsManager
+
         btn_manager = BoutonsManager(args.overlay.btns_gpio)
     if args.save_video:
         fourcc = cv2.VideoWriter_fourcc(*"XVID")
@@ -138,13 +139,9 @@ def launch_demo(args):
 
     number_image = 1
 
-
-
     # MAIN LOOP
     # --------------------------------------
     try:
-            
-
         while True:
             new_frame_time = time.time()
             fps = int(1 / (new_frame_time - prev_frame_time))
@@ -193,17 +190,13 @@ def launch_demo(args):
 
                         print(key)
 
-
                 if key in possible_input or key in possible_input_2:
                     print("la key est bien dans les possibles inputs")
-                    if key in possible_input :
+                    if key in possible_input:
                         classe = possible_input.index(key)
-                    else :
+                    else:
                         classe = possible_input_2.index(key)
                     last_detected = clock_main * 1  # time.time()
-                    
-
-
 
                 cv_interface.put_text("Initialization")
 
@@ -211,31 +204,37 @@ def launch_demo(args):
             # once the key is pressed, the 10 following frames will be saved as snapshot
             # only the first one will be saved for display
 
-            print("clock_main = ",clock_main, " nm frame init = ", number_frame_init, " do_reset= ", do_reset)
+            print(
+                "clock_main = ",
+                clock_main,
+                " nm frame init = ",
+                number_frame_init,
+                " do_reset= ",
+                do_reset,
+            )
             print("key in possible input : ", (key in possible_input_2))
             if (
                 (key in possible_input or doing_registration or key in possible_input_2)
-
                 and clock_main > number_frame_init
                 and not do_reset
             ):
                 do_inference = False
-                
 
                 if key in possible_input or key in possible_input_2:
                     print("la key est bien dans les possibles inputs")
-                    if key in possible_input :
+                    if key in possible_input:
                         classe = possible_input.index(key)
-                    else :
+                    else:
                         classe = possible_input_2.index(key)
                     last_detected = clock_main * 1  # time.time()
-                    
+
                 frame = cv_interface.get_copy_captured_image(args.resolution_input)
-                
-                print("la valeur de key avant le test des possibles inputs vaut : ", key )
 
-                if ((key in possible_input) or (key in  possible_input_2)):
+                print(
+                    "la valeur de key avant le test des possibles inputs vaut : ", key
+                )
 
+                if (key in possible_input) or (key in possible_input_2):
                     # if this is the first frame (ie there was an user input)
                     cv_interface.add_snapshot(classe)
 
@@ -258,7 +257,10 @@ def launch_demo(args):
                 frame = cv_interface.get_copy_captured_image(args.resolution_input)
                 frame = preprocess(frame)
                 features = backbone(frame)
-                classe_prediction, probabilities = few_shot_model.predict_class_moving_avg(
+                (
+                    classe_prediction,
+                    probabilities,
+                ) = few_shot_model.predict_class_moving_avg(
                     features,
                     probabilities,
                     current_data.get_shot_list(),
@@ -269,7 +271,6 @@ def launch_demo(args):
                 cv_interface.draw_indicator(probabilities)
 
                 if args.no_display and not (args.save_video):
-
                     print("probabilities :", probabilities)
 
             # add info on frame
@@ -281,7 +282,7 @@ def launch_demo(args):
             # update current state
             # reset action
             if key == "r":
-                clock_main=0
+                clock_main = 0
                 doing_registration = False
                 do_inference = False
                 current_data.reset()
@@ -289,13 +290,18 @@ def launch_demo(args):
                 do_reset = True
 
             # inference action
-            print("Valeur de key = ", key, " Valeur de current data.isrecorded = ", current_data.is_data_recorded())
-            
+            print(
+                "Valeur de key = ",
+                key,
+                " Valeur de current data.isrecorded = ",
+                current_data.is_data_recorded(),
+            )
+
             # Dans la ligne suivante, il faudra enlever le not, je l'ai ajouté pour faire l'inférence
             if key == "i" and current_data.is_data_recorded():
                 print("Begining Inference")
                 do_inference = True
-                probabilities = None 
+                probabilities = None
 
             # quit action
             if key == "q" or (
@@ -307,39 +313,35 @@ def launch_demo(args):
                 break
 
             clock_main += 1
-            clock+=1
+            clock += 1
 
             # outputs
             print("no display", args.no_display)
             if not (args.no_display):
-
-                if (args.hdmi_display):
+                if args.hdmi_display:
                     # Returns a frame of the appropriate size for the video mode (undefined value)
-                    frame = hdmi_out.newframe() 
+                    frame = hdmi_out.newframe()
                     # get the frame from the cv interface (size is the same since they are specified by  ResOutput)
-                    
-                    w,h=RES_OUTPUT
-                    pw,ph=PADDING
-                    frame[ph:ph+h,pw:pw+w,:] =  cv_interface.frame
+
+                    w, h = RES_OUTPUT
+                    pw, ph = PADDING
+                    frame[ph : ph + h, pw : pw + w, :] = cv_interface.frame
 
                     hdmi_out.writeframe(frame)
                 else:
                     cv_interface.show()
 
-            
             if args.save_video:
                 frame_to_save = cv_interface.frame
                 out.write(frame_to_save)
     finally:
         # close all
         cv_interface.close()
-        #hdmi_out.close()
+        # hdmi_out.close()
         if args.save_video:
             out.release()
-    
 
 
-if __name__=="__main__":
-    args=get_args_demo()
+if __name__ == "__main__":
+    args = get_args_demo()
     launch_demo(args)
-    
