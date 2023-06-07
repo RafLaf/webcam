@@ -262,7 +262,7 @@ def process_arguments(args):
 
         sys.path.append(args.path_tcu)
         args.backbone_specs = {
-            "type": "args.framework_backbone",
+            "type": args.framework_backbone,
             "overlay": args.overlay,
             "path_tmodel": args.path_tmodel,
         }
