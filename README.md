@@ -64,12 +64,11 @@ sudo -E python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batc
 ```
 
 
-<!--
 # other setup :
 
 ## test of the performance of the demonstration
 
-You may have problem setting up the hdmi output, and want to verify that the demonstration is running well. In order to do that, setup a video simulation of the demo :
+You may have problem setting up the hdmi output/ input from camera, and want to verify that the demonstration is running well. In order to do that, setup a video simulation of the demo :
 
 1. download a video and put it in this repo.
 2. put reference images inside a folder with the folowing structure :
@@ -78,6 +77,7 @@ You may have problem setting up the hdmi output, and want to verify that the dem
         -class2_name
 3. add the path as argument when you call the function
 
+exemple :
 ```bash
 sudo -E python3 main.py --no-display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit 
 ```
@@ -97,7 +97,7 @@ python3 main.py tensil --help
 ## conversion of models to onnx :
 
 basic setup fo onnx exportation is to export it using torch library, and delete all useless nodes with onnx-simplifier. We included a script model_to_onnx.py in order to convert all the pytorch networks implemented in this repo. Check the description of the file for more info (you need to set the output to output, use opset 10, and avoid certain specific node not implemented by tensil)
- -->
+
 
 # How to train a model, convert it to onnx, then to tensil and finally run it on the PYNQ
 ## How to train a backbone model
@@ -117,7 +117,7 @@ Tensil should be installed on your computer. Output files will be saved in the `
 <!--
 Once the ONNX model is generated, the next step is to create the .tmodel, .tprog and .tdata files with Tensil. These will allow the model to be implemented on FPGA. The hardware architecture chosen is given by the .tarch file. The steps are as follows:
 1. Place the ONNX model in a folder in the directory: `Tensil/networks_onnx`
-2. Make sure that there is a folder named "tensilFiles" and a folder "compilation_summaries" in the directory. In the "tensilFiles" folder are saved the Tensil .tmodel, .tprog and .tdata files useful for the rest. In the "compilation_summaries" folder are saved the details of the compilation, such as the number of instructions, the memory space used, the number of MAC, etc.
+2. Make sure that there is a folder named "tensilFiles" and a folder "compilation_summaries" in the directory. In the "tensilFiles" folder are saved the Tensil .tmodel, .tprog and .tdata files useful for the rest. In the "compilation_summaries" hfolder are saved the details of the compilation, such as the number of instructions, the memory space used, the number of MAC, etc.
 3. Run the onnx_automation.py script which is located in the directory: /home/eleve/projet3AEmbeddedFewShot/Tensil. In this one, you will have to choose the folder containing the ONNX models to convert and the .tarch hardware architecture. The file we have chosen is "custom_per_f.tarch". -->
 
 # Hardware vivado project
@@ -133,3 +133,4 @@ Will be provided soon.
     - the class id must be sequentialy set (first the 0, then 1, ect...)
     - Should be at least enough elements to form queries + n_shots for the evaluation
     - the current implementation of knn expect an even number of samples for every class
+
