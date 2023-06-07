@@ -60,7 +60,7 @@ The inputs are the following: {1-4} to register shots for classes {0-3}, i to st
 # Performance evaluation on the dataset cifar-10
 It is possible to test the performance of the model on cifar 10 on PYNQ (only 32x32 networks). Download CIFAR 10 test set (cifar-10-batches-py/test_batch) and run the following command :
 ```
-python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batches-py/test_batch  tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
+sudo -E python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batches-py/test_batch  tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
 ```
 
 
@@ -77,6 +77,22 @@ You may have problem setting up the hdmi output, and want to verify that the dem
         -class1_name
         -class2_name
 3. add the path as argument when you call the function
+
+```bash
+sudo -E python3 main.py --no_display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit 
+```
+
+Get the argument specific to main.py :
+
+```bash
+python3 main.py --help
+```
+
+Get the argument specific to tensil:
+
+```bash
+python3 main.py --help
+```
 
 ## conversion of models to onnx :
 

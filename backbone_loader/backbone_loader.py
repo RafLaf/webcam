@@ -31,7 +31,6 @@ def get_model(model_specs: dict):
         return BackboneTensilWrapper(
             model_specs["overlay"],
             model_specs["path_tmodel"],
-            onnx_output_name=model_specs.get("onnx_output_name", "Output"),
         )
     elif model_specs["type"] == "onnx":
         from backbone_loader.backbone_onnx import BackboneOnnxWrapper

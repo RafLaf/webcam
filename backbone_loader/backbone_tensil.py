@@ -15,7 +15,7 @@ class BackboneTensilWrapper:
         self,
         overlay: Overlay,
         path_tmodel: Union[str, os.PathLike],
-        onnx_output_name: str,
+        onnx_output_name: str = "Output",
         debug=False,
     ):
         """
@@ -38,8 +38,10 @@ class BackboneTensilWrapper:
 
         with open(path_tmodel, "r") as f:
             outputs = json.loads(f.read())["outputs"]
-            self.output_names = [output["name"] for output in outputs]
-
+            output_names = [output["name"] for output in outputs]
+            if onnx_output_name not in output_names:
+                raise Exception(f"{onnx_output_name} not in tmodel output names. Set the onnx output name as {onnx_output_name}")
+            
         self.tcu.load_model(path_tmodel)
         assert self.tcu.arch.array_size >= 3, "array size must be >=3"
 
@@ -63,4 +65,4 @@ class BackboneTensilWrapper:
         inputs = {"input.1": img}
         outputs = self.tcu.run(inputs)
 
-        return outputs[self.output_name][None, :]
+        return outputs[self.output_names][None, :]
