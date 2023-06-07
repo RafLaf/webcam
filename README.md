@@ -60,7 +60,7 @@ The inputs are the following: {1-4} to register shots for classes {0-3}, i to st
 # Performance evaluation on the dataset cifar-10
 It is possible to test the performance of the model on cifar 10 on PYNQ (only 32x32 networks). Download CIFAR 10 test set (cifar-10-batches-py/test_batch) and run the following command :
 ```
-python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batches-py/test_batch  tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
+sudo -E python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batches-py/test_batch  tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
 ```
 
 
@@ -78,9 +78,25 @@ You may have problem setting up the hdmi output, and want to verify that the dem
         -class2_name
 3. add the path as argument when you call the function
 
+```bash
+sudo -E python3 main.py --no-display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit 
+```
+
+Get the argument specific to main.py :
+
+```bash
+python3 main.py --help
+```
+
+Get the argument specific to tensil:
+
+```bash
+python3 main.py tensil --help
+```
+
 ## conversion of models to onnx :
 
-basic setup fo onnx exportation is to export it using torch library, and delete all useless nodes with onnx-simplifier. We included a script model_to_onnx.py in order to convert all the pytorch networks implemented in this repo
+basic setup fo onnx exportation is to export it using torch library, and delete all useless nodes with onnx-simplifier. We included a script model_to_onnx.py in order to convert all the pytorch networks implemented in this repo. Check the description of the file for more info (you need to set the output to output, use opset 10, and avoid certain specific node not implemented by tensil)
  -->
 
 # How to train a model, convert it to onnx, then to tensil and finally run it on the PYNQ
@@ -110,8 +126,10 @@ Will be provided soon.
 # args :
     - For converting model to onnx, exemples are in the docstring of the folder model_to_onnx.py
 # Possible pitfall :
-    - Sometimes there is a bug with memory allocation. We are investigating it. For now if it happens, just reset the PYNQ.
+    - Sometimes there is a bug with memory allocation (an error is raised). We are investigating it. For now if it happens, just reset the PYNQ.
     - In the PYNQ, always launch the scripts while beeing authentify as root
-    - Sometimes PYNQ need to be reset between executions of the program in order to use the hdmi
-    - Path for the PYNQ specific arguments are often absolute
+    - Somethimes PYNQ need to be reset between executions of the program in order to use the hdmi
+    - when launching the model, if the tarch of the model does not correspond to the accelerator, the scripts fail silently.
+    - the class id must be sequentialy set (first the 0, then 1, ect...)
     - Should be at least enough elements to form queries + n_shots for the evaluation
+    - the current implementation of knn expect an even number of samples for every class
