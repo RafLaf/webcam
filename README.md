@@ -79,7 +79,7 @@ You may have problem setting up the hdmi output, and want to verify that the dem
 3. add the path as argument when you call the function
 
 ```bash
-sudo -E python3 main.py --no_display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit 
+sudo -E python3 main.py --no-display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit 
 ```
 
 Get the argument specific to main.py :
@@ -91,7 +91,7 @@ python3 main.py --help
 Get the argument specific to tensil:
 
 ```bash
-python3 main.py --help
+python3 main.py tensil --help
 ```
 
 ## conversion of models to onnx :
@@ -126,9 +126,10 @@ Will be provided soon.
 # args :
     - For converting model to onnx, exemples are in the docstring of the folder model_to_onnx.py
 # Possible pitfall :
-    - Sometimes there is a bug with memory allocation. We are investigating it. For now if it happens, just reset the PYNQ.
+    - Sometimes there is a bug with memory allocation (an error is raised). We are investigating it. For now if it happens, just reset the PYNQ.
     - In the PYNQ, always launch the scripts while beeing authentify as root
     - Somethimes PYNQ need to be reset between executions of the program in order to use the hdmi
-    - the current implementation of knn expect an even number of samples for every class
+    - when launching the model, if the tarch of the model does not correspond to the accelerator, the scripts fail silently.
     - the class id must be sequentialy set (first the 0, then 1, ect...)
     - Should be at least enough elements to form queries + n_shots for the evaluation
+    - the current implementation of knn expect an even number of samples for every class

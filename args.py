@@ -186,7 +186,7 @@ def parse_args_demonstration(parser):
     demonstration_arguments.add_argument(
         "--save-video",
         action="store_true",
-        help="if you want to save the video, specify the path of the video file instead.",
+        help="if you add this flag, the video will be saved as output.avi",
     )
     demonstration_arguments.add_argument("--hdmi-display", action="store_true")
     demonstration_arguments.add_argument(
