@@ -96,7 +96,7 @@ python3 main.py tensil --help
 
 ## conversion of models to onnx :
 
-basic setup fo onnx exportation is to export it using torch library, and delete all useless nodes with onnx-simplifier. We included a script model_to_onnx.py in order to convert all the pytorch networks implemented in this repo. Check the description of the file for more info (you need to set the output to output, use opset 10, and avoid certain specific node not implemented by tensil)
+basic setup fo onnx exportation is to export it using torch library, and delete all useless nodes with onnx-simplifier. We included a script model_to_onnx.py in order to convert all the pytorch networks implemented in this repo. Check the description of the file for more info (you need to set the output to "Output", use opset 10, and avoid certain specific node not implemented by tensil)
 
 
 # How to train a model, convert it to onnx, then to tensil and finally run it on the PYNQ
