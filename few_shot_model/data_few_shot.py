@@ -78,8 +78,9 @@ class DataFewShot:
 
     def reset(self):
         """
-        reset the saved image, but not the mean repr
+        reset the saved image
         """
         self.shot_list = []
         self.registered_classes = []
         self.is_recorded = False
+        self.mean_features = []

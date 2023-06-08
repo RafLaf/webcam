@@ -170,7 +170,7 @@ def launch_demo(args):
             elif args.button_keyboard == "button":
                 key = btn_manager.change_state()
             else:
-                print("L'argument button_keyboard n'est pas valide")
+                print("Arg button_keyboard invalid")
 
             # initialisation
             if clock_main <= number_frame_init:
@@ -191,7 +191,7 @@ def launch_demo(args):
                         print(key)
 
                 if key in possible_input or key in possible_input_2:
-                    print("la key est bien dans les possibles inputs")
+                    print("key is in possible values")
                     if key in possible_input:
                         classe = possible_input.index(key)
                     else:
@@ -221,7 +221,7 @@ def launch_demo(args):
                 do_inference = False
 
                 if key in possible_input or key in possible_input_2:
-                    print("la key est bien dans les possibles inputs")
+                    print("key is in possible inputs")
                     if key in possible_input:
                         classe = possible_input.index(key)
                     else:
@@ -231,7 +231,7 @@ def launch_demo(args):
                 frame = cv_interface.get_copy_captured_image(args.resolution_input)
 
                 print(
-                    "la valeur de key avant le test des possibles inputs vaut : ", key
+                    "Key value before input test : ", key
                 )
 
                 if (key in possible_input) or (key in possible_input_2):
@@ -291,9 +291,9 @@ def launch_demo(args):
 
             # inference action
             print(
-                "Valeur de key = ",
+                "Key value = ",
                 key,
-                " Valeur de current data.isrecorded = ",
+                " Value of current data.isrecorded = ",
                 current_data.is_data_recorded(),
             )
 
