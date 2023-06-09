@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xd:acceleratorMap xmlns:xd="http://www.xilinx.com/xidane" xd:functionName="color_convert" xd:componentRef="color_convert" xd:initiationInterval="1" xd:clockPeriod="7.000" xd:sequential="true" xd:hostMachine="64" xd:reset="control">
+  <xd:arg xd:name="stream_in_24.data" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_in_24.keep" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_in_24.strb" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_in_24.user" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_in_24.last" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_24.data" xd:originalName="stream_out_24" xd:direction="out" xd:interfaceRef="stream_out_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_24.keep" xd:originalName="stream_out_24" xd:direction="out" xd:interfaceRef="stream_out_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_24.strb" xd:originalName="stream_out_24" xd:direction="out" xd:interfaceRef="stream_out_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_24.user" xd:originalName="stream_out_24" xd:direction="out" xd:interfaceRef="stream_out_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_24.last" xd:originalName="stream_out_24" xd:direction="out" xd:interfaceRef="stream_out_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="c1_0" xd:originalName="c1_0" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x10" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="c1_1" xd:originalName="c1_1" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x18" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="c1_2" xd:originalName="c1_2" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x20" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="c2_0" xd:originalName="c2_0" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x28" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="c2_1" xd:originalName="c2_1" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x30" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="c2_2" xd:originalName="c2_2" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x38" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="c3_0" xd:originalName="c3_0" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x40" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="c3_1" xd:originalName="c3_1" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x48" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="c3_2" xd:originalName="c3_2" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x50" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="bias_0" xd:originalName="bias_0" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x58" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="bias_1" xd:originalName="bias_1" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x60" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="bias_2" xd:originalName="bias_2" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x68" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:latencyEstimates xd:best-case="5" xd:worst-case="5" xd:average-case="5"/>
+  <xd:resourceEstimates xd:LUT="1815" xd:FF="1664" xd:BRAM="0" xd:DSP="0"/>
+</xd:acceleratorMap>
