@@ -9,13 +9,12 @@ DEMO of few shot learning:
 
 
 #'/usr/local/share/pynq-venv/lib/python3.8/site-packages', '', '', '/usr/lib/python3.8/dist-packages', '', '', '/home/xilinx'
-import time
 import cv2
 import numpy as np
 import os
 import time
 from typing import Union
-
+import sys
 # import cProfile
 
 from input_output.graphical_interface import OpencvInterface
@@ -26,6 +25,42 @@ from few_shot_model.data_few_shot import DataFewShot
 from args import get_args_demo
 
 print("import done")
+
+def custom_format(value):
+    width = 7
+    return"{: >{width}.2g}".format(value, width=width)
+
+class Terminal:
+    def __init__(self, period=0.5):
+        self.flag_log = False
+        self.time = time.time()
+        self.period = period
+    def log(self, fps, total_time, frameread_time, backbone_time, probabilities):
+        if not self.flag_log:
+            self.flag_log = True
+            print("   FPS    | TOTAL TIME (us) | FRAME READ TIME (us) | BACKBONE TIME (us) |")
+        if(time.time() - self.time > self.period):
+            self.time = time.time()
+            print('\r' + custom_format(fps), end='')
+            print("   |       ", end="")
+            print(custom_format(total_time*1000), end='')
+            print("   |            ", end="")
+            print(custom_format(frameread_time*1000), end='')
+            print("   |          ", end="")
+            if (backbone_time is not None):
+                print(custom_format(backbone_time*1000), end='')
+            else:
+                print("    N/A", end='')
+            print("   | ", end="")
+            if probabilities is not None:
+                print("PROBABILITIES: ", end="")
+                for data in probabilities.flatten():
+                    print("{:>4.2f} %, ".format(data*100), end='')
+                sys.stdout.write("\b")
+                sys.stdout.write("\b")
+                sys.stdout.write(" ")
+                sys.stdout.write(" ")
+        sys.stdout.flush()
 
 
 def compute_and_add_feature_saved_image(
@@ -102,7 +137,6 @@ def launch_demo(args):
     do_inference = False
     doing_registration = False
     do_reset = False
-    prev_frame_time = time.time()
 
     # time related variables
     # clock : number of frames since begining
@@ -110,6 +144,8 @@ def launch_demo(args):
     clock = 0
     clock_main = 0
     number_frame_init = 5
+
+    terminal = Terminal()
 
     # CV2 related constant
 
@@ -138,27 +174,25 @@ def launch_demo(args):
         out = cv2.VideoWriter("output.avi", fourcc, 30.0, RES_OUTPUT)
 
     number_image = 1
+    fps = 0
 
     # MAIN LOOP
     # --------------------------------------
     try:
         while True:
-            new_frame_time = time.time()
-            fps = int(1 / (new_frame_time - prev_frame_time))
 
             # get inputs
             # video input
+            initial_time = time.time()
+            backbone_time = None
+            probabilities = None
             try:
                 cv_interface.read_frame()
-                print(f"reading image n°{number_image}")
-                print(f"fps : {fps}")
                 number_image = number_image + 1
             except:
                 print("failed to get next image")
-                break
-
-            prev_frame_time = new_frame_time
-
+                exit(1)
+            frameread_time = time.time() - initial_time
             # keyboard/button input
             if args.button_keyboard == "keyboard":
                 key = cv_interface.get_key()
@@ -176,8 +210,10 @@ def launch_demo(args):
             if clock_main <= number_frame_init:
                 frame = cv_interface.get_copy_captured_image(args.resolution_input)
                 frame = preprocess(frame)
-                features = backbone(frame)
 
+                pre_backbone_time = time.time()
+                features = backbone(frame)
+                backbone_time = (time.time() - pre_backbone_time)
                 current_data.add_mean_repr(features)
                 if clock_main == number_frame_init:
                     current_data.aggregate_mean_rep()
@@ -191,7 +227,6 @@ def launch_demo(args):
                         print(key)
 
                 if key in possible_input or key in possible_input_2:
-                    print("key is in possible values")
                     if key in possible_input:
                         classe = possible_input.index(key)
                     else:
@@ -204,15 +239,6 @@ def launch_demo(args):
             # once the key is pressed, the 10 following frames will be saved as snapshot
             # only the first one will be saved for display
 
-            print(
-                "clock_main = ",
-                clock_main,
-                " nm frame init = ",
-                number_frame_init,
-                " do_reset= ",
-                do_reset,
-            )
-            print("key in possible input : ", (key in possible_input_2))
             if (
                 (key in possible_input or doing_registration or key in possible_input_2)
                 and clock_main > number_frame_init
@@ -221,7 +247,6 @@ def launch_demo(args):
                 do_inference = False
 
                 if key in possible_input or key in possible_input_2:
-                    print("key is in possible inputs")
                     if key in possible_input:
                         classe = possible_input.index(key)
                     else:
@@ -230,17 +255,16 @@ def launch_demo(args):
 
                 frame = cv_interface.get_copy_captured_image(args.resolution_input)
 
-                print(
-                    "Key value before input test : ", key
-                )
-
                 if (key in possible_input) or (key in possible_input_2):
                     # if this is the first frame (ie there was an user input)
                     cv_interface.add_snapshot(classe)
 
                 # add the representation to the class
                 frame = preprocess(frame)
+
+                pre_backbone_time = time.time()
                 features = backbone(frame)
+                backbone_time = (time.time() - pre_backbone_time)
                 current_data.add_repr(classe, features)
 
                 if abs(clock_main - last_detected) < 10:
@@ -248,15 +272,20 @@ def launch_demo(args):
                     text = f"Class :{classe} registered. \
                     Number of shots: {cv_interface.get_number_snapshot(classe)}"
                     cv_interface.put_text(text)
+                    if(clock_main - last_detected == 0):
+                        print(text)
                 else:
                     doing_registration = False
 
             # perform inference
             if do_inference and clock_main > number_frame_init and not do_reset:
-                print("inference is running")
                 frame = cv_interface.get_copy_captured_image(args.resolution_input)
                 frame = preprocess(frame)
+
+                pre_backbone_time = time.time()
                 features = backbone(frame)
+                backbone_time = (time.time() - pre_backbone_time)
+
                 (
                     classe_prediction,
                     probabilities,
@@ -269,9 +298,6 @@ def launch_demo(args):
 
                 cv_interface.put_text(f"Object is from class :", classe_prediction)
                 cv_interface.draw_indicator(probabilities)
-
-                if args.no_display and not (args.save_video):
-                    print("probabilities :", probabilities)
 
             # add info on frame
             cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
@@ -288,14 +314,6 @@ def launch_demo(args):
                 current_data.reset()
                 cv_interface.reset_snapshot()
                 do_reset = True
-
-            # inference action
-            print(
-                "Key value = ",
-                key,
-                " Value of current data.isrecorded = ",
-                current_data.is_data_recorded(),
-            )
 
             # Dans la ligne suivante, il faudra enlever le not, je l'ai ajouté pour faire l'inférence
             if key == "i" and current_data.is_data_recorded():
@@ -316,7 +334,6 @@ def launch_demo(args):
             clock += 1
 
             # outputs
-            print("no display", args.no_display)
             if not (args.no_display):
                 if args.hdmi_display:
                     # Returns a frame of the appropriate size for the video mode (undefined value)
@@ -334,6 +351,11 @@ def launch_demo(args):
             if args.save_video:
                 frame_to_save = cv_interface.frame
                 out.write(frame_to_save)
+            total_time = time.time() - initial_time
+            fps = 1 / (total_time)
+
+            terminal.log(fps, total_time, frameread_time, backbone_time, probabilities)
+
     finally:
         # close all
         cv_interface.close()

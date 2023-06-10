@@ -261,7 +261,6 @@ class FewShotModel:
             features, shots_list, mean_feature
         )
 
-        print("probabilities:", current_proba)
 
         if prev_probabilities is None:
             probabilities = current_proba
