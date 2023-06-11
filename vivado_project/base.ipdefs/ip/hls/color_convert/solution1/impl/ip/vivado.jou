@@ -1,0 +1,12 @@
+#-----------------------------------------------------------
+# Vivado v2020.2 (64-bit)
+# SW Build 3064766 on Wed Nov 18 09:12:47 MST 2020
+# IP Build 3064653 on Wed Nov 18 14:17:31 MST 2020
+# Start of session at: Tue Nov 29 11:48:52 2022
+# Process ID: 50922
+# Current directory: /home/l17grati/workspace/projet3A/2022_2023/fewshot/PYNQ-2.7.0/boards/ip/hls/color_convert/solution1/impl/ip
+# Command line: vivado -notrace -mode batch -source run_ippack.tcl
+# Log file: /home/l17grati/workspace/projet3A/2022_2023/fewshot/PYNQ-2.7.0/boards/ip/hls/color_convert/solution1/impl/ip/vivado.log
+# Journal file: /home/l17grati/workspace/projet3A/2022_2023/fewshot/PYNQ-2.7.0/boards/ip/hls/color_convert/solution1/impl/ip/vivado.jou
+#-----------------------------------------------------------
+source run_ippack.tcl -notrace

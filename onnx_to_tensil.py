@@ -248,6 +248,7 @@ def main():
     parser.add_argument('--onnx-path', type=str, help='path to onnx file')
     parser.add_argument('--arch-path', type=str, default= "arch/custom_perf.tarch",help='path to tensil architecture file')
     parser.add_argument('--output-dir', type=str, default= "tensil/",help='path to script output directory')
+    parser.add_argument('--onnx-output', type=str, default= "Output",help='name of the onnx output layer')
     args = parser.parse_args()
 
     # Create output directory
@@ -279,7 +280,7 @@ def main():
 
         log_casa = client.containers.run("tensilai/tensil:latest",
                                             ["tensil", "compile", "-a", args.arch_path, "-m", network,
-                                            "-o", "Output", "-t", args.output_dir]+summary_flags,
+                                            "-o", args.onnx_output, "-t", args.output_dir]+summary_flags,
                                             volumes=[pwd + ":/work"],
                                             working_dir="/work",
                                             stderr=True)

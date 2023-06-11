@@ -29,7 +29,7 @@ Button 3: reset the demo
 - Micro-USB cable
 
 ## Installation
-1. Download the [PYNQ-Z1 v2.7 image](https://bit.ly/pynqz1_2_7) and flash it on the SD card (see [PYNQ documentation](https://pynq.readthedocs.io/en/v2.7.0/getting_started/pynq_z1_setup.html))
+1. Download the [PYNQ-Z1 v2.7 image](https://bit.ly/pynqz1_2_7) and [flash it on the SD card](https://pynq.readthedocs.io/en/v2.7.0/appendix/sdcard.html?highlight=SD%20card#writing-an-sd-card-image) and [get started](https://pynq.readthedocs.io/en/v2.7.0/getting_started/pynq_z1_setup.html).
 2. Install tensil tcu on the PYNQ: Start by cloning the [Tensil GitHub repository](https://github.com/tensil-ai/tensil) to your work station and then copy `drivers/tcu_pynq` to `/home/xilinx/tcu_pynq` onto your board.
     ```bash
     git clone git@github.com:tensil-ai/tensil.git
@@ -79,7 +79,7 @@ You may have problem setting up the hdmi output/ input from camera, and want to 
 
 exemple :
 ```bash
-sudo -E python3 main.py --no-display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit 
+sudo -E python3 main.py --no-display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
 ```
 
 Get the argument specific to main.py :
@@ -106,26 +106,48 @@ A repository is available to train a model with pytorch: https://github.com/anto
 
 The script used to convert the model to onnx is [model_to_onnx.py](model_to_onnx.py). Examples to launch the script are in the file. In order to be exported with this script, the networks must be implemented in the demo. Look at [backbone_loader/backbone_pytorch/model.py](backbone_loader/backbone_pytorch/model.py) for a list of supported models. Thus, for the aforementioned models:
 ```bash
-    python model_to_onnx.py --input-resolution 32 --save-name "small-strides-resnet9" --model-type "brain_resnet9_tiny_strided" --model-specification "weights/miniimagenet_resnet9s_32x32.pt" --weight-description "weight retrained on miniimagenet using image size 32"
+    python3 model_to_onnx.py --input-resolution 32 --save-name "small-strides-resnet9" --model-type "brain_resnet9_tiny_strided" --model-specification "weights/miniimagenet_resnet9s_32x32.pt" --weight-description "weight retrained on miniimagenet using image size 32"
 ```
 Weights available [on this link](https://drive.google.com/drive/folders/1ftzFL3Byidmls2zS0OdhVA2FBBb2krQR?usp=share_link).
 
 ## Conversion to tensil
+Once you generated the onnx file for your model, you can generate the tensil model using the script [onnx_to_tensil.py](onnx_to_tensil.py).
 
-Use the `onnx_automation.py` script to convert the onnx model to tensil.
-Tensil should be installed on your computer. Output files will be saved in the `tensilFiles` folder.
-<!--
-Once the ONNX model is generated, the next step is to create the .tmodel, .tprog and .tdata files with Tensil. These will allow the model to be implemented on FPGA. The hardware architecture chosen is given by the .tarch file. The steps are as follows:
-1. Place the ONNX model in a folder in the directory: `Tensil/networks_onnx`
-2. Make sure that there is a folder named "tensilFiles" and a folder "compilation_summaries" in the directory. In the "tensilFiles" folder are saved the Tensil .tmodel, .tprog and .tdata files useful for the rest. In the "compilation_summaries" hfolder are saved the details of the compilation, such as the number of instructions, the memory space used, the number of MAC, etc.
-3. Run the onnx_automation.py script which is located in the directory: /home/eleve/projet3AEmbeddedFewShot/Tensil. In this one, you will have to choose the folder containing the ONNX models to convert and the .tarch hardware architecture. The file we have chosen is "custom_per_f.tarch". -->
+```bash
+    usage: onnx_to_tensil.py [-h] [--onnx-path ONNX_PATH] [--arch-path ARCH_PATH]
+                         [--output-dir OUTPUT_DIR] [--onnx-output ONNX_OUTPUT]
+
+options:
+  -h, --help            show this help message and exit
+  --onnx-path ONNX_PATH
+                        path to onnx file
+  --arch-path ARCH_PATH
+                        path to tensil architecture file .tarch
+  --output-dir OUTPUT_DIR
+                        path to script output directory
+  --onnx-output ONNX_OUTPUT
+                        name of the onnx output layer
+
+```
 
 # Hardware vivado project
-Will be provided soon.
+The project has been created with Vivado 2020.2. The project is available in the folder `vivado_project`. The project is configured for the PYNQ-Z1 board. The board files can be found in the directory `vivado_project/pynq-z1`. Add them to Vivado by copying it to the directory `Vivado/2020.2/data/boards/board_files`.
 
-# args :
-    - For converting model to onnx, exemples are in the docstring of the folder model_to_onnx.py
-# Possible pitfall :
+Use the tcl script `vivado_project/base.tcl` to generate the project.
+```bash
+vivado -mode batch -source base.tcl
+```
+
+You can then open the project with Vivado and generate the bitstream.
+
+If you want to modify the tensil architecture, replace the verilog files that are in the `vivado_project/base/sources_1/imports/tensil` folder with the ones that you generate with tensil. Then, regenerate the project with the tcl script.
+The output files that you will need after the bitstream generation are the following:
+- `vivado_project/base/base.runs/impl_1/base_wrapper.bit`
+- `base.gen/base/sources_1/bd/base/hw_handoff/base.hwh`
+
+Rename them to respectively to `design.bit` and `design.hwh` and copy them to the PYNQ.
+
+# Possible pitfalls :
     - Sometimes there is a bug with memory allocation (an error is raised). We are investigating it. For now if it happens, just reset the PYNQ.
     - In the PYNQ, always launch the scripts while beeing authentify as root
     - Somethimes PYNQ need to be reset between executions of the program in order to use the hdmi
