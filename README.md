@@ -94,11 +94,6 @@ Get the argument specific to tensil:
 python3 main.py tensil --help
 ```
 
-## conversion of models to onnx :
-
-basic setup fo onnx exportation is to export it using torch library, and delete all useless nodes with onnx-simplifier. We included a script model_to_onnx.py in order to convert all the pytorch networks implemented in this repo. Check the description of the file for more info (you need to set the output to "Output", use opset 10, and avoid certain specific node not implemented by tensil)
-
-
 # How to train a model, convert it to onnx, then to tensil and finally run it on the PYNQ
 ## How to train a backbone model
 A repository is available to train a model with pytorch: https://github.com/antoine-lavrard/brain-train/tree/few_shot_demo . It is possible to train a model from scratch.
@@ -106,7 +101,7 @@ A repository is available to train a model with pytorch: https://github.com/anto
 
 The script used to convert the model to onnx is [model_to_onnx.py](model_to_onnx.py). Examples to launch the script are in the file. In order to be exported with this script, the networks must be implemented in the demo. Look at [backbone_loader/backbone_pytorch/model.py](backbone_loader/backbone_pytorch/model.py) for a list of supported models. Thus, for the aforementioned models:
 ```bash
-    python3 model_to_onnx.py --input-resolution 32 --save-name "small-strides-resnet9" --model-type "brain_resnet9_tiny_strided" --model-specification "weights/miniimagenet_resnet9s_32x32.pt" --weight-description "weight retrained on miniimagenet using image size 32"
+    python3 model_to_onnx.py --input-resolution 32 --save-name resnet12 --backbone "resnet12"  --input-model resnet12.pt
 ```
 Weights available [on this link](https://drive.google.com/drive/folders/1ftzFL3Byidmls2zS0OdhVA2FBBb2krQR?usp=share_link).
 
