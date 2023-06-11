@@ -29,7 +29,7 @@ Button 3: reset the demo
 - Micro-USB cable
 
 ## Installation
-1. Download the [PYNQ-Z1 v2.7 image](https://bit.ly/pynqz1_2_7) and flash it on the SD card (see [PYNQ documentation](https://pynq.readthedocs.io/en/v2.7.0/getting_started/pynq_z1_setup.html))
+1. Download the [PYNQ-Z1 v2.7 image](https://bit.ly/pynqz1_2_7) and [flash it on the SD card](https://pynq.readthedocs.io/en/v2.7.0/appendix/sdcard.html?highlight=SD%20card#writing-an-sd-card-image) and [get started](https://pynq.readthedocs.io/en/v2.7.0/getting_started/pynq_z1_setup.html).
 2. Install tensil tcu on the PYNQ: Start by cloning the [Tensil GitHub repository](https://github.com/tensil-ai/tensil) to your work station and then copy `drivers/tcu_pynq` to `/home/xilinx/tcu_pynq` onto your board.
     ```bash
     git clone git@github.com:tensil-ai/tensil.git
