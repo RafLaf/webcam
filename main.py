@@ -300,7 +300,7 @@ def launch_demo(args):
                 cv_interface.draw_indicator(probabilities)
 
             # add info on frame
-            cv_interface.put_text(f"fps:{fps}", bottom_pos_x=0.05, bottom_pos_y=0.1)
+            cv_interface.put_text(f"fps:{custom_format(fps)}", bottom_pos_x=0.05, bottom_pos_y=0.1)
             cv_interface.put_text(
                 f"frame number:{clock}", bottom_pos_x=0.8, bottom_pos_y=0.1
             )
