@@ -55,7 +55,6 @@ def replace_reduce_mean(
 
     # find the batch size and output size
     output = onnx_model.graph.output[0]
-    print(output.type)
     shape_output = output.type.tensor_type.shape.dim
 
     if len(shape_output) != 2:
@@ -65,14 +64,10 @@ def replace_reduce_mean(
         shape_output[0].dim_value,
         shape_output[1].dim_value,
     )
-    print(batch_size)
 
     for pos, node in enumerate(onnx_model.graph.node):
         if node.name.find("ReduceMean") < 0:
             continue
-
-        print("attributes of node :")
-        print(node.attribute)
 
         # check if node operate on the last op
         do_replace_mean = False
@@ -92,10 +87,10 @@ def replace_reduce_mean(
 
         # replace the node if needed
         if do_replace_mean:
-            print("Replacing ReduceMean operation with GlobalAveragePool")
+
             if index_keep_dims >= 0:
                 if node.attribute[index_keep_dims].i == 0:
-                    print("adding one reshape layer ")
+
                     old_output_name = node.output.pop()
 
                     # reshape dimentions
@@ -163,7 +158,6 @@ def model_to_onnx(args):
     _ = model(dummy_input)
 
 
-    print("exporting res : ",args.input_resolution)
 
     ans=torchinfo.summary(model,(3,args.input_resolution,args.input_resolution),batch_dim = 0,verbose=0,device="cpu",col_names=
         ["input_size",

@@ -102,7 +102,6 @@ def load_model_weights(
             print("weight with name : {k} not loaded (not in model)")
     model_dict.update(new_dict)
     model.load_state_dict(model_dict)
-    print("Model loaded!")
 
 
 def get_model(backbone, input_model, use_strides, device="cpu"):
