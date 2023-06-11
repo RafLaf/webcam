@@ -131,11 +131,23 @@ options:
 ```
 
 # Hardware vivado project
-Will be provided soon.
+The project has been created with Vivado 2020.2. The project is available in the folder `vivado_project`. The project is configured for the PYNQ-Z1 board. The board files can be found in the directory `vivado_project/pynq-z1`. Add them to Vivado by copying it to the directory `Vivado/2020.2/data/boards/board_files`.
 
-# args :
-    - For converting model to onnx, exemples are in the docstring of the folder model_to_onnx.py
-# Possible pitfall :
+Use the tcl script `vivado_project/base.tcl` to generate the project.
+```bash
+vivado -mode batch -source base.tcl
+```
+
+You can then open the project with Vivado and generate the bitstream.
+
+If you want to modify the tensil architecture, replace the verilog files that are in the `vivado_project/base/sources_1/imports/tensil` folder with the ones that you generate with tensil. Then, regenerate the project with the tcl script.
+The output files that you will need after the bitstream generation are the following:
+- `vivado_project/base/base.runs/impl_1/base_wrapper.bit`
+- `base.gen/base/sources_1/bd/base/hw_handoff/base.hwh`
+
+Rename them to respectively to `design.bit` and `design.hwh` and copy them to the PYNQ.
+
+# Possible pitfalls :
     - Sometimes there is a bug with memory allocation (an error is raised). We are investigating it. For now if it happens, just reset the PYNQ.
     - In the PYNQ, always launch the scripts while beeing authentify as root
     - Somethimes PYNQ need to be reset between executions of the program in order to use the hdmi

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xd:acceleratorMap xmlns:xd="http://www.xilinx.com/xidane" xd:functionName="pixel_pack" xd:componentRef="pixel_pack" xd:initiationInterval="x" xd:clockPeriod="7.000" xd:sequential="true" xd:hostMachine="64" xd:reset="control">
+  <xd:arg xd:name="stream_in_24.data" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_in_24.keep" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_in_24.strb" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_in_24.user" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_in_24.last" xd:originalName="stream_in_24" xd:direction="in" xd:interfaceRef="stream_in_24" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_32.data" xd:originalName="stream_out_32" xd:direction="out" xd:interfaceRef="stream_out_32" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_32.keep" xd:originalName="stream_out_32" xd:direction="out" xd:interfaceRef="stream_out_32" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_32.strb" xd:originalName="stream_out_32" xd:direction="out" xd:interfaceRef="stream_out_32" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_32.user" xd:originalName="stream_out_32" xd:direction="out" xd:interfaceRef="stream_out_32" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="stream_out_32.last" xd:originalName="stream_out_32" xd:direction="out" xd:interfaceRef="stream_out_32" xd:busTypeRef="axis" xd:dataWidth="1"/>
+  <xd:arg xd:name="mode" xd:originalName="mode" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x10" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:arg xd:name="alpha" xd:originalName="alpha" xd:direction="in" xd:interfaceRef="s_axi_control" xd:busTypeRef="axilite" xd:offset="0x18" xd:handshakeRef="ap_none" xd:dataWidth="1"/>
+  <xd:latencyEstimates xd:best-case="undef" xd:worst-case="undef" xd:average-case="undef"/>
+  <xd:resourceEstimates xd:LUT="1015" xd:FF="829" xd:BRAM="0" xd:DSP="0"/>
+</xd:acceleratorMap>
