@@ -357,7 +357,8 @@ def launch_demo(args):
     finally:
         # close all
         cv_interface.close()
-        hdmi_out.close()
+        if args.hdmi_display:
+            hdmi_out.close()
         if args.save_video:
             out.release()
 
