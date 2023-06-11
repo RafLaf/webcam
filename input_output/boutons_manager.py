@@ -28,18 +28,13 @@ class BoutonsManager:
                     # prendre une image
                     if self.key_pressed == "r":
                         self.key_pressed = "1"
-                    print(
-                        "Une image de la classe"
-                        + self.key_pressed
-                        + "doit être capturée"
-                    )
                     self.last_state = state
                     return self.key_pressed
 
                 if state == 2:
                     # changer de classe
                     self.key_pressed = str(int(self.key_pressed) + 1)
-                    print("Passons maintenant à la classe " + self.key_pressed)
+                    print("Now registering class: " + self.key_pressed)
                     self.last_state = state
                     return self.key_pressed
 
@@ -47,14 +42,13 @@ class BoutonsManager:
                     # faire l'inference
                     self.key_pressed = "i"
                     self.last_state = state
-                    print("Il est temps de faire l'inférence")
                     return self.key_pressed
 
                 if state == 8:
                     # reset
                     self.key_pressed = "r"
                     print(
-                        "Les images ont été effacées, veuillez capturez des images de la classe 1"
+                        "Now registering class 1"
                     )
                     self.last_state = state
                     return self.key_pressed

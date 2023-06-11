@@ -28,7 +28,7 @@ print("import done")
 
 def custom_format(value):
     width = 7
-    return"{: >{width}.2g}".format(value, width=width)
+    return"{: >{width}.2f}".format(value, width=width)
 
 class Terminal:
     def __init__(self, period=0.5):
@@ -38,7 +38,7 @@ class Terminal:
     def log(self, fps, total_time, frameread_time, backbone_time, probabilities):
         if not self.flag_log:
             self.flag_log = True
-            print("   FPS    | TOTAL TIME (us) | FRAME READ TIME (us) | BACKBONE TIME (us) |")
+            print("   FPS    | TOTAL TIME (ms) | FRAME READ TIME (ms) | BACKBONE TIME (ms) |")
         if(time.time() - self.time > self.period):
             self.time = time.time()
             print('\r' + custom_format(fps), end='')
@@ -151,14 +151,14 @@ def launch_demo(args):
 
     if not (args.camera_specification is None):
         cap = cv2.VideoCapture(args.camera_specification)
-
+        # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     # cv_interface manage graphical manipulation
     # TODO : add input/output to serparate class and use with statement
     cv_interface = OpencvInterface(cap, SCALE, RES_OUTPUT, FONT, class_num)
 
     if args.hdmi_display:
         from pynq.lib.video import VideoMode
-
         hdmi_out = args.overlay.video.hdmi_out
         h, w = RES_HDMI
         mode = VideoMode(w, h, 24)  # 24 : pixel format
@@ -198,9 +198,7 @@ def launch_demo(args):
                 key = cv_interface.get_key()
                 key = chr(key)  # key convertion to char
             elif args.button_keyboard == "button":
-                print("test_key_passage_avant")
                 key = btn_manager.change_state()
-                print("test_key_passage")
             elif args.button_keyboard == "button":
                 key = btn_manager.change_state()
             else:
@@ -327,7 +325,7 @@ def launch_demo(args):
                 and number_image > args.max_number_of_frame
             ):
                 # stop simulation if max number of frame is attained
-                print("stoping simu")
+                print("Stopping...")
                 break
 
             clock_main += 1
@@ -359,7 +357,7 @@ def launch_demo(args):
     finally:
         # close all
         cv_interface.close()
-        # hdmi_out.close()
+        hdmi_out.close()
         if args.save_video:
             out.release()
 

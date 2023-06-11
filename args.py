@@ -1,5 +1,5 @@
 """
-adapted from : 
+adapted from :
 EASY - Ensemble Augmented-Shot Y-shaped Learning: State-Of-The-Art Few-Shot Classification with Simple Ingredients.
 (https://github.com/ybendou/easy)
 (to load a model without training)
@@ -122,7 +122,7 @@ def parse_model_params(parser):
 
     pynq_parser.add_argument(
         "--path_bit",
-        default="/home/xilinx/jupyter_notebooks/l20leche/base_tensil_hdmi.bit",
+        default="/home/xilinx/design.bit",
         type=str,
         help="The bitstream name or absolute path as a string. To see how to generate it, look at the tensil documentation",
     )
