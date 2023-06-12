@@ -57,48 +57,6 @@ Other backbones examples and weights are available on the EASY repository: https
 
 The inputs are the following: {1-4} to register shots for classes {0-3}, i to start inference, r to reset the demo.
 
-# Performance evaluation on the dataset cifar-10
-It is possible to test the performance of the model on cifar 10 on PYNQ (only 32x32 networks). Download CIFAR 10 test set (cifar-10-batches-py/test_batch) and run the following command :
-```
-sudo -E python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batches-py/test_batch  tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
-```
-
-
-# other setup :
-
-## test of the performance of the demonstration
-
-You may have problem setting up the hdmi output/ input from camera, and want to verify that the demonstration is running well. In order to do that, setup a video simulation of the demo :
-
-1. download a video and put it in this repo.
-2. put reference images inside a folder with the folowing structure :
-    -folder
-        -class1_name
-        -class2_name
-3. add the path as argument when you call the function
-
-exemple :
-```bash
-sudo -E python3 main.py --no-display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
-```
-
-Get the argument specific to main.py :
-
-```bash
-python3 main.py --help
-```
-
-Get the argument specific to tensil:
-
-```bash
-python3 main.py tensil --help
-```
-
-## conversion of models to onnx :
-
-basic setup fo onnx exportation is to export it using torch library, and delete all useless nodes with onnx-simplifier. We included a script model_to_onnx.py in order to convert all the pytorch networks implemented in this repo. Check the description of the file for more info (you need to set the output to "Output", use opset 10, and avoid certain specific node not implemented by tensil)
-
-
 # How to train a model, convert it to onnx, then to tensil and finally run it on the PYNQ
 ## Schema of the process
 ![plot](./static/process.png)
@@ -150,6 +108,40 @@ The output files that you will need after the bitstream generation are the follo
 - `base.gen/base/sources_1/bd/base/hw_handoff/base.hwh`
 
 Rename them to respectively to `design.bit` and `design.hwh` and copy them to the PYNQ.
+
+# other setup :
+## Performance evaluation on the dataset cifar-10
+It is possible to test the performance of the model on cifar 10 on PYNQ (only 32x32 networks). Download CIFAR 10 test set (cifar-10-batches-py/test_batch) and run the following command :
+```
+sudo -E python3 few_shot_evaluation.py --dataset-path /home/xilinx/cifar-10-batches-py/test_batch  tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
+```
+## test of the performance of the demonstration
+
+You may have problem setting up the hdmi output/ input from camera, and want to verify that the demonstration is running well. In order to do that, setup a video simulation of the demo :
+
+1. download a video and put it in this repo.
+2. put reference images inside a folder with the folowing structure :
+    -folder
+        -class1_name
+        -class2_name
+3. add the path as argument when you call the function
+
+exemple :
+```bash
+sudo -E python3 main.py --no-display --use-saved-sample --path_shots_video data/catvsdog --camera-specification catvsdog.mp4 tensil --path_tmodel /home/xilinx/resnet12_32_32_32_onnx_custom_perf.tmodel --path_bit /home/xilinx/design.bit
+```
+
+Get the argument specific to main.py :
+
+```bash
+python3 main.py --help
+```
+
+Get the argument specific to tensil:
+
+```bash
+python3 main.py tensil --help
+```
 
 # Possible pitfalls :
     - Sometimes there is a bug with memory allocation (an error is raised). We are investigating it. For now if it happens, just reset the PYNQ.
