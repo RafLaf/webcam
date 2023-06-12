@@ -100,6 +100,10 @@ basic setup fo onnx exportation is to export it using torch library, and delete 
 
 
 # How to train a model, convert it to onnx, then to tensil and finally run it on the PYNQ
+## Schema of the process
+![plot](./static/process.png)
+
+
 ## How to train a backbone model
 A repository is available to train a model with pytorch: https://github.com/antoine-lavrard/brain-train/tree/few_shot_demo . It is possible to train a model from scratch.
 ## Conversion to onnx
