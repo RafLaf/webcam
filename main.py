@@ -144,6 +144,7 @@ def launch_demo(args):
     clock = 0
     clock_main = 0
     number_frame_init = 5
+    number_frame_restart = 5
 
     terminal = Terminal()
 
@@ -313,6 +314,10 @@ def launch_demo(args):
                 cv_interface.reset_snapshot()
                 do_reset = True
 
+            if do_reset == True and clock_main > number_frame_restart:
+                do_reset = False
+                cv_interface.put_text("Initialization and relaunch the demo")
+            
             # Dans la ligne suivante, il faudra enlever le not, je l'ai ajouté pour faire l'inférence
             if key == "i" and current_data.is_data_recorded():
                 print("Begining Inference")
@@ -327,7 +332,7 @@ def launch_demo(args):
                 # stop simulation if max number of frame is attained
                 print("Stopping...")
                 break
-
+                
             clock_main += 1
             clock += 1
 
